@@ -99,6 +99,11 @@ public:
         m_core = integrator;
     }
 
+    double get_dt() const
+    {
+        return m_dt;
+    }
+
 private:
     DerivFunction m_f;
     TimeSeries<double> m_result;

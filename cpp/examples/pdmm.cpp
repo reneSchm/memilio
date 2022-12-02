@@ -2,58 +2,24 @@
 #include "memilio/epidemiology/populations.h"
 #include "memilio/compartments/compartmentalmodel.h"
 #include "memilio/math/eigen.h"
+#include "memilio/utils/logging.h"
 #include "memilio/utils/parameter_distributions.h"
 #include "memilio/utils/parameter_set.h"
 #include "memilio/utils/random_number_generator.h"
 #include <algorithm>
+#include <cstddef>
 #include <iostream>
+#include <limits>
+#include <list>
 #include <memory>
 #include <numeric>
 #include <utility>
 #include <vector>
 
-template <class SC>
-void print_to_terminal(const mio::TimeSeries<SC>& results, const std::vector<std::string>& state_names)
+enum Order
 {
-    printf("| %-16s |", "Time");
-    for (size_t k = 0; k < state_names.size(); k++) {
-        printf(" %-16s |", state_names[k].data()); // print underlying char*
-    }
-    auto num_points = static_cast<size_t>(results.get_num_time_points());
-    for (size_t i = 0; i < num_points; i++) {
-        printf("\n| %16.6f |", results.get_time(i));
-        auto res_i = results.get_value(i);
-        for (size_t j = 0; j < state_names.size(); j++) {
-            printf(" %16.6f |", res_i[j]);
-        }
-    }
-    printf("\n");
-}
-
-struct AdoptionRate {
-    double factor;
-    bool second_order;
-    int i;
-    int j;
-
-    template <class Population>
-    constexpr double operator()(const Population& p) const
-    {
-        if (second_order) {
-            return factor * p.array()[i] * p.array()[j];
-        }
-        else {
-            return factor * p.array()[i];
-        }
-    }
-};
-
-struct AdoptionRates {
-    using Type = std::vector<std::vector<AdoptionRate>>;
-    const static std::string name()
-    {
-        return "AdoptionRates";
-    }
+    first,
+    second
 };
 
 enum Status
@@ -64,9 +30,60 @@ enum Status
     Count
 };
 
-class PDMM : public mio::CompartmentalModel<Status, mio::Populations<Status>, mio::ParameterSet<AdoptionRates>>
+struct AdoptionRate {
+    Status from; // i
+    Status to; // j
+    double factor; // gammahat_{ij}^k
+    Order order; // first or second
+
+    template <class Population>
+    constexpr double operator()(const Population& p) const
+    {
+        if (order == Order::second) {
+            return factor * p.array()[from] * p.array()[to] / p.array().sum();
+        }
+        else {
+            return factor * p.array()[from];
+        }
+    }
+};
+
+struct AdoptionRates {
+    // consider std::map<<i, j>, rate>, if access by index is ever needed
+    using Type = std::list<AdoptionRate>;
+    const static std::string name()
+    {
+        return "AdoptionRates";
+    }
+};
+
+struct TransitionRate {
+    Status status; // i
+    int from; // k
+    int to; // l
+    double factor; // lambda_i^{kl}
+
+    template <class Population>
+    constexpr double operator()(const Population& p) const
+    {
+        return factor * p.array()[status];
+    }
+};
+
+struct TransitionRates {
+    // consider a more dense format, e.g. a matrix of size n_sudomains × Status::Count
+    using Type = std::vector<TransitionRate>;
+    const static std::string name()
+    {
+        return "TransitionRates";
+    }
+};
+
+using Params = mio::ParameterSet<AdoptionRates>;
+
+class PDMM : public mio::CompartmentalModel<Status, mio::Populations<Status>, Params>
 {
-    using Base = mio::CompartmentalModel<Status, mio::Populations<Status>, mio::ParameterSet<AdoptionRates>>;
+    using Base = mio::CompartmentalModel<Status, mio::Populations<Status>, Params>;
 
 public:
     PDMM()
@@ -77,13 +94,9 @@ public:
                          Eigen::Ref<Eigen::VectorXd> dxdt) const override
     {
         auto& params = this->parameters;
-
-        for (Eigen::Index i = 0; i < x.size(); i++) {
-            for (Eigen::Index j = 0; j < x.size(); j++) {
-                // TODO: replace AdoptionRates by sparse pattern
-                dxdt[i] -= params.template get<AdoptionRates>()[i][j](x);
-                dxdt[j] += params.template get<AdoptionRates>()[i][j](x);
-            }
+        for (auto& rate : params.template get<AdoptionRates>()) {
+            dxdt[rate.from] -= rate(x);
+            dxdt[rate.to] += rate(x);
         }
     }
 };
@@ -97,86 +110,185 @@ public:
         , m_t0(t0)
         , m_dt(dt)
     {
-        std::vector<Simulation<PDMM>> sims;
-        sims.reserve(models.size());
+        m_simulations.reserve(models.size());
         for (auto&& m : models) {
-            sims.push_back(Simulation<PDMM>(m, t0, dt));
+            m_simulations.push_back(Simulation<PDMM>(m, t0, dt));
         }
     }
-    /* Eigen::Ref<Eigen::VectorXd> advance(double tmax)
+    std::vector<Eigen::Ref<Eigen::VectorXd>> advance(double tmax)
     {
-        double next_jump_time = mio::ExponentialDistribution<double>::get_instance()(1); // tau'
-        double cumulative_transition_rate; // TODO: Lambda
-        while (cumulative_transition_rate * m_dt <= next_jump_time) {
-            next_jump_time -= cumulative_transition_rate * m_dt;
-
-            for (auto&& sim : *m_simulations) {
+        // determine how long we wait until the next transition occurs
+        double waiting_time = draw_waiting_time();
+        // iterate time by increments of m_dt
+        while (m_t0 < tmax) {
+            m_dt = std::min({m_dt, tmax - m_t0});
+            // check if one or more transitions occur during this time step
+            if (waiting_time < m_dt) { // (at least one) event occurs
+                std::vector<double> rates(transition_rates.size()); // lambda_m (for all m)
+                double remaining_time = m_dt; // xi * Delta-t
+                // perform transition(s)
+                do {
+                    // compute current transition rates
+                    std::transform(transition_rates.begin(), transition_rates.end(), rates.begin(), [&](auto&& r) {
+                        // we should normalize here by dividing by the cumulative transition rate,
+                        // but the DiscreteDistribution below effectively does that for us
+                        return compute_rate(r);
+                    });
+                    // draw transition event and execute it
+                    int event         = mio::DiscreteDistribution<int>::get_instance()(rates);
+                    double event_time = m_t0 + (m_dt - remaining_time) + waiting_time;
+                    perform_transition(event, event_time);
+                    // draw new waiting time
+                    remaining_time -= waiting_time;
+                    /* mio::log_info("time {} \t event: {}, {}->{}", event_time, transition_rates[event].status,
+                                  transition_rates[event].from, transition_rates[event].to); */
+                    waiting_time = draw_waiting_time();
+                    // repeat, if another event occurs in the remaining time interval
+                } while (waiting_time < remaining_time);
+            }
+            else { // no event occurs
+                // reduce waiting time for the next step
+                //normalized_waiting_time -= cumulative_transition_rate * m_dt;
+                waiting_time -= m_dt;
+            }
+            // advance all locations
+            for (auto&& sim : m_simulations) {
                 sim.advance(m_t0 + m_dt);
             }
-            // TODO: update m_dt?
             m_t0 += m_dt;
+            update_dt();
         }
-        int event = mio::DiscreteDistribution<int>::get_instance()(rates / cumulative_transition_rate)
-            do_jump(event, t = t_n + tau_dash / Lambda)
+        // gather and return simulation results
+        std::vector<Eigen::Ref<Eigen::VectorXd>> results;
+        for (size_t i = 0; i < m_simulations.size(); i++) {
+            results.emplace_back(m_simulations[i].get_result().get_last_value());
+        }
+        return results;
+    }
 
-                while (another event in this time step)
-        {
-            do_jump
-        }
-    } */
+    mio::TimeSeries<double>& get_result(size_t location)
+    {
+        return m_simulations[location].get_result();
+    }
+
+    TransitionRates::Type transition_rates;
 
 private:
-    std::unique_ptr<std::vector<mio::Simulation<PDMM>>> m_simulations;
+    void perform_transition(int event, double time)
+    {
+        // get the rate corresponding to the event
+        const auto& r = transition_rates[event];
+        // add a new timepoint to the result at the given time, transitioning one person
+        Eigen::VectorXd value = m_simulations[r.from].get_result().get_last_value();
+        value[r.status] -= 1;
+        if (value[r.status] < 0) {
+            mio::log_error("Transition from {} to {} with status {} caused negative value.", r.from, r.to, r.status);
+        }
+        m_simulations[r.from].get_result().add_time_point(time, value);
+        // finish the transition (as above for r.from instead of r.to, with switched sign)
+        value = m_simulations[r.to].get_result().get_last_value();
+        value[r.status] += 1;
+        m_simulations[r.to].get_result().add_time_point(time, value);
+    }
+    double compute_rate(const TransitionRate& r) const
+    {
+        return r(m_simulations[r.from].get_result().get_last_value());
+    }
+    double draw_waiting_time()
+    {
+        // compute the current cumulative transition rate
+        double ctr = 0; // Lambda
+        for (auto rate : transition_rates) {
+            ctr += compute_rate(rate);
+        }
+        // draw the normalized waiting time
+        double nwt = mio::ExponentialDistribution<double>::get_instance()(1.0); // tau'
+        return nwt / ctr;
+    }
+    void update_dt()
+    {
+        m_dt = std::numeric_limits<double>::max();
+        for (auto&& sim : m_simulations) {
+            if (sim.get_dt() < m_dt) {
+                m_dt = sim.get_dt();
+            }
+        }
+    }
+    std::vector<mio::Simulation<PDMM>> m_simulations;
     double m_t0, m_dt;
 };
+
+template <class SC>
+void print_to_terminal(const mio::TimeSeries<SC>& results, const std::vector<std::string>& state_names)
+{
+    printf("%-16s   ", "Time");
+    for (size_t k = 0; k < state_names.size(); k++) {
+        printf(" %-16s ", state_names[k].data()); // print underlying char*
+    }
+    auto num_points = static_cast<size_t>(results.get_num_time_points());
+    for (size_t i = 0; i < num_points; i++) {
+        printf("\n%16.6f ", results.get_time(i));
+        auto res_i = results.get_value(i);
+        for (size_t j = 0; j < state_names.size(); j++) {
+            printf(" %16.6f ", res_i[j]);
+        }
+    }
+    printf("\n");
+}
 
 int main()
 {
     /*** CONFIG ***/
     const int n_subdomains = 2;
+    mio::set_log_level(mio::LogLevel::warn);
     /*** END CONFIG ***/
 
     auto pop_size = PDMM::Compartments::Count;
 
-    // index: k=loc, i=staus_from, j=status_to; value: {factor, order} of adoption i->j in k
-    std::vector<std::vector<std::vector<std::pair<double, int>>>> gammas{};
-    gammas.resize(n_subdomains);
-    for (auto&& locs : gammas) {
-        locs.resize(pop_size, std::vector<std::pair<double, int>>(pop_size, {0, 0}));
-    }
+    // vector of locations k; list entries = {staus_from, status_to, gammahat, order}
+    std::vector<std::list<AdoptionRate>> adoption_rates(n_subdomains);
+    // vector {status, location_from, location_to, lambda}
+    TransitionRates::Type transition_rates;
 
     /*** CONFIG ***/
-    gammas[0][Status::S][Status::I] = {0.5, 2};
-    gammas[0][Status::I][Status::R] = {0.001, 1};
-    gammas[1][Status::S][Status::I] = {0.001, 2};
-    gammas[1][Status::I][Status::R] = {0.5, 1};
-    std::vector<double> pops{1900, 100, 0};
+    adoption_rates[0].push_back({Status::S, Status::I, 0.3, Order::second});
+    adoption_rates[0].push_back({Status::I, Status::R, 0.1, Order::first});
+    adoption_rates[1].push_back({Status::S, Status::I, 1, Order::second});
+    adoption_rates[1].push_back({Status::I, Status::R, 0.08, Order::first});
+
+    double kappa     = 0.001;
+    transition_rates = {{Status::S, 0, 1, 0.5 * kappa},  {Status::I, 0, 1, 0.1 * kappa},
+                        {Status::R, 0, 1, 0.1 * kappa},  {Status::S, 1, 0, 0.1 * kappa},
+                        {Status::I, 1, 0, 0.02 * kappa}, {Status::R, 1, 0, 0.2 * kappa}};
+
+    std::vector<std::vector<double>> populations{{1900, 100, 0}, {2000, 0, 0}};
     /*** END CONFIG ***/
 
     std::vector<PDMM> local_models(n_subdomains);
 
     for (int k = 0; k < n_subdomains; k++) {
-        local_models[k].parameters.get<AdoptionRates>() =
-            AdoptionRates::Type(pop_size, std::vector<AdoptionRate>(pop_size));
-        for (int i = 0; i < pop_size; i++) {
-            for (int j = 0; j < pop_size; j++) {
-                local_models[k].parameters.get<AdoptionRates>()[i][j] =
-                    AdoptionRate{gammas[k][i][j].first / std::accumulate(pops.begin(), pops.end(), 0),
-                                 (gammas[k][i][j].second == 2), i, j};
-            }
+        for (auto& r : adoption_rates[k]) {
+            local_models[k].parameters.get<AdoptionRates>().emplace_back(r);
         }
-    }
-    for (auto& m : local_models) {
         for (int i = 0; i < pop_size; i++) {
-            m.populations.array()[i] = pops[i];
+            local_models[k].populations.array()[i] = populations[k][i];
         }
     }
 
     int i = 0;
-    for (auto& m : local_models) {
+    /* for (auto& m : local_models) {
         auto results = mio::simulate(0, 10, 0.1, m);
         std::cout << "Model " << ++i << "/" << n_subdomains << "\n";
         print_to_terminal(results, {"S", "I", "R"});
+    } */
+
+    auto sim             = mio::Simulation<std::vector<PDMM>>(local_models, 0, 0.1);
+    sim.transition_rates = transition_rates;
+    sim.advance(100);
+
+    for (i = 0; i < n_subdomains; i++) {
+        std::cout << "Global Model " << i + 1 << "/" << n_subdomains << "\n";
+        print_to_terminal(sim.get_result(i), {"S", "I", "R"});
     }
 
     return 0;

@@ -131,6 +131,11 @@ public:
         return *m_model;
     }
 
+    double get_dt() const
+    {
+        return m_integrator.get_dt();
+    }
+
 private:
     std::shared_ptr<IntegratorCore> m_integratorCore;
     std::unique_ptr<Model> m_model;
