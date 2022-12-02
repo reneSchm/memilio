@@ -17,6 +17,9 @@ target_link_libraries(seir_example PRIVATE memilio ode_seir)
 add_executable(ode_secir_example ode_secir.cpp)
 target_link_libraries(ode_secir_example PRIVATE memilio ode_secir)
 
+add_executable(pdmm pdmm.cpp)
+target_link_libraries(pdmm PRIVATE memilio)
+
 add_executable(secirvvs_example secirvvs.cpp)
 target_link_libraries(secirvvs_example PRIVATE memilio ode_secirvvs)
 
