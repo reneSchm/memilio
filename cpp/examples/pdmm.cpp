@@ -50,7 +50,7 @@ struct AdoptionRate {
 
 struct AdoptionRates {
     // consider std::map<<i, j>, rate>, if access by index is ever needed
-    using Type = std::list<AdoptionRate>;
+    using Type = std::vector<AdoptionRate>;
     const static std::string name()
     {
         return "AdoptionRates";
@@ -115,7 +115,7 @@ public:
             m_simulations.push_back(Simulation<PDMM>(m, t0, dt));
         }
     }
-    std::vector<Eigen::Ref<Eigen::VectorXd>> advance(double tmax)
+    std::vector<Eigen::Ref<Eigen::VectorXd>> advance(double tmax, double dt_max = std::numeric_limits<double>::max())
     {
         // determine how long we wait until the next transition occurs
         double waiting_time = draw_waiting_time();
@@ -128,6 +128,12 @@ public:
                 double remaining_time = m_dt; // xi * Delta-t
                 // perform transition(s)
                 do {
+                    //double event_time = m_t0 + (m_dt - remaining_time) + waiting_time;
+                    m_t0 += waiting_time; // event time t**
+                    // advance all locations
+                    for (auto&& sim : m_simulations) {
+                        sim.advance(m_t0);
+                    }
                     // compute current transition rates
                     std::transform(transition_rates.begin(), transition_rates.end(), rates.begin(), [&](auto&& r) {
                         // we should normalize here by dividing by the cumulative transition rate,
@@ -136,8 +142,7 @@ public:
                     });
                     // draw transition event and execute it
                     int event         = mio::DiscreteDistribution<int>::get_instance()(rates);
-                    double event_time = m_t0 + (m_dt - remaining_time) + waiting_time;
-                    perform_transition(event, event_time);
+                    perform_transition(event, m_t0);
                     // draw new waiting time
                     remaining_time -= waiting_time;
                     /* mio::log_info("time {} \t event: {}, {}->{}", event_time, transition_rates[event].status,
@@ -156,7 +161,7 @@ public:
                 sim.advance(m_t0 + m_dt);
             }
             m_t0 += m_dt;
-            update_dt();
+            update_dt(dt_max);
         }
         // gather and return simulation results
         std::vector<Eigen::Ref<Eigen::VectorXd>> results;
@@ -181,14 +186,21 @@ private:
         // add a new timepoint to the result at the given time, transitioning one person
         Eigen::VectorXd value = m_simulations[r.from].get_result().get_last_value();
         value[r.status] -= 1;
+        m_simulations[r.from].get_result().get_last_value() = value;
         if (value[r.status] < 0) {
             mio::log_error("Transition from {} to {} with status {} caused negative value.", r.from, r.to, r.status);
         }
+        value = m_simulations[r.to].get_result().get_last_value();
+        value[r.status] += 1;
+        m_simulations[r.to].get_result().get_last_value() = value;
+
+        /* Eigen::VectorXd value = m_simulations[r.from].get_result().get_last_value();
+        value[r.status] -= 1;
         m_simulations[r.from].get_result().add_time_point(time, value);
         // finish the transition (as above for r.from instead of r.to, with switched sign)
         value = m_simulations[r.to].get_result().get_last_value();
         value[r.status] += 1;
-        m_simulations[r.to].get_result().add_time_point(time, value);
+        m_simulations[r.to].get_result().add_time_point(time, value); */
     }
     double compute_rate(const TransitionRate& r) const
     {
@@ -205,9 +217,9 @@ private:
         double nwt = mio::ExponentialDistribution<double>::get_instance()(1.0); // tau'
         return nwt / ctr;
     }
-    void update_dt()
+    void update_dt(double dt_max)
     {
-        m_dt = std::numeric_limits<double>::max();
+        m_dt = dt_max;
         for (auto&& sim : m_simulations) {
             if (sim.get_dt() < m_dt) {
                 m_dt = sim.get_dt();
@@ -267,6 +279,7 @@ int main()
     std::vector<PDMM> local_models(n_subdomains);
 
     for (int k = 0; k < n_subdomains; k++) {
+        local_models[k].parameters.get<AdoptionRates>().reserve(adoption_rates[k].size());
         for (auto& r : adoption_rates[k]) {
             local_models[k].parameters.get<AdoptionRates>().emplace_back(r);
         }
