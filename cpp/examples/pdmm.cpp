@@ -119,13 +119,14 @@ public:
     {
         // determine how long we wait until the next transition occurs
         double waiting_time = draw_waiting_time();
+        double remaining_time;
         // iterate time by increments of m_dt
         while (m_t0 < tmax) {
             m_dt = std::min({m_dt, tmax - m_t0});
+            remaining_time = m_dt; // xi * Delta-t
             // check if one or more transitions occur during this time step
             if (waiting_time < m_dt) { // (at least one) event occurs
                 std::vector<double> rates(transition_rates.size()); // lambda_m (for all m)
-                double remaining_time = m_dt; // xi * Delta-t
                 // perform transition(s)
                 do {
                     //double event_time = m_t0 + (m_dt - remaining_time) + waiting_time;
@@ -158,9 +159,9 @@ public:
             }
             // advance all locations
             for (auto&& sim : m_simulations) {
-                sim.advance(m_t0 + m_dt);
+                sim.advance(m_t0 + remaining_time);
             }
-            m_t0 += m_dt;
+            m_t0 += remaining_time;
             update_dt(dt_max);
         }
         // gather and return simulation results
