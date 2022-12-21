@@ -6,6 +6,8 @@
 #include "memilio/utils/parameter_distributions.h"
 #include "memilio/utils/parameter_set.h"
 #include "memilio/utils/random_number_generator.h"
+#include "memilio/utils/time_series.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <iostream>
@@ -122,7 +124,7 @@ public:
         double remaining_time;
         // iterate time by increments of m_dt
         while (m_t0 < tmax) {
-            m_dt = std::min({m_dt, tmax - m_t0});
+            m_dt           = std::min({m_dt, tmax - m_t0});
             remaining_time = m_dt; // xi * Delta-t
             // check if one or more transitions occur during this time step
             if (waiting_time < m_dt) { // (at least one) event occurs
@@ -142,8 +144,8 @@ public:
                         return compute_rate(r);
                     });
                     // draw transition event and execute it
-                    int event         = mio::DiscreteDistribution<int>::get_instance()(rates);
-                    perform_transition(event, m_t0);
+                    int event = mio::DiscreteDistribution<int>::get_instance()(rates);
+                    perform_transition(event);
                     // draw new waiting time
                     remaining_time -= waiting_time;
                     /* mio::log_info("time {} \t event: {}, {}->{}", event_time, transition_rates[event].status,
@@ -180,28 +182,17 @@ public:
     TransitionRates::Type transition_rates;
 
 private:
-    void perform_transition(int event, double time)
+    void perform_transition(int event)
     {
         // get the rate corresponding to the event
         const auto& r = transition_rates[event];
-        // add a new timepoint to the result at the given time, transitioning one person
-        Eigen::VectorXd value = m_simulations[r.from].get_result().get_last_value();
-        value[r.status] -= 1;
-        m_simulations[r.from].get_result().get_last_value() = value;
-        if (value[r.status] < 0) {
+        // transitioning one person at the current time
+        auto& value = m_simulations[r.from].get_result().get_last_value()[static_cast<Eigen::Index>(r.status)];
+        value -= 1;
+        if (value < 0) {
             mio::log_error("Transition from {} to {} with status {} caused negative value.", r.from, r.to, r.status);
         }
-        value = m_simulations[r.to].get_result().get_last_value();
-        value[r.status] += 1;
-        m_simulations[r.to].get_result().get_last_value() = value;
-
-        /* Eigen::VectorXd value = m_simulations[r.from].get_result().get_last_value();
-        value[r.status] -= 1;
-        m_simulations[r.from].get_result().add_time_point(time, value);
-        // finish the transition (as above for r.from instead of r.to, with switched sign)
-        value = m_simulations[r.to].get_result().get_last_value();
-        value[r.status] += 1;
-        m_simulations[r.to].get_result().add_time_point(time, value); */
+        m_simulations[r.to].get_result().get_last_value()[static_cast<Eigen::Index>(r.status)] += 1;
     }
     double compute_rate(const TransitionRate& r) const
     {
