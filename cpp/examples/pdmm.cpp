@@ -24,7 +24,7 @@ enum Order
     second
 };
 
-enum Status
+enum InfectionState
 {
     S,
     I,
@@ -32,6 +32,7 @@ enum Status
     Count
 };
 
+template <class Status>
 struct AdoptionRate {
     Status from; // i
     Status to; // j
@@ -50,15 +51,17 @@ struct AdoptionRate {
     }
 };
 
+template <class Status>
 struct AdoptionRates {
     // consider std::map<<i, j>, rate>, if access by index is ever needed
-    using Type = std::vector<AdoptionRate>;
+    using Type = std::vector<AdoptionRate<Status>>;
     const static std::string name()
     {
         return "AdoptionRates";
     }
 };
 
+template <class Status>
 struct TransitionRate {
     Status status; // i
     int from; // k
@@ -72,49 +75,52 @@ struct TransitionRate {
     }
 };
 
+template <class Status>
 struct TransitionRates {
     // consider a more dense format, e.g. a matrix of size n_sudomains × Status::Count
-    using Type = std::vector<TransitionRate>;
+    using Type = std::vector<TransitionRate<Status>>;
     const static std::string name()
     {
         return "TransitionRates";
     }
 };
 
-using Params = mio::ParameterSet<AdoptionRates>;
+template <class Status>
+using Params = mio::ParameterSet<AdoptionRates<Status>>;
 
-class PDMM : public mio::CompartmentalModel<Status, mio::Populations<Status>, Params>
+template <class Status>
+class PDMM : public mio::CompartmentalModel<Status, mio::Populations<Status>, Params<Status>>
 {
-    using Base = mio::CompartmentalModel<Status, mio::Populations<Status>, Params>;
+    using Base = mio::CompartmentalModel<Status, mio::Populations<Status>, Params<Status>>;
 
 public:
     PDMM()
-        : Base(Populations({Status::Count}, 0.), ParameterSet())
+        : Base(typename Base::Populations({Status::Count}, 0.), typename Base::ParameterSet())
     {
     }
     void get_derivatives(Eigen::Ref<const Eigen::VectorXd> x, Eigen::Ref<const Eigen::VectorXd>, double t,
                          Eigen::Ref<Eigen::VectorXd> dxdt) const override
     {
         auto& params = this->parameters;
-        for (auto& rate : params.template get<AdoptionRates>()) {
+        for (auto& rate : params.template get<AdoptionRates<Status>>()) {
             dxdt[rate.from] -= rate(x);
             dxdt[rate.to] += rate(x);
         }
     }
 };
 
-template <>
-class mio::Simulation<std::vector<PDMM>>
+template <class Status>
+class mio::Simulation<std::vector<PDMM<Status>>>
 {
 public:
-    Simulation(const std::vector<PDMM>& models, double t0 = 0., double dt = 0.1)
+    Simulation(const std::vector<PDMM<Status>>& models, double t0 = 0., double dt = 0.1)
         : m_simulations()
         , m_t0(t0)
         , m_dt(dt)
     {
         m_simulations.reserve(models.size());
         for (auto&& m : models) {
-            m_simulations.push_back(Simulation<PDMM>(m, t0, dt));
+            m_simulations.push_back(Simulation<PDMM<Status>>(m, t0, dt));
         }
     }
     std::vector<Eigen::Ref<Eigen::VectorXd>> advance(double tmax, double dt_max = std::numeric_limits<double>::max())
@@ -179,7 +185,7 @@ public:
         return m_simulations[location].get_result();
     }
 
-    TransitionRates::Type transition_rates;
+    typename TransitionRates<Status>::Type transition_rates;
 
 private:
     void perform_transition(int event)
@@ -194,7 +200,7 @@ private:
         }
         m_simulations[r.to].get_result().get_last_value()[static_cast<Eigen::Index>(r.status)] += 1;
     }
-    double compute_rate(const TransitionRate& r) const
+    double compute_rate(const TransitionRate<Status>& r) const
     {
         return r(m_simulations[r.from].get_result().get_last_value());
     }
@@ -218,7 +224,7 @@ private:
             }
         }
     }
-    std::vector<mio::Simulation<PDMM>> m_simulations;
+    std::vector<mio::Simulation<PDMM<Status>>> m_simulations;
     double m_t0, m_dt;
 };
 
@@ -242,17 +248,19 @@ void print_to_terminal(const mio::TimeSeries<SC>& results, const std::vector<std
 
 int main()
 {
+    using Model  = PDMM<InfectionState>;
+    using Status = Model::Compartments;
     /*** CONFIG ***/
     const int n_subdomains = 2;
     mio::set_log_level(mio::LogLevel::warn);
     /*** END CONFIG ***/
 
-    auto pop_size = PDMM::Compartments::Count;
+    auto pop_size = Model::Compartments::Count;
 
     // vector of locations k; list entries = {staus_from, status_to, gammahat, order}
-    std::vector<std::list<AdoptionRate>> adoption_rates(n_subdomains);
+    std::vector<std::list<AdoptionRate<Status>>> adoption_rates(n_subdomains);
     // vector {status, location_from, location_to, lambda}
-    TransitionRates::Type transition_rates;
+    TransitionRates<Status>::Type transition_rates;
 
     /*** CONFIG ***/
     adoption_rates[0].push_back({Status::S, Status::I, 0.3, Order::second});
@@ -268,12 +276,12 @@ int main()
     std::vector<std::vector<double>> populations{{1900, 100, 0}, {2000, 0, 0}};
     /*** END CONFIG ***/
 
-    std::vector<PDMM> local_models(n_subdomains);
+    std::vector<Model> local_models(n_subdomains);
 
     for (int k = 0; k < n_subdomains; k++) {
-        local_models[k].parameters.get<AdoptionRates>().reserve(adoption_rates[k].size());
+        local_models[k].parameters.get<AdoptionRates<Status>>().reserve(adoption_rates[k].size());
         for (auto& r : adoption_rates[k]) {
-            local_models[k].parameters.get<AdoptionRates>().emplace_back(r);
+            local_models[k].parameters.get<AdoptionRates<Status>>().emplace_back(r);
         }
         for (int i = 0; i < pop_size; i++) {
             local_models[k].populations.array()[i] = populations[k][i];
@@ -287,7 +295,7 @@ int main()
         print_to_terminal(results, {"S", "I", "R"});
     } */
 
-    auto sim             = mio::Simulation<std::vector<PDMM>>(local_models, 0, 0.1);
+    auto sim             = mio::Simulation<std::vector<Model>>(local_models, 0, 0.1);
     sim.transition_rates = transition_rates;
     sim.advance(100);
 
