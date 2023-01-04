@@ -99,7 +99,12 @@ public:
         m_core = integrator;
     }
 
-    double get_dt() const
+    double& get_dt()
+    {
+        return m_dt;
+    }
+
+    const double& get_dt() const
     {
         return m_dt;
     }

@@ -131,7 +131,12 @@ public:
         return *m_model;
     }
 
-    double get_dt() const
+    double& get_dt()
+    {
+        return m_integrator.get_dt();
+    }
+
+    const double& get_dt() const
     {
         return m_integrator.get_dt();
     }
