@@ -80,6 +80,7 @@ if(MEMILIO_BUILD_MODELS)
     add_subdirectory(models/ode_secirvvs)
     add_subdirectory(models/ide_seir)
     add_subdirectory(models/ode_seir)
+    add_subdirectory(models/mpm)
 endif()
 
 if(MEMILIO_BUILD_EXAMPLES)
