@@ -173,7 +173,7 @@ public:
      */
     const Model& get_model() const
     {
-        return m_simulation.get_model();
+        return static_cast<Model&>(m_simulation.get_model());
     }
 
     /**
@@ -181,7 +181,7 @@ public:
      */
     Model& get_model()
     {
-        return m_simulation.get_model();
+        return static_cast<Model&>(m_simulation.get_model());
     }
 
 private:
