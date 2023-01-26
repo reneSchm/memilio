@@ -17,7 +17,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 #ifndef MPM_PDMM_H_
 #define MPM_PDMM_H_
 
@@ -25,6 +24,7 @@
 #include "mpm/utility.h"
 
 #include "memilio/compartments/simulation.h"
+
 #include <algorithm>
 
 namespace mio
@@ -44,7 +44,8 @@ public:
 template <class Status, size_t mps>
 class Simulation<mpm::PDMModel<mps, Status>>
 {
-    using Sim = mio::Simulation<mpm::MetapopulationModel<mps, Status>>;
+    using Sim        = mio::Simulation<mpm::MetapopulationModel<mps, Status>>;
+    using Integrator = mio::ControlledStepperWrapper<boost::numeric::odeint::runge_kutta_cash_karp54>;
 
 public:
     using Model = mpm::PDMModel<mps, Status>;
@@ -57,20 +58,15 @@ public:
      */
     Simulation(Model const& model, ScalarType t0 = 0., ScalarType dt = 0.1)
         : m_dt(dt)
-        , m_t0(t0)
-        , m_traced_dt(dt)
         , m_model(std::make_unique<Model>(model))
         , m_simulation(Sim(model, t0, dt))
-        , m_dt_tracer(
-              m_traced_dt,
-              std::make_shared<mio::ControlledStepperWrapper<boost::numeric::odeint::runge_kutta_cash_karp54>>())
     {
         assert(dt > 0);
         assert(std::all_of(transition_rates().begin(), transition_rates().end(), [](auto&& r) {
             return static_cast<size_t>(r.from) < mps && static_cast<size_t>(r.to) < mps;
         }));
 
-        m_simulation.set_integrator(std::make_shared<mpm::dt_tracer>(m_dt_tracer));
+        m_simulation.set_integrator(std::make_shared<mpm::dt_tracer>(std::make_shared<Integrator>()));
     }
 
     /**
@@ -82,19 +78,20 @@ public:
     {
         // determine how long we wait until the next transition occurs
         ScalarType waiting_time = draw_waiting_time();
+        ScalarType current_time = get_result().get_last_time();
         ScalarType remaining_time;
         // iterate time by increments of m_dt
-        while (m_t0 < tmax) {
-            ScalarType dt  = std::min({m_dt, tmax - m_t0});
-            remaining_time = dt; // xi * Delta-t
+        while (current_time < tmax) {
+            remaining_time = std::min({m_dt, tmax - current_time});
+            ; // xi * Delta-t
             // check if one or more transitions occur during this time step
-            if (waiting_time < dt) { // (at least one) event occurs
+            if (waiting_time < remaining_time) { // (at least one) event occurs
                 std::vector<ScalarType> rates(transition_rates().size()); // lambda_m (for all m)
                 // perform transition(s)
                 do {
-                    m_t0 += waiting_time; // event time t**
+                    current_time += waiting_time; // event time t**
                     // advance all locations
-                    m_simulation.advance(m_t0);
+                    m_simulation.advance(current_time);
                     // compute current transition rates
                     std::transform(transition_rates().begin(), transition_rates().end(), rates.begin(),
                                    [&](auto&& rate) {
@@ -113,13 +110,13 @@ public:
             }
             else { // no event occurs
                 // reduce waiting time for the next step
-                waiting_time -= dt;
+                waiting_time -= remaining_time;
             }
             // advance time
-            m_t0 += remaining_time;
+            current_time += remaining_time;
             // advance all locations
-            m_simulation.advance(m_t0);
-            m_dt = m_traced_dt;
+            m_simulation.advance(current_time);
+            m_dt = get_dt_tracer().get_dt();
         }
         return get_result().get_last_value();
     }
@@ -129,7 +126,7 @@ public:
      */
     void set_integrator(std::shared_ptr<IntegratorCore> integrator)
     {
-        m_dt_tracer.set_integrator(integrator);
+        get_dt_tracer().set_integrator(integrator);
     }
 
     /**
@@ -138,7 +135,7 @@ public:
      */
     IntegratorCore& get_integrator()
     {
-        return m_simulation.get_integrator();
+        return get_dt_tracer().get_integrator();
     }
 
     /**
@@ -147,7 +144,7 @@ public:
      */
     IntegratorCore const& get_integrator() const
     {
-        return m_simulation.get_integrator();
+        return get_dt_tracer().get_integrator();
     }
 
     /**
@@ -219,11 +216,15 @@ private:
     {
         return m_model->parameters.template get<mpm::TransitionRates<Status>>();
     }
+    // retrieve dt_tracer& from m_simulation
+    inline constexpr mpm::dt_tracer& get_dt_tracer()
+    {
+        return static_cast<mpm::dt_tracer&>(m_simulation.get_integrator());
+    }
 
-    ScalarType m_dt, m_t0, m_traced_dt;
+    ScalarType m_dt;
     std::unique_ptr<const Model> m_model;
     Sim m_simulation;
-    mpm::dt_tracer m_dt_tracer;
 };
 
 } // namespace mio
