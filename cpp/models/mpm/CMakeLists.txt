@@ -1,9 +1,9 @@
 add_library(mpm
     abm.h
-    metapopulation.h
     model.cpp
     model.h
     pdmm.h
+    region.h
     smm.h
     utility.cpp
     utility.h

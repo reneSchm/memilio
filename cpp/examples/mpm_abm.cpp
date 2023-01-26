@@ -32,7 +32,7 @@ public:
             assert(is_in_domain(agent.position));
         }
         for (auto& r : rates) {
-            m_adoption_rates[{r.location, r.from, r.to}] = {r.order, r.factor};
+            m_adoption_rates[{r.region, r.from, r.to}] = {r.order, r.factor};
         }
     }
 
@@ -121,7 +121,7 @@ private:
         return -2 <= p[0] && p[0] <= 2 && -2 <= p[1] && p[1] <= 2;
     }
 
-    std::map<std::tuple<mio::mpm::Metapopulation, Status, Status>, std::pair<mio::mpm::Order, double>> m_adoption_rates;
+    std::map<std::tuple<mio::mpm::Region, Status, Status>, std::pair<mio::mpm::Order, double>> m_adoption_rates;
 };
 
 int main()

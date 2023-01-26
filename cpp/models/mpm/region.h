@@ -18,8 +18,8 @@
 * limitations under the License.
 */
 
-#ifndef METAPOPULATION_H_
-#define METAPOPULATION_H_
+#ifndef MPM_REGION_H_
+#define MPM_REGION_H_
 
 #include "memilio/utils/index.h"
 
@@ -28,9 +28,10 @@ namespace mio
 namespace mpm
 {
 
-struct Metapopulation : public mio::Index<Metapopulation> {
-    Metapopulation(const size_t num_metapopulations)
-        : mio::Index<Metapopulation>(num_metapopulations)
+// yet another "curiously recuring template pattern"
+struct Region : public mio::Index<Region> {
+    Region(const size_t num_regions)
+        : mio::Index<Region>(num_regions)
     {
     }
 };

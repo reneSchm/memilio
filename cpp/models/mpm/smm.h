@@ -32,19 +32,19 @@ namespace mio
 namespace mpm
 {
 
-template <size_t mps, class Status>
-class SMModel : public MetapopulationModel<mps, Status>
+template <size_t regions, class Status>
+class SMModel : public MetapopulationModel<regions, Status>
 {
 };
 
 } // namespace mpm
 
-template <size_t mps, class Status>
-class Simulation<mpm::SMModel<mps, Status>>
+template <size_t regions, class Status>
+class Simulation<mpm::SMModel<regions, Status>>
 {
 public:
 public:
-    using Model = mpm::SMModel<mps, Status>;
+    using Model = mpm::SMModel<regions, Status>;
 
     /**
      * @brief setup the simulation with an ODE solver
@@ -64,10 +64,10 @@ public:
         assert(dt > 0);
         assert(m_waiting_times.size() > 0);
         assert(std::all_of(adoption_rates().begin(), adoption_rates().end(), [](auto&& r) {
-            return static_cast<size_t>(r.location) < mps;
+            return static_cast<size_t>(r.region) < regions;
         }));
         assert(std::all_of(transition_rates().begin(), transition_rates().end(), [](auto&& r) {
-            return static_cast<size_t>(r.from) < mps && static_cast<size_t>(r.to) < mps;
+            return static_cast<size_t>(r.from) < regions && static_cast<size_t>(r.to) < regions;
         }));
         // initialize (internal) next event times by random values
         for (size_t i = 0; i < m_tp_next_event.size(); i++) {
@@ -102,8 +102,8 @@ public:
             if (next_event < adoption_rates().size()) {
                 // perform adoption event
                 const auto& rate = adoption_rates()[next_event];
-                m_result.get_last_value()[m_model->populations.get_flat_index({rate.location, rate.from})] -= 1;
-                m_result.get_last_value()[m_model->populations.get_flat_index({rate.location, rate.to})] += 1;
+                m_result.get_last_value()[m_model->populations.get_flat_index({rate.region, rate.from})] -= 1;
+                m_result.get_last_value()[m_model->populations.get_flat_index({rate.region, rate.to})] += 1;
             }
             else {
                 // perform transition event

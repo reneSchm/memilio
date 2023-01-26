@@ -32,23 +32,23 @@ namespace mio
 namespace mpm
 {
 
-template <size_t mps, class Status>
-class PDMModel : public MetapopulationModel<mps, Status>
+template <size_t regions, class Status>
+class PDMModel : public MetapopulationModel<regions, Status>
 {
 public:
-    using MetapopulationModel<mps, Status>::MetapopulationModel;
+    using MetapopulationModel<regions, Status>::MetapopulationModel;
 };
 
 } // namespace mpm
 
-template <class Status, size_t mps>
-class Simulation<mpm::PDMModel<mps, Status>>
+template <class Status, size_t regions>
+class Simulation<mpm::PDMModel<regions, Status>>
 {
-    using Sim        = mio::Simulation<mpm::MetapopulationModel<mps, Status>>;
+    using Sim        = mio::Simulation<mpm::MetapopulationModel<regions, Status>>;
     using Integrator = mio::ControlledStepperWrapper<boost::numeric::odeint::runge_kutta_cash_karp54>;
 
 public:
-    using Model = mpm::PDMModel<mps, Status>;
+    using Model = mpm::PDMModel<regions, Status>;
 
     /**
      * @brief setup the simulation with an ODE solver
@@ -63,7 +63,7 @@ public:
     {
         assert(dt > 0);
         assert(std::all_of(transition_rates().begin(), transition_rates().end(), [](auto&& r) {
-            return static_cast<size_t>(r.from) < mps && static_cast<size_t>(r.to) < mps;
+            return static_cast<size_t>(r.from) < regions && static_cast<size_t>(r.to) < regions;
         }));
 
         m_simulation.set_integrator(std::make_shared<mpm::dt_tracer>(std::make_shared<Integrator>()));

@@ -21,7 +21,7 @@
 #ifndef MPM_MODEL_H_
 #define MPM_MODEL_H_
 
-#include "mpm/metapopulation.h"
+#include "mpm/region.h"
 
 #include "memilio/epidemiology/populations.h"
 #include "memilio/config.h"
@@ -47,7 +47,7 @@ struct AdoptionRate {
     Status to; // j
     ScalarType factor; // gammahat_{ij}^k
     Order order; // first or second
-    Metapopulation location; // k
+    Region region; // k
 };
 
 template <class Status>
@@ -62,8 +62,8 @@ struct AdoptionRates {
 template <class Status>
 struct TransitionRate {
     Status status; // i
-    Metapopulation from; // k
-    Metapopulation to; // l
+    Region from; // k
+    Region to; // l
     ScalarType factor; // lambda_i^{kl}
 };
 
@@ -79,15 +79,15 @@ struct TransitionRates {
 template <class Status>
 using ParametersBase = mio::ParameterSet<AdoptionRates<Status>, TransitionRates<Status>>;
 
-template <size_t mps, class Status>
+template <size_t regions, class Status>
 class MetapopulationModel
-    : public mio::CompartmentalModel<Status, mio::Populations<Metapopulation, Status>, ParametersBase<Status>>
+    : public mio::CompartmentalModel<Status, mio::Populations<Region, Status>, ParametersBase<Status>>
 {
-    using Base = mio::CompartmentalModel<Status, mio::Populations<Metapopulation, Status>, ParametersBase<Status>>;
+    using Base = mio::CompartmentalModel<Status, mio::Populations<Region, Status>, ParametersBase<Status>>;
 
 public:
     MetapopulationModel()
-        : Base(typename Base::Populations({static_cast<Metapopulation>(mps), Status::Count}, 0.),
+        : Base(typename Base::Populations({static_cast<Region>(regions), Status::Count}, 0.),
                typename Base::ParameterSet())
     {
     }
@@ -98,8 +98,8 @@ public:
         const auto& params = this->parameters;
         const auto& pop    = this->populations;
         for (const auto& rate : params.template get<AdoptionRates<Status>>()) {
-            const auto source = pop.get_flat_index({rate.location, rate.from});
-            const auto target = pop.get_flat_index({rate.location, rate.to});
+            const auto source = pop.get_flat_index({rate.region, rate.from});
+            const auto target = pop.get_flat_index({rate.region, rate.to});
             const auto change = evaluate(rate, x);
             dxdt[source] -= change;
             dxdt[target] += change;
@@ -108,16 +108,16 @@ public:
 
     static constexpr ScalarType evaluate(const AdoptionRate<Status>& rate, const Eigen::VectorXd& x)
     {
-        const auto source = flat_index({rate.location, rate.from});
-        const auto target = flat_index({rate.location, rate.to});
+        const auto source = flat_index({rate.region, rate.from});
+        const auto target = flat_index({rate.region, rate.to});
         // calculate rate depending on order
         if (rate.order == Order::first) {
             return rate.factor * x[source];
         }
         else {
-            // calculate current size of metapopulation
+            // calculate current population of region
             const ScalarType N =
-                x.segment(rate.location.get() * static_cast<size_t>(Status::Count), static_cast<size_t>(Status::Count))
+                x.segment(rate.region.get() * static_cast<size_t>(Status::Count), static_cast<size_t>(Status::Count))
                     .sum();
             return (N > 0) ? (rate.factor * x[source] * x[target] / N) : 0;
         }
@@ -132,7 +132,7 @@ public:
 private:
     static constexpr Eigen::Index flat_index(const typename Base::Populations::Index& indices)
     {
-        return mio::details::flatten_index<0>(indices, {static_cast<Metapopulation>(mps), Status::Count}).first;
+        return mio::details::flatten_index<0>(indices, {static_cast<Region>(regions), Status::Count}).first;
     }
 };
 
