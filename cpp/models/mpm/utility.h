@@ -36,8 +36,8 @@ void print_to_terminal(const mio::TimeSeries<ScalarType>& results, const std::ve
 class dt_tracer : public mio::IntegratorCore
 {
 public:
-    explicit dt_tracer(ScalarType& traced_dt, std::shared_ptr<IntegratorCore> integrator)
-        : m_dt(traced_dt)
+    explicit dt_tracer(std::shared_ptr<IntegratorCore> integrator)
+        : m_dt()
         , m_integrator(std::move(integrator))
     {
     }
@@ -45,8 +45,9 @@ public:
     inline bool step(const DerivFunction& f, Eigen::Ref<const Eigen::VectorXd> yt, ScalarType& t, ScalarType& dt,
                      Eigen::Ref<Eigen::VectorXd> ytp1) const override final
     {
-        m_dt = dt;
-        return m_integrator->step(f, yt, t, m_dt, ytp1);
+        const auto rtval = m_integrator->step(f, yt, t, dt, ytp1);
+        m_dt             = dt;
+        return rtval;
     }
 
     void set_integrator(std::shared_ptr<IntegratorCore> integrator)
@@ -54,8 +55,23 @@ public:
         m_integrator = std::move(integrator);
     }
 
+    IntegratorCore& get_integrator()
+    {
+        return *m_integrator;
+    }
+
+    const IntegratorCore& get_integrator() const
+    {
+        return *m_integrator;
+    }
+
+    ScalarType get_dt() const
+    {
+        return m_dt;
+    }
+
 private:
-    ScalarType& m_dt;
+    mutable ScalarType m_dt;
     std::shared_ptr<IntegratorCore> m_integrator;
 };
 
