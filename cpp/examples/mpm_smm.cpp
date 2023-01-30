@@ -23,10 +23,10 @@ int main()
     mio::set_log_level(mio::LogLevel::info);
     ScalarType kappa                                 = 0.001;
     std::vector<std::vector<ScalarType>> populations = {{950, 50, 0}, {1000, 0, 0}};
-    model.parameters.get<AdoptionRates<Status>>()    = {{Status::S, Status::I, 0.3, Order::second, 0},
-                                                        {Status::I, Status::R, 0.1, Order::first, 0},
-                                                        {Status::S, Status::I, 1, Order::second, 1},
-                                                        {Status::I, Status::R, 0.08, Order::first, 1}};
+    model.parameters.get<AdoptionRates<Status>>()    = {{Status::S, Status::I, 0, 0.3, {Status::I}, {1}},
+                                                        {Status::I, Status::R, 0, 0.1},
+                                                        {Status::S, Status::I, 1, 1.0, {Status::I}, {1}},
+                                                        {Status::I, Status::R, 1, 0.08}};
     model.parameters.get<TransitionRates<Status>>()  = {{Status::S, 0, 1, 0.5 * kappa},  {Status::I, 0, 1, 0.1 * kappa},
                                                         {Status::R, 0, 1, 0.1 * kappa},  {Status::S, 1, 0, 0.1 * kappa},
                                                         {Status::I, 1, 0, 0.02 * kappa}, {Status::R, 1, 0, 0.2 * kappa}};

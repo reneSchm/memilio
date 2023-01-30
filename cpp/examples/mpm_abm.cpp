@@ -32,7 +32,8 @@ public:
             assert(is_in_domain(agent.position));
         }
         for (auto& r : rates) {
-            m_adoption_rates[{r.region, r.from, r.to}] = {r.order, r.factor};
+            m_adoption_rates.emplace(std::forward_as_tuple(r.region, r.from, r.to), r);
+            //m_adoption_rates[{r.region, r.from, r.to}] = r;
         }
     }
 
@@ -50,26 +51,28 @@ public:
         if (map_itr != m_adoption_rates.end()) {
             const auto& adoption_rate = map_itr->second;
             // calculate the current rate, depending on order
-            if (adoption_rate.first == mio::mpm::Order::first) { // .first is the order
+            if (adoption_rate.influences.size() == 0) { // first order adoption
                 // contact independant rate
-                rate = adoption_rate.second; // .second is the factor
+                rate = adoption_rate.factor;
             }
-            else { // order == second
-                // accumulate rate per contact with status new_status
+            else { // second order adoption
+                // accumulate rate per contact with a status in influences
                 size_t num_contacts   = 0;
-                size_t num_influences = 0;
+                ScalarType influences = 0;
                 for (auto& contact : populations) {
                     // check if contact is indeed a contact
                     if (is_contact(agent, contact)) {
                         num_contacts++;
-                        if (contact.status == new_status) {
-                            num_influences++;
+                        for (size_t i = 0; i < adoption_rate.influences.size(); i++) {
+                            if (contact.status == adoption_rate.influences[i]) {
+                                influences += adoption_rate.factors[i];
+                            }
                         }
                     }
                 }
                 // rate = factor * "concentration of contacts with status new_status"
                 if (num_contacts > 0) {
-                    rate = adoption_rate.second * (static_cast<double>(num_influences) / num_contacts);
+                    rate = adoption_rate.factor * (influences / num_contacts);
                 }
             }
         }
@@ -121,7 +124,7 @@ private:
         return -2 <= p[0] && p[0] <= 2 && -2 <= p[1] && p[1] <= 2;
     }
 
-    std::map<std::tuple<mio::mpm::Region, Status, Status>, std::pair<mio::mpm::Order, double>> m_adoption_rates;
+    std::map<std::tuple<mio::mpm::Region, Status, Status>, mio::mpm::AdoptionRate<Status>> m_adoption_rates;
 };
 
 int main()
@@ -152,10 +155,10 @@ int main()
         }
     }
 
-    std::vector<AdoptionRate<Status>> adoption_rates = {{Status::S, Status::I, 0.3, Order::second, 0},
-                                                        {Status::I, Status::R, 0.1, Order::first, 0},
-                                                        {Status::S, Status::I, 1, Order::second, 1},
-                                                        {Status::I, Status::R, 0.08, Order::first, 1}};
+    std::vector<AdoptionRate<Status>> adoption_rates = {{Status::S, Status::I, 0, 0.3, {Status::I}, {1}},
+                                                        {Status::I, Status::R, 0, 0.1},
+                                                        {Status::S, Status::I, 1, 1.0, {Status::I}, {1}},
+                                                        {Status::I, Status::R, 1, 0.08}};
 
     Model model(agents, adoption_rates);
 

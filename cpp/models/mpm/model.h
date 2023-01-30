@@ -35,19 +35,16 @@ namespace mio
 namespace mpm
 {
 
-enum class Order
-{
-    first,
-    second
-};
-
+// the AdoptionRate is considered to be of second order, if there are any "influences" with corresponding "factors".
+// "from" is always an influence, scaled by "factor".
 template <class Status>
 struct AdoptionRate {
     Status from; // i
     Status to; // j
-    ScalarType factor; // gammahat_{ij}^k
-    Order order; // first or second
     Region region; // k
+    ScalarType factor; // gammahat_{ij}^k
+    std::vector<Status> influences;
+    std::vector<ScalarType> factors;
 };
 
 template <class Status>
@@ -106,33 +103,30 @@ public:
         }
     }
 
-    static constexpr ScalarType evaluate(const AdoptionRate<Status>& rate, const Eigen::VectorXd& x)
+    ScalarType evaluate(const AdoptionRate<Status>& rate, const Eigen::VectorXd& x) const
     {
-        const auto source = flat_index({rate.region, rate.from});
-        const auto target = flat_index({rate.region, rate.to});
-        // calculate rate depending on order
-        if (rate.order == Order::first) {
+        assert(rate.influences.size() == rate.factors.size());
+        const auto& pop   = this->populations;
+        const auto source = pop.get_flat_index({rate.region, rate.from});
+        // determine order and calculate rate
+        if (rate.influences.size() == 0) { // first order adoption
             return rate.factor * x[source];
         }
-        else {
-            // calculate current population of region
-            const ScalarType N =
-                x.segment(rate.region.get() * static_cast<size_t>(Status::Count), static_cast<size_t>(Status::Count))
-                    .sum();
-            return (N > 0) ? (rate.factor * x[source] * x[target] / N) : 0;
+        else { // second order adoption
+            const ScalarType N = pop.get_group_total(rate.region);
+            // accumulate influences
+            ScalarType influences = 0.0;
+            for (size_t i = 0; i < rate.influences.size(); i++) {
+                influences += rate.factors[i] * x[pop.get_flat_index({rate.region, rate.influences[i]})];
+            }
+            return (N > 0) ? (rate.factor * x[source] * influences / N) : 0;
         }
     }
 
-    static constexpr ScalarType evaluate(const TransitionRate<Status>& rate, const Eigen::VectorXd& x)
+    ScalarType evaluate(const TransitionRate<Status>& rate, const Eigen::VectorXd& x) const
     {
-        const auto source = flat_index({rate.from, rate.status});
+        const auto source = this->populations.get_flat_index({rate.from, rate.status});
         return rate.factor * x[source];
-    }
-
-private:
-    static constexpr Eigen::Index flat_index(const typename Base::Populations::Index& indices)
-    {
-        return mio::details::flatten_index<0>(indices, {static_cast<Region>(regions), Status::Count}).first;
     }
 };
 
