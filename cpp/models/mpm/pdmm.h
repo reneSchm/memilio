@@ -20,12 +20,15 @@
 #ifndef MPM_PDMM_H_
 #define MPM_PDMM_H_
 
+#include "memilio/config.h"
+#include "memilio/mobility/graph_simulation.h"
 #include "mpm/model.h"
 #include "mpm/utility.h"
 
 #include "memilio/compartments/simulation.h"
 
 #include <algorithm>
+#include <numeric>
 
 namespace mio
 {
@@ -77,40 +80,37 @@ public:
     Eigen::Ref<Eigen::VectorXd> advance(ScalarType tmax)
     {
         // determine how long we wait until the next transition occurs
-        ScalarType waiting_time = draw_waiting_time();
-        ScalarType current_time = get_result().get_last_time();
-        ScalarType remaining_time;
+        ScalarType normalized_waiting_time = mio::ExponentialDistribution<ScalarType>::get_instance()(1.0); // tau'
+        ScalarType current_time            = get_result().get_last_time();
+        ScalarType remaining_time; // xi * Delta-t
+        ScalarType cctr = 0; // Lambda (aka current cumulative transition rate)
+        std::vector<ScalarType> rates(transition_rates().size()); // lambda_m (for all m)
         // iterate time by increments of m_dt
         while (current_time < tmax) {
             remaining_time = std::min({m_dt, tmax - current_time});
-            ; // xi * Delta-t
+            // update current (cumulative) transition rates
+            evaluate_current_tramsition_rates(rates, cctr);
             // check if one or more transitions occur during this time step
-            if (waiting_time < remaining_time) { // (at least one) event occurs
-                std::vector<ScalarType> rates(transition_rates().size()); // lambda_m (for all m)
+            if (normalized_waiting_time < remaining_time * cctr) { // (at least one) event occurs
                 // perform transition(s)
                 do {
-                    current_time += waiting_time; // event time t**
-                    // advance all locations
+                    current_time += normalized_waiting_time / cctr; // event time t**
+                    // advance all locations to t**
                     m_simulation.advance(current_time);
-                    // compute current transition rates
-                    std::transform(transition_rates().begin(), transition_rates().end(), rates.begin(),
-                                   [&](auto&& rate) {
-                                       // we should normalize each term by dividing by the cumulative transition rate,
-                                       // but the DiscreteDistribution below effectively does that for us
-                                       return m_model->evaluate(rate, get_result().get_last_value());
-                                   });
-                    // draw transition event, then execute it
+                    // draw which transition event occurs, then execute it
                     size_t event = mio::DiscreteDistribution<size_t>::get_instance()(rates);
                     perform_transition(event);
+                    remaining_time -= normalized_waiting_time / cctr;
+                    // update current (cumulative) transition rates
+                    evaluate_current_tramsition_rates(rates, cctr);
                     // draw new waiting time
-                    remaining_time -= waiting_time;
-                    waiting_time = draw_waiting_time();
+                    normalized_waiting_time = mio::ExponentialDistribution<ScalarType>::get_instance()(1.0);
                     // repeat, if another event occurs in the remaining time interval
-                } while (waiting_time < remaining_time);
+                } while (normalized_waiting_time < remaining_time * cctr);
             }
             else { // no event occurs
                 // reduce waiting time for the next step
-                waiting_time -= remaining_time;
+                normalized_waiting_time -= remaining_time * cctr;
             }
             // advance time
             current_time += remaining_time;
@@ -182,18 +182,15 @@ public:
     }
 
 private:
-    /// @brief draw time until the next event occurs
-    inline ScalarType draw_waiting_time()
+    /// @brief compute current transition rates and the accumulated transiton rate
+    inline void evaluate_current_tramsition_rates(std::vector<ScalarType>& rates, ScalarType& cctr)
     {
-        // compute the current cumulative transition rate
-        ScalarType ctr = 0; // Lambda
-        for (auto rate : transition_rates()) {
-            ctr += m_model->evaluate(rate, get_result().get_last_value());
-        }
-        // draw the normalized waiting time
-        ScalarType nwt = mio::ExponentialDistribution<ScalarType>::get_instance()(1.0); // tau'
-        // "un-normalize", i.e. scale nwt by time = 1/rate
-        return nwt / ctr;
+        std::transform(transition_rates().begin(), transition_rates().end(), rates.begin(), [&](auto&& r) {
+            // we should normalize each term by dividing by the cumulative transition rate,
+            // but the DiscreteDistribution used for drawing "event" effectively does that for us
+            return m_model->evaluate(r, get_result().get_last_value());
+        });
+        cctr = std::accumulate(rates.begin(), rates.end(), 0.0);
     }
     /// @brief perform the given transition event, moving a single "agent"
     inline void perform_transition(size_t event)
