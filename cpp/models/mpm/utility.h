@@ -32,6 +32,8 @@ namespace mpm
 {
 
 void print_to_terminal(const mio::TimeSeries<ScalarType>& results, const std::vector<std::string>& state_names);
+void print_to_file(FILE* outfile, const mio::TimeSeries<ScalarType>& results,
+                   const std::vector<std::string>& state_names);
 
 class dt_tracer : public mio::IntegratorCore
 {
