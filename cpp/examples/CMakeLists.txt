@@ -44,6 +44,9 @@ target_link_libraries(mpm_smm_example PRIVATE memilio mpm)
 add_executable(hybrid_example hybrid.cpp)
 target_link_libraries(hybrid_example PRIVATE memilio mpm)
 
+add_executable(quad_well_example quad_well.cpp)
+target_link_libraries(quad_well_example PRIVATE memilio mpm)
+
 if(MEMILIO_HAS_JSONCPP)
   add_executable(ode_secir_read_graph_example ode_secir_read_graph.cpp)
   target_link_libraries(ode_secir_read_graph_example PRIVATE memilio ode_secir)
