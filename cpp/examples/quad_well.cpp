@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <map>
 #include <chrono>
+#include <string>
 
 #define TIME_TYPE std::chrono::high_resolution_clock::time_point
 #define TIME_NOW std::chrono::high_resolution_clock::now()
@@ -159,8 +160,13 @@ std::vector<ScalarType>& scale(std::vector<ScalarType>& v, ScalarType s)
     return v;
 }
 
-int main()
+int main(int argc, char** argv)
 {
+    std::string filepostfix = ".txt";
+    if (argc > 1) {
+        filepostfix = argv[1];
+    }
+
     mio::set_log_level(mio::LogLevel::off);
 
     using namespace mio::mpm;
@@ -223,14 +229,16 @@ int main()
     mio::TimeSeries<ScalarType> result(12);
 
     {
-        FILE* file    = fopen("abm_quad_well_results", "w");
-        auto sim      = mio::Simulation<Model>(model, 0, 0.02);
-        TIME_TYPE pre = TIME_NOW;
+        std::string fname = "abm_quad_well_results" + filepostfix;
+        FILE* file        = fopen(fname.c_str(), "w");
+        auto sim          = mio::Simulation<Model>(model, 0, 0.02);
+        TIME_TYPE pre     = TIME_NOW;
         sim.advance(100);
         TIME_TYPE post = TIME_NOW;
         result         = sim.get_result();
         print_to_file(file, result, {"S1", "I1", "R1", "S2", "I2", "R2", "S3", "I3", "R3", "S4", "I4", "R4"});
         fprintf(file, "# Elapsed time during advance(): %.*g\n", PRECISION, PRINTABLE_TIME(post - pre));
+        fclose(file);
     }
 
     // mio::mpm::print_to_terminal(mio::simulate(0, 100, 0.05, model),
@@ -264,14 +272,16 @@ int main()
     }
 
     {
-        FILE* file    = fopen("smm_quad_well_results", "w");
-        auto sim      = mio::Simulation<SMModel<regions, Status>>(smm, 0, 0.05);
-        TIME_TYPE pre = TIME_NOW;
+        std::string fname = "smm_quad_well_results" + filepostfix;
+        FILE* file        = fopen(fname.c_str(), "w");
+        auto sim          = mio::Simulation<SMModel<regions, Status>>(smm, 0, 0.05);
+        TIME_TYPE pre     = TIME_NOW;
         sim.advance(100);
         TIME_TYPE post = TIME_NOW;
         result         = sim.get_result();
         print_to_file(file, result, {"S1", "I1", "R1", "S2", "I2", "R2", "S3", "I3", "R3", "S4", "I4", "R4"});
         fprintf(file, "# Elapsed time during advance(): %.*g\n", PRECISION, PRINTABLE_TIME(post - pre));
+        fclose(file);
     }
 
     // print_to_terminal(mio::simulate(0, 100, 0.1, smm), {"S", "I", "R", "S", "I", "R", "S", "I", "R", "S", "I", "R"});
@@ -284,14 +294,16 @@ int main()
     pdmm.populations                               = smm.populations;
 
     {
-        FILE* file    = fopen("pdmm_quad_well_results", "w");
-        auto sim      = mio::Simulation<PDMModel<regions, Status>>(pdmm, 0, 0.05);
-        TIME_TYPE pre = TIME_NOW;
+        std::string fname = "pdmm_quad_well_results" + filepostfix;
+        FILE* file        = fopen(fname.c_str(), "w");
+        auto sim          = mio::Simulation<PDMModel<regions, Status>>(pdmm, 0, 0.05);
+        TIME_TYPE pre     = TIME_NOW;
         sim.advance(100);
         TIME_TYPE post = TIME_NOW;
         result         = sim.get_result();
         print_to_file(file, result, {"S1", "I1", "R1", "S2", "I2", "R2", "S3", "I3", "R3", "S4", "I4", "R4"});
         fprintf(file, "# Elapsed time during advance(): %.*g\n", PRECISION, PRINTABLE_TIME(post - pre));
+        fclose(file);
     }
 
     // print_to_terminal(mio::simulate(0, 100, 0.1, pdmm), {"S", "I", "R", "S", "I", "R", "S", "I", "R", "S", "I", "R"});
