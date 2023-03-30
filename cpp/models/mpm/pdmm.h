@@ -188,7 +188,9 @@ private:
         std::transform(transition_rates().begin(), transition_rates().end(), rates.begin(), [&](auto&& r) {
             // we should normalize each term by dividing by the cumulative transition rate,
             // but the DiscreteDistribution used for drawing "event" effectively does that for us
-            return m_model->evaluate(r, get_result().get_last_value());
+            const ScalarType rate = m_model->evaluate(r, get_result().get_last_value());
+            // clamp rates to 0, if the adoption event would cause a negative value by moving 1 agent
+            return rate >= 1 ? rate : 0;
         });
         cctr = std::accumulate(rates.begin(), rates.end(), 0.0);
     }
@@ -198,15 +200,7 @@ private:
         // get the rate corresponding to the event
         const auto& rate = transition_rates()[event];
         // transitioning one person at the current time
-        auto& value = get_result().get_last_value()[m_model->populations.get_flat_index({rate.from, rate.status})];
-        value -= 1;
-        if (value < 0) {
-            std::cerr << "Transition from " << static_cast<size_t>(rate.from) << " to " << static_cast<size_t>(rate.to)
-                      << " with status " << static_cast<size_t>(rate.status) << " caused negative value.\n";
-            mio::log_error("Transition from {} to {} with status {} caused negative value.",
-                           static_cast<size_t>(rate.from), static_cast<size_t>(rate.to),
-                           static_cast<size_t>(rate.status));
-        }
+        get_result().get_last_value()[m_model->populations.get_flat_index({rate.from, rate.status})] -= 1;
         get_result().get_last_value()[m_model->populations.get_flat_index({rate.to, rate.status})] += 1;
     }
     inline constexpr const typename mpm::TransitionRates<Status>::Type& transition_rates()
