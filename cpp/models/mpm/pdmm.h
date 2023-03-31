@@ -189,8 +189,10 @@ private:
             // we should normalize each term by dividing by the cumulative transition rate,
             // but the DiscreteDistribution used for drawing "event" effectively does that for us
             const ScalarType rate = m_model->evaluate(r, get_result().get_last_value());
+            const ScalarType from =
+                get_result().get_last_value()[m_model->populations.get_flat_index({rate.from, rate.status})];
             // clamp rates to 0, if the adoption event would cause a negative value by moving 1 agent
-            return rate >= 1 ? rate : 0;
+            return from >= 1 ? rate : 0;
         });
         cctr = std::accumulate(rates.begin(), rates.end(), 0.0);
     }
