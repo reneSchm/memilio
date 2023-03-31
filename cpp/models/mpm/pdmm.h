@@ -190,7 +190,7 @@ private:
             // but the DiscreteDistribution used for drawing "event" effectively does that for us
             const ScalarType rate = m_model->evaluate(r, get_result().get_last_value());
             const ScalarType from =
-                get_result().get_last_value()[m_model->populations.get_flat_index({rate.from, rate.status})];
+                get_result().get_last_value()[m_model->populations.get_flat_index({r.from, r.status})];
             // clamp rates to 0, if the adoption event would cause a negative value by moving 1 agent
             return from >= 1 ? rate : 0;
         });
