@@ -42,7 +42,7 @@ enum class InfectionState
 class QuadWellModel
 {
     constexpr static double contact_radius = 0.4;
-    constexpr static double sigma          = 0.5;
+    constexpr static double sigma          = 0.4;
 
 public:
     using Status   = InfectionState;
@@ -110,6 +110,7 @@ public:
 
     static void move(const double t, const double dt, Agent& agent)
     {
+        if (agent.position[0] > 0 || agent.position[1] < 0) return;
         Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
                       mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
 
@@ -219,8 +220,8 @@ int main(int argc, char** argv)
         {0, 0, 0}, {n_agents / 4.0, 0, 0}, {n_agents / 4.0, 0, 0}, {n_agents / 4.0, 0, 0}};
     smm.parameters.get<AdoptionRates<Status>>()   = adoption_rates;
     smm.parameters.get<TransitionRates<Status>>() = {
-        {Status::S, 0, 1, 0.1 * kappa}, {Status::I, 0, 1, 0.1 * kappa}, {Status::R, 0, 1, 0.1 * kappa},
-        {Status::S, 0, 2, 0.1 * kappa}, {Status::I, 0, 2, 0.1 * kappa}, {Status::R, 0, 2, 0.1 * kappa},
+        //
+
         {Status::S, 1, 0, 0.1 * kappa}, {Status::I, 1, 0, 0.1 * kappa}, {Status::R, 1, 0, 0.1 * kappa},
         {Status::S, 1, 3, 0.1 * kappa}, {Status::I, 1, 3, 0.1 * kappa}, {Status::R, 1, 3, 0.1 * kappa},
         {Status::S, 2, 0, 0.1 * kappa}, {Status::I, 2, 0, 0.1 * kappa}, {Status::R, 2, 0, 0.1 * kappa},
@@ -258,19 +259,19 @@ int main(int argc, char** argv)
             while (itr != agents.end()) {
                 if (itr->position[0] > 0) {
                     if (itr->position[1] > 0) {
-                        simB.get_model().populations[{mio::mpm::Region(2), itr->status}]++;
+                        simB.get_model().populations[{mio::mpm::Region(1), itr->status}]++;
                     }
                     else {
-                        simB.get_model().populations[{mio::mpm::Region(4), itr->status}]++;
+                        simB.get_model().populations[{mio::mpm::Region(3), itr->status}]++;
                     }
                     itr = agents.erase(itr);
                 }
                 else if (itr->position[1] < 0) {
                     if (itr->position[0] < 0) {
-                        simB.get_model().populations[{mio::mpm::Region(3), itr->status}]++;
+                        simB.get_model().populations[{mio::mpm::Region(2), itr->status}]++;
                     }
                     else {
-                        simB.get_model().populations[{mio::mpm::Region(4), itr->status}]++;
+                        simB.get_model().populations[{mio::mpm::Region(3), itr->status}]++;
                     }
                     itr = agents.erase(itr);
                 }
@@ -280,7 +281,7 @@ int main(int argc, char** argv)
         { //pdmm/smm deduct
             auto& pop = simB.get_model().populations;
             for (int i = 0; i < (int)Status::Count; i++) {
-                for (auto& agents = pop[{mio::mpm::Region(1), (Status)i}]; agents > 0; agents--) {
+                for (auto& agents = pop[{mio::mpm::Region(0), (Status)i}]; agents > 0; agents--) {
                     simA.get_model().populations.push_back({{-1, 1}, (Status)i});
                 }
             }

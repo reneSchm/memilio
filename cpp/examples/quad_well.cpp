@@ -39,7 +39,7 @@ enum class InfectionState
 class QuadWellModel
 {
     constexpr static double contact_radius = 0.4;
-    constexpr static double sigma          = 0.5;
+    constexpr static double sigma          = 0.4;
 
 public:
     using Status   = InfectionState;
