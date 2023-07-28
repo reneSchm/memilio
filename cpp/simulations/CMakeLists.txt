@@ -7,3 +7,7 @@ if(MEMILIO_HAS_JSONCPP AND MEMILIO_HAS_HDF5)
     target_link_libraries(2021_vaccination_delta PRIVATE memilio ode_secirvvs Boost::filesystem ${HDF5_C_LIBRARIES})
     target_compile_options(2021_vaccination_delta PRIVATE ${MEMILIO_CXX_FLAGS_ENABLE_WARNING_ERRORS})
 endif()
+
+add_executable(transition_rate_estimation transition_rate_estimation.cpp)
+target_link_libraries(transition_rate_estimation PRIVATE memilio mpm)
+target_compile_options(transition_rate_estimation PRIVATE ${MEMILIO_CXX_FLAGS_ENABLE_WARNING_ERRORS})
