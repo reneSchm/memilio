@@ -51,6 +51,7 @@ mio::IOResult<Eigen::MatrixXd> get_transition_matrices(std::string data_dir)
  * So  m(i, j) + m(j, i)
  * 
  * 2. get the transitions from simulation
+ * -> agent in one state should have contact with every other agent in one state
  *  -> in the abm simulation the transitions will noch necessarily the same every day, so we need to multiply the transitions from the matrices
  * with the number of simulation days to be able to compare it
  * -> we should store the number of transitions matrix wise like the commuter matrices are given
