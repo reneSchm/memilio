@@ -4,15 +4,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from shapely.geometry.polygon import Polygon
 
-im = np.reshape(np.loadtxt("map.pgm", skiprows=4), (480, 480))
-
-for i in range(480):
-    for j in range(480):
-        if 0 < im[i,j] < 255:
-            print(i / 480, j/480)
-
-exit()
-
 map_data = geopandas.read_file(os.path.join(
     os.getcwd(), 'tools/vg2500_12-31.gk3.shape/vg2500/VG2500_LAN.shp'))
 geometries = map_data.geometry
