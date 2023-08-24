@@ -110,7 +110,8 @@ public:
 
     static void move(const double t, const double dt, Agent& agent)
     {
-        if (agent.position[0] > 0 || agent.position[1] < 0) return;
+        if (agent.position[0] > 0 || agent.position[1] < 0)
+            return;
         Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
                       mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
 
@@ -259,19 +260,19 @@ int main(int argc, char** argv)
             while (itr != agents.end()) {
                 if (itr->position[0] > 0) {
                     if (itr->position[1] > 0) {
-                        simB.get_model().populations[{mio::mpm::Region(1), itr->status}]++;
+                        simB.get_model().populations[{mio::mpm::Region(1), itr->status}] += 1;
                     }
                     else {
-                        simB.get_model().populations[{mio::mpm::Region(3), itr->status}]++;
+                        simB.get_model().populations[{mio::mpm::Region(3), itr->status}] += 1;
                     }
                     itr = agents.erase(itr);
                 }
                 else if (itr->position[1] < 0) {
                     if (itr->position[0] < 0) {
-                        simB.get_model().populations[{mio::mpm::Region(2), itr->status}]++;
+                        simB.get_model().populations[{mio::mpm::Region(2), itr->status}] += 1;
                     }
                     else {
-                        simB.get_model().populations[{mio::mpm::Region(3), itr->status}]++;
+                        simB.get_model().populations[{mio::mpm::Region(3), itr->status}] += 1;
                     }
                     itr = agents.erase(itr);
                 }
@@ -281,7 +282,7 @@ int main(int argc, char** argv)
         { //pdmm/smm deduct
             auto& pop = simB.get_model().populations;
             for (int i = 0; i < (int)Status::Count; i++) {
-                for (auto& agents = pop[{mio::mpm::Region(0), (Status)i}]; agents > 0; agents--) {
+                for (auto& agents = pop[{mio::mpm::Region(0), (Status)i}]; agents > 0; agents -= 1) {
                     simA.get_model().populations.push_back({{-1, 1}, (Status)i});
                 }
             }

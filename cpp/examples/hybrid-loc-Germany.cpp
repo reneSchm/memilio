@@ -1,12 +1,40 @@
-#include "mpm/abm.h"
-#include "mpm/utility.h"
+#include "memilio/compartments/simulation.h"
+#include "memilio/config.h"
+#include "memilio/utils/logging.h"
 #include "memilio/io/json_serializer.h"
-#include <json/value.h>
+#include "memilio/utils/time_series.h"
+#include "mpm/abm.h"
+#include "mpm/model.h"
+#include "mpm/region.h"
+#include "mpm/smm.h"
+#include "mpm/pdmm.h"
+#include "mpm/utility.h"
 
+#include <algorithm>
+#include <cstdio>
+#include <list>
+#include <map>
+#include <chrono>
+#include <string>
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <map>
+
+#define TIME_TYPE std::chrono::high_resolution_clock::time_point
+#define TIME_NOW std::chrono::high_resolution_clock::now()
+#define PRINTABLE_TIME(_time) (std::chrono::duration_cast<std::chrono::duration<double>>(_time)).count()
+#define PRECISION 17
+
+#define restart_timer(timer, description)                                                                              \
+    {                                                                                                                  \
+        TIME_TYPE new_time = TIME_NOW;                                                                                 \
+        std::cout << "\r" << description << " :: " << PRINTABLE_TIME(new_time - timer) << std::endl << std::flush;     \
+        timer = new_time;                                                                                              \
+    }
+
+//#undef restart_timer(timer, description)
+//#define restart_timer(timer, description)
 
 enum class InfectionState
 {
@@ -283,11 +311,10 @@ void read_initialization(std::string filename, std::vector<Agent>& agents, int n
     }
 }
 
-int main()
+int main(int argc, char** argv)
 {
     using namespace mio::mpm;
-    using Status    = ABM<PotentialGermany>::Status;
-    size_t n_agents = 16 * 100;
+    using Status = ABM<PotentialGermany>::Status;
 
     Eigen::MatrixXd potential;
     Eigen::MatrixXi metaregions;
@@ -302,7 +329,7 @@ int main()
             return 1;
         }
         else {
-            potential = 8 * read_pgm(ifile);
+            potential = read_pgm(ifile);
             ifile.close();
         }
     }
@@ -324,13 +351,22 @@ int main()
         }
     }
 
+    //read agents
     std::vector<ABM<PotentialGermany>::Agent> agents;
+    read_initialization<ABM<PotentialGermany>::Agent>("initialization.json", agents, 16 * 100);
 
-    //std::vector<double> pop_dist{0.9, 0.05, 0.05, 0.0, 0.0};
-    //create_start_initialization<Status, ABM<PotentialGermany>::Agent>(agents, pop_dist, potential, metaregions);
+    std::vector<ABM<PotentialGermany>::Agent> agents_focus_region;
+    std::copy_if(agents.begin(), agents.end(), std::back_inserter(agents_focus_region),
+                 [](ABM<PotentialGermany>::Agent a) {
+                     return a.land == 8;
+                 });
+    agents.erase(std::remove_if(agents.begin(), agents.end(),
+                                [](ABM<PotentialGermany>::Agent a) {
+                                    return a.land == 8;
+                                }),
+                 agents.end());
 
-    read_initialization<ABM<PotentialGermany>::Agent>("initialization.json", agents, n_agents);
-
+    //set adoption rates
     //set adoption rates for every federal state
     std::vector<AdoptionRate<Status>> adoption_rates;
     for (int i = 0; i < 16; i++) {
@@ -342,18 +378,102 @@ int main()
         adoption_rates.push_back({Status::I, Status::R, Region(i), 0.12});
     }
 
-    ABM<PotentialGermany> model(agents, adoption_rates, potential, metaregions);
+    ABM<PotentialGermany> abm(agents_focus_region, adoption_rates, potential, metaregions);
 
-    std::cerr << "Starting simulation.\n" << std::flush;
+    const unsigned regions = 16;
 
-    auto result = mio::simulate(0, 5, 0.05, model);
+    SMModel<regions, Status> smm;
+
+    //TODO: estimate transition rates due to abm sim
+    std::vector<TransitionRate<Status>> transition_rates;
+    ScalarType kappa = 0.01;
+    for (int i = 0; i < 16; ++i) {
+        for (int j = 0; j < 16; ++j) {
+            if (i != j) {
+                transition_rates.push_back({Status::S, Region(i), Region(j), 0.1 * kappa});
+                transition_rates.push_back({Status::E, Region(i), Region(j), 0.1 * kappa});
+                transition_rates.push_back({Status::C, Region(i), Region(j), 0.1 * kappa});
+                transition_rates.push_back({Status::I, Region(i), Region(j), 0.1 * kappa});
+                transition_rates.push_back({Status::R, Region(i), Region(j), 0.1 * kappa});
+            }
+        }
+    }
+
+    smm.parameters.get<AdoptionRates<Status>>()   = adoption_rates;
+    smm.parameters.get<TransitionRates<Status>>() = transition_rates;
+
+    //set populations for smm
+    std::vector<std::vector<ScalarType>> populations;
+    for (int i = 0; i < regions; ++i) {
+        std::vector<ScalarType> pop(static_cast<size_t>(Status::Count));
+        if (i != 8) {
+            for (size_t s = 0; s < pop.size(); ++s) {
+                pop[s] = std::count_if(agents.begin(), agents.end(), [i, s](ABM<PotentialGermany>::Agent a) {
+                    return (a.land == i && a.status == Status(s));
+                });
+            }
+        }
+        populations.push_back(pop);
+    }
+
+    for (size_t k = 0; k < regions; k++) {
+        for (int i = 0; i < static_cast<size_t>(Status::Count); i++) {
+            smm.populations[{static_cast<Region>(k), static_cast<Status>(i)}] = populations[k][i];
+        }
+    }
+
+    PDMModel<regions, Status> pdmm;
+    pdmm.parameters.get<AdoptionRates<Status>>()   = smm.parameters.get<AdoptionRates<Status>>();
+    pdmm.parameters.get<TransitionRates<Status>>() = smm.parameters.get<TransitionRates<Status>>();
+    pdmm.populations                               = smm.populations;
+
+    double delta_exchange_time = 0.2;
+    double start_time          = 0.0;
+    double end_time            = 5.0;
+
+    auto simABM  = mio::Simulation<ABM<PotentialGermany>>(abm, start_time, 0.05);
+    auto simPDMM = mio::Simulation<PDMModel<regions, Status>>(pdmm, start_time, 0.05);
+
+    for (double t = start_time; t < end_time; t = std::min(t + delta_exchange_time, end_time)) {
+        printf("%.1f/%.1f\r", t, end_time);
+        simABM.advance(t);
+        simPDMM.advance(t);
+        { //move agents from abm to pdmm
+            auto& agents = simABM.get_model().populations;
+            auto itr     = agents.begin();
+            while (itr != agents.end()) {
+                if (itr->land != 8) {
+                    simPDMM.get_model().populations[{mio::mpm::Region(itr->land), itr->status}] += 1;
+                    itr = agents.erase(itr);
+                }
+                else {
+                    itr++;
+                }
+            }
+        }
+        { //move agents from abm to pdmm
+            auto& pop = simPDMM.get_model().populations;
+            for (int i = 0; i < (int)Status::Count; i++) {
+                for (auto& agents = pop[{mio::mpm::Region(8), (Status)i}]; agents > 0; agents -= 1) {
+                    //TODO: put agent to center of focus region
+                    simABM.get_model().populations.push_back({{370, 770}, (Status)i, 8});
+                }
+            }
+        }
+    }
+
     std::vector<std::string> comps(16 * int(Status::Count));
     for (int i = 0; i < 16; ++i) {
         std::vector<std::string> c = {"S", "E", "C", "I", "R", "D"};
         std::copy(c.begin(), c.end(), comps.begin() + i * int(Status::Count));
     }
 
-    mio::mpm::print_to_terminal(result, comps);
+    FILE* outfile1 = fopen("outputABM.txt", "w");
+    mio::mpm::print_to_file(outfile1, simABM.get_result(), comps);
+    fclose(outfile1);
+    FILE* outfile2 = fopen("outputPDMM.txt", "w");
+    mio::mpm::print_to_file(outfile2, simPDMM.get_result(), comps);
+    fclose(outfile2);
 
     return 0;
 }

@@ -44,6 +44,9 @@ target_link_libraries(mpm_smm_example PRIVATE memilio mpm)
 add_executable(hybrid_example hybrid.cpp)
 target_link_libraries(hybrid_example PRIVATE memilio mpm)
 
+add_executable(hybrid_loc_Germany_example hybrid-loc-Germany.cpp)
+target_link_libraries(hybrid_loc_Germany_example PRIVATE memilio mpm)
+
 add_executable(hybrid_lok_example hybrid-lok.cpp)
 target_link_libraries(hybrid_lok_example PRIVATE memilio mpm)
 
