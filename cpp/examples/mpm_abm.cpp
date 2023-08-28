@@ -96,7 +96,7 @@ public:
         agent.position  = agent.position - dt * grad_U(agent.position) + (sigma * std::sqrt(dt)) * p;
         const auto land = metaregions(agent.position[0], agent.position[1]);
         if (land > 0) {
-            agent.land = land - 1;
+            agent.land = land - 1; // shift land so we can use it as index
         }
     }
 
@@ -210,7 +210,7 @@ int main()
     using namespace mio::mpm;
     using Model     = ABM<DoubleWellModel>;
     using Status    = Model::Status;
-    size_t n_agents = 2;
+    size_t n_agents = 1;
 
     std::vector<Model::Agent> agents(n_agents);
 

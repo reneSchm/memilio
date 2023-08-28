@@ -3,65 +3,7 @@
 // g++ --std=c++14 -Wall --pedantic -o map_reader map_reader.cpp
 // generate pgm's using map.py with .shp files from https://daten.gdz.bkg.bund.de/produkte/vg/vg2500/aktuell/vg2500_12-31.gk3.shape.zip (unpack into tools/)
 
-#include <deque>
-#include <fstream>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <vector>
-
-#include "build/_deps/eigen-src/Eigen/Core"
-#define DEBUG(cout_args) std::cerr << cout_args << std::endl << std::flush;
-typedef double ScalarType;
-
-Eigen::MatrixXd read_pgm(std::istream& pgm_file)
-{
-    size_t height, width, color_range;
-    std::string reader;
-    std::stringstream parser;
-    // ignore magic number (P2)
-    std::getline(pgm_file, reader);
-    // get dims
-    std::getline(pgm_file, reader);
-    parser.str(reader);
-    parser >> width >> height;
-    // get color range (max value for colors)
-    std::getline(pgm_file, reader);
-    parser.clear();
-    parser.str(reader);
-    parser >> color_range;
-    // read image data
-    // we assume (0,0) to be at the bottom left
-    Eigen::MatrixXd data(width, height);
-    for (size_t j = height; j > 0; j--) {
-        std::getline(pgm_file, reader);
-        parser.clear();
-        parser.str(reader);
-        for (size_t i = 0; i < width; i++) {
-            parser >> data(i, j - 1);
-            data(i, j - 1) = data(i, j - 1) / color_range;
-        }
-    }
-    return data;
-}
-
-void write_pgm(std::ostream& pgm_file, Eigen::Ref<const Eigen::MatrixXd> image, size_t color_range = 255)
-{
-    // write pgm header
-    pgm_file << "P2\n" << image.rows() << " " << image.cols() << "\n" << color_range << "\n";
-    // write image data
-    // we assume (0,0) to be at the bottom left
-    const auto max = image.maxCoeff();
-    for (Eigen::Index j = image.rows(); j > 0; j--) {
-        for (Eigen::Index i = 0; i < image.cols(); i++) {
-            pgm_file << size_t(image(i, j - 1) / max * color_range);
-            if (i != image.cols() - 1)
-                pgm_file << " ";
-        }
-        pgm_file << "\n";
-    }
-}
-
+#include "map_reader.h"
 typedef Eigen::Vector2d Position;
 
 // Add neighbouring (matrix) indices to queue
@@ -139,6 +81,7 @@ Eigen::MatrixXd find_connected_image_region(Eigen::Ref<const Eigen::MatrixXd> im
 // Eigen::MatrixXd find_bounded_image_region(Eigen::Ref<Eigen::MatrixXd> image, const size_t start_x, const size_t start_y,
 //                                           ScalarType boundary_color, ScalarType color_tolerance = 0);
 
+// should work with any stencil, but odd number of rows/cols is recommended
 void apply_stencil(Eigen::Ref<Eigen::MatrixXd> image, Eigen::Ref<const Eigen::MatrixXd> stencil, ScalarType color,
                    ScalarType color_tolerance = 0)
 {
@@ -196,6 +139,35 @@ int main()
         canvas += i * find_connected_image_region(image, x, y, 0);
     }
 
+    DEBUG("identify boundary segments")
+    Eigen::MatrixXi boundaries            = Eigen::MatrixXi::Zero(image.rows(), image.cols());
+    Eigen::MatrixXi boundaries_simplified = Eigen::MatrixXi::Zero(image.rows(), image.cols());
+    auto is_outside                       = find_connected_image_region(image, 0, 0);
+    // iterate image, leave out two outermost rows/cols
+    int check_width = 3;
+    for (Eigen::Index i = check_width; i < image.rows() - check_width; i++) {
+        for (Eigen::Index j = check_width; j < image.cols() - check_width; j++) {
+            // skip interior
+            if (canvas(i, j) != 0 or is_outside(i, j))
+                continue;
+            // look for land ids in a 5x5 square
+            u_int16_t ids = 0;
+            for (int k = -check_width; k <= check_width; k++) {
+                for (int l = -check_width; l <= check_width; l++) {
+                    ids |= 1 << (int)(canvas(i + k, j + l) - 1);
+                }
+            }
+            if (num_bits_set(ids) > 1) { // 0 or 1 should only occur on exterior pixels
+                boundaries(i, j)            = ids;
+                boundaries_simplified(i, j) = 2;
+            }
+            else {
+                boundaries_simplified(i, j) = 1;
+            }
+            assert(num_bits_set(ids) < 4);
+        }
+    }
+
     DEBUG("set stencil")
     Eigen::Matrix<double, 1, 5> stencil;
     stencil(0, 0) = 0.5;
@@ -236,6 +208,20 @@ int main()
         return 1;
     }
     write_pgm(ofile, canvas, 16);
+    ofile.close();
+    ofile.open("boundary_ids.pgm");
+    if (!ofile.is_open()) {
+        DEBUG("Could not open file boundary_ids.pgm");
+        return 1;
+    }
+    write_pgm(ofile, boundaries);
+    ofile.close();
+    ofile.open("boundary_simplyfied.pgm");
+    if (!ofile.is_open()) {
+        DEBUG("Could not open file boundary_simplyfied.pgm");
+        return 1;
+    }
+    write_pgm(ofile, boundaries_simplified);
     ofile.close();
 
     // DEBUG("print")
