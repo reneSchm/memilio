@@ -1,0 +1,504 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage.info - models/ode_secir/parameters_io.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">models/ode_secir</a> - parameters_io.h<span style="font-size: 80%;"> (source / <a href="parameters_io.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">129</td>
+            <td class="headerCovTableEntry">137</td>
+            <td class="headerCovTableEntryHi">94.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-08-28 12:00:27</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* </a>
+<a name="2"><span class="lineNum">       2 </span>            : * Copyright (C) 2020-2023 German Aerospace Center (DLR-SC)</a>
+<a name="3"><span class="lineNum">       3 </span>            : *</a>
+<a name="4"><span class="lineNum">       4 </span>            : * Authors: Wadim Koslow, Daniel Abele, Martin J. Kuehn, Lena Ploetzke</a>
+<a name="5"><span class="lineNum">       5 </span>            : *</a>
+<a name="6"><span class="lineNum">       6 </span>            : * Contact: Martin J. Kuehn &lt;Martin.Kuehn@DLR.de&gt;</a>
+<a name="7"><span class="lineNum">       7 </span>            : *</a>
+<a name="8"><span class="lineNum">       8 </span>            : * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</a>
+<a name="9"><span class="lineNum">       9 </span>            : * you may not use this file except in compliance with the License.</a>
+<a name="10"><span class="lineNum">      10 </span>            : * You may obtain a copy of the License at</a>
+<a name="11"><span class="lineNum">      11 </span>            : *</a>
+<a name="12"><span class="lineNum">      12 </span>            : *     http://www.apache.org/licenses/LICENSE-2.0</a>
+<a name="13"><span class="lineNum">      13 </span>            : *</a>
+<a name="14"><span class="lineNum">      14 </span>            : * Unless required by applicable law or agreed to in writing, software</a>
+<a name="15"><span class="lineNum">      15 </span>            : * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</a>
+<a name="16"><span class="lineNum">      16 </span>            : * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</a>
+<a name="17"><span class="lineNum">      17 </span>            : * See the License for the specific language governing permissions and</a>
+<a name="18"><span class="lineNum">      18 </span>            : * limitations under the License.</a>
+<a name="19"><span class="lineNum">      19 </span>            : */</a>
+<a name="20"><span class="lineNum">      20 </span>            : #ifndef ODESECIR_PARAMETERS_IO_H</a>
+<a name="21"><span class="lineNum">      21 </span>            : #define ODESECIR_PARAMETERS_IO_H</a>
+<a name="22"><span class="lineNum">      22 </span>            : </a>
+<a name="23"><span class="lineNum">      23 </span>            : #include &quot;memilio/config.h&quot;</a>
+<a name="24"><span class="lineNum">      24 </span>            : </a>
+<a name="25"><span class="lineNum">      25 </span>            : #ifdef MEMILIO_HAS_JSONCPP</a>
+<a name="26"><span class="lineNum">      26 </span>            : </a>
+<a name="27"><span class="lineNum">      27 </span>            : #include &quot;ode_secir/model.h&quot;</a>
+<a name="28"><span class="lineNum">      28 </span>            : #include &quot;ode_secir/analyze_result.h&quot;</a>
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;memilio/math/eigen_util.h&quot;</a>
+<a name="30"><span class="lineNum">      30 </span>            : #include &quot;memilio/mobility/graph.h&quot;</a>
+<a name="31"><span class="lineNum">      31 </span>            : #include &quot;memilio/mobility/metapopulation_mobility_instant.h&quot;</a>
+<a name="32"><span class="lineNum">      32 </span>            : #include &quot;memilio/io/io.h&quot;</a>
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;memilio/io/json_serializer.h&quot;</a>
+<a name="34"><span class="lineNum">      34 </span>            : #include &quot;memilio/io/result_io.h&quot;</a>
+<a name="35"><span class="lineNum">      35 </span>            : #include &quot;memilio/io/epi_data.h&quot;</a>
+<a name="36"><span class="lineNum">      36 </span>            : #include &quot;memilio/utils/date.h&quot;</a>
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<a name="38"><span class="lineNum">      38 </span>            : namespace mio</a>
+<a name="39"><span class="lineNum">      39 </span>            : {</a>
+<a name="40"><span class="lineNum">      40 </span>            : </a>
+<a name="41"><span class="lineNum">      41 </span>            : namespace osecir</a>
+<a name="42"><span class="lineNum">      42 </span>            : {</a>
+<a name="43"><span class="lineNum">      43 </span>            : </a>
+<a name="44"><span class="lineNum">      44 </span>            : namespace details</a>
+<a name="45"><span class="lineNum">      45 </span>            : {</a>
+<a name="46"><span class="lineNum">      46 </span>            : /**</a>
+<a name="47"><span class="lineNum">      47 </span>            :      * @brief interpolates age_ranges to param_ranges and saves ratios in interpolation</a>
+<a name="48"><span class="lineNum">      48 </span>            :      * @param age_ranges original age ranges of the data</a>
+<a name="49"><span class="lineNum">      49 </span>            :      * @param interpolation vector of ratios that are aplied to the data of age_ranges</a>
+<a name="50"><span class="lineNum">      50 </span>            :      * @param carry_over boolean vector which indicates whether there is an overflow from one age group to the next while interpolating data</a>
+<a name="51"><span class="lineNum">      51 </span>            :      */</a>
+<a name="52"><span class="lineNum">      52 </span>            : void interpolate_ages(const std::vector&lt;double&gt;&amp; age_ranges, std::vector&lt;std::vector&lt;double&gt;&gt;&amp; interpolation,</a>
+<a name="53"><span class="lineNum">      53 </span>            :                       std::vector&lt;bool&gt;&amp; carry_over);</a>
+<a name="54"><span class="lineNum">      54 </span>            : </a>
+<a name="55"><span class="lineNum">      55 </span>            : /**</a>
+<a name="56"><span class="lineNum">      56 </span>            :      * @brief reads populations data from RKI</a>
+<a name="57"><span class="lineNum">      57 </span>            :      * @param path Path to RKI file</a>
+<a name="58"><span class="lineNum">      58 </span>            :      * @param region vector of keys of the region of interest</a>
+<a name="59"><span class="lineNum">      59 </span>            :      * @param year Specifies year at which the data is read</a>
+<a name="60"><span class="lineNum">      60 </span>            :      * @param month Specifies month at which the data is read</a>
+<a name="61"><span class="lineNum">      61 </span>            :      * @param day Specifies day at which the data is read</a>
+<a name="62"><span class="lineNum">      62 </span>            :      * @param num_* output vector for number of people in the corresponding compartement</a>
+<a name="63"><span class="lineNum">      63 </span>            :      * @param t_* vector average time it takes to get from one compartement to another for each age group</a>
+<a name="64"><span class="lineNum">      64 </span>            :      * @param mu_* vector probabilities to get from one compartement to another for each age group</a>
+<a name="65"><span class="lineNum">      65 </span>            :      */</a>
+<a name="66"><span class="lineNum">      66 </span>            : IOResult&lt;void&gt; read_confirmed_cases_data(</a>
+<a name="67"><span class="lineNum">      67 </span>            :     std::string const&amp; path, std::vector&lt;int&gt; const&amp; vregion, Date date, std::vector&lt;std::vector&lt;double&gt;&gt;&amp; vnum_Exposed,</a>
+<a name="68"><span class="lineNum">      68 </span>            :     std::vector&lt;std::vector&lt;double&gt;&gt;&amp; vnum_InfectedNoSymptoms, std::vector&lt;std::vector&lt;double&gt;&gt;&amp; vnum_InfectedSymptoms,</a>
+<a name="69"><span class="lineNum">      69 </span>            :     std::vector&lt;std::vector&lt;double&gt;&gt;&amp; vnum_InfectedSevere, std::vector&lt;std::vector&lt;double&gt;&gt;&amp; vnum_icu,</a>
+<a name="70"><span class="lineNum">      70 </span>            :     std::vector&lt;std::vector&lt;double&gt;&gt;&amp; vnum_death, std::vector&lt;std::vector&lt;double&gt;&gt;&amp; vnum_rec,</a>
+<a name="71"><span class="lineNum">      71 </span>            :     const std::vector&lt;std::vector&lt;int&gt;&gt;&amp; vt_Exposed, const std::vector&lt;std::vector&lt;int&gt;&gt;&amp; vt_InfectedNoSymptoms,</a>
+<a name="72"><span class="lineNum">      72 </span>            :     const std::vector&lt;std::vector&lt;int&gt;&gt;&amp; vt_InfectedSymptoms, const std::vector&lt;std::vector&lt;int&gt;&gt;&amp; vt_InfectedSevere,</a>
+<a name="73"><span class="lineNum">      73 </span>            :     const std::vector&lt;std::vector&lt;int&gt;&gt;&amp; vt_InfectedCritical, const std::vector&lt;std::vector&lt;double&gt;&gt;&amp; vmu_C_R,</a>
+<a name="74"><span class="lineNum">      74 </span>            :     const std::vector&lt;std::vector&lt;double&gt;&gt;&amp; vmu_I_H, const std::vector&lt;std::vector&lt;double&gt;&gt;&amp; vmu_H_U,</a>
+<a name="75"><span class="lineNum">      75 </span>            :     const std::vector&lt;double&gt;&amp; scaling_factor_inf);</a>
+<a name="76"><span class="lineNum">      76 </span>            : </a>
+<a name="77"><span class="lineNum">      77 </span>            : /**</a>
+<a name="78"><span class="lineNum">      78 </span>            :      * @brief sets populations data from RKI into a Model</a>
+<a name="79"><span class="lineNum">      79 </span>            :      * @param model vector of objects in which the data is set</a>
+<a name="80"><span class="lineNum">      80 </span>            :      * @param path Path to RKI file</a>
+<a name="81"><span class="lineNum">      81 </span>            :      * @param region vector of keys of the region of interest</a>
+<a name="82"><span class="lineNum">      82 </span>            :      * @param year Specifies year at which the data is read</a>
+<a name="83"><span class="lineNum">      83 </span>            :      * @param month Specifies month at which the data is read</a>
+<a name="84"><span class="lineNum">      84 </span>            :      * @param day Specifies day at which the data is read</a>
+<a name="85"><span class="lineNum">      85 </span>            :      * @param scaling_factor_inf factors by which to scale the confirmed cases of rki data</a>
+<a name="86"><span class="lineNum">      86 </span>            :      */</a>
+<a name="87"><span class="lineNum">      87 </span>            : IOResult&lt;void&gt; set_confirmed_cases_data(std::vector&lt;Model&gt;&amp; model, const std::string&amp; path,</a>
+<a name="88"><span class="lineNum">      88 </span>            :                                         std::vector&lt;int&gt; const&amp; region, Date date,</a>
+<a name="89"><span class="lineNum">      89 </span>            :                                         const std::vector&lt;double&gt;&amp; scaling_factor_inf);</a>
+<a name="90"><span class="lineNum">      90 </span>            : </a>
+<a name="91"><span class="lineNum">      91 </span>            : /**</a>
+<a name="92"><span class="lineNum">      92 </span>            :      * @brief reads number of ICU patients from DIVI register into Parameters</a>
+<a name="93"><span class="lineNum">      93 </span>            :      * @param path Path to DIVI file</a>
+<a name="94"><span class="lineNum">      94 </span>            :      * @param vregion Keys of the region of interest</a>
+<a name="95"><span class="lineNum">      95 </span>            :      * @param year Specifies year at which the data is read</a>
+<a name="96"><span class="lineNum">      96 </span>            :      * @param month Specifies month at which the data is read</a>
+<a name="97"><span class="lineNum">      97 </span>            :      * @param day Specifies day at which the data is read</a>
+<a name="98"><span class="lineNum">      98 </span>            :      * @param vnum_icu number of ICU patients</a>
+<a name="99"><span class="lineNum">      99 </span>            :      */</a>
+<a name="100"><span class="lineNum">     100 </span>            : IOResult&lt;void&gt; read_divi_data(const std::string&amp; path, const std::vector&lt;int&gt;&amp; vregion, Date date,</a>
+<a name="101"><span class="lineNum">     101 </span>            :                               std::vector&lt;double&gt;&amp; vnum_icu);</a>
+<a name="102"><span class="lineNum">     102 </span>            : </a>
+<a name="103"><span class="lineNum">     103 </span>            : /**</a>
+<a name="104"><span class="lineNum">     104 </span>            :      * @brief sets populations data from DIVI register into Model</a>
+<a name="105"><span class="lineNum">     105 </span>            :      * @param model vector of objects in which the data is set</a>
+<a name="106"><span class="lineNum">     106 </span>            :      * @param path Path to DIVI file</a>
+<a name="107"><span class="lineNum">     107 </span>            :      * @param vregion vector of keys of the regions of interest</a>
+<a name="108"><span class="lineNum">     108 </span>            :      * @param year Specifies year at which the data is read</a>
+<a name="109"><span class="lineNum">     109 </span>            :      * @param month Specifies month at which the data is read</a>
+<a name="110"><span class="lineNum">     110 </span>            :      * @param day Specifies day at which the data is read</a>
+<a name="111"><span class="lineNum">     111 </span>            :      * @param scaling_factor_icu factor by which to scale the icu cases of divi data</a>
+<a name="112"><span class="lineNum">     112 </span>            :      */</a>
+<a name="113"><span class="lineNum">     113 </span>            : IOResult&lt;void&gt; set_divi_data(std::vector&lt;Model&gt;&amp; model, const std::string&amp; path, const std::vector&lt;int&gt;&amp; vregion,</a>
+<a name="114"><span class="lineNum">     114 </span>            :                              Date date, double scaling_factor_icu);</a>
+<a name="115"><span class="lineNum">     115 </span>            : </a>
+<a name="116"><span class="lineNum">     116 </span>            : /**</a>
+<a name="117"><span class="lineNum">     117 </span>            :      * @brief reads population data from census data</a>
+<a name="118"><span class="lineNum">     118 </span>            :      * @param path Path to RKI file</a>
+<a name="119"><span class="lineNum">     119 </span>            :      * @param vregion vector of keys of the regions of interest</a>
+<a name="120"><span class="lineNum">     120 </span>            :      */</a>
+<a name="121"><span class="lineNum">     121 </span>            : IOResult&lt;std::vector&lt;std::vector&lt;double&gt;&gt;&gt; read_population_data(const std::string&amp; path,</a>
+<a name="122"><span class="lineNum">     122 </span>            :                                                                 const std::vector&lt;int&gt;&amp; vregion);</a>
+<a name="123"><span class="lineNum">     123 </span>            : </a>
+<a name="124"><span class="lineNum">     124 </span>            : /**</a>
+<a name="125"><span class="lineNum">     125 </span>            :      * @brief sets population data from census data</a>
+<a name="126"><span class="lineNum">     126 </span>            :      * @param model vector of objects in which the data is set</a>
+<a name="127"><span class="lineNum">     127 </span>            :      * @param path Path to RKI file</a>
+<a name="128"><span class="lineNum">     128 </span>            :      * @param vregion vector of keys of the regions of interest</a>
+<a name="129"><span class="lineNum">     129 </span>            :      */</a>
+<a name="130"><span class="lineNum">     130 </span>            : IOResult&lt;void&gt; set_population_data(std::vector&lt;Model&gt;&amp; model, const std::string&amp; path, const std::vector&lt;int&gt;&amp; vregion);</a>
+<a name="131"><span class="lineNum">     131 </span>            : } //namespace details</a>
+<a name="132"><span class="lineNum">     132 </span>            : </a>
+<a name="133"><span class="lineNum">     133 </span>            : #ifdef MEMILIO_HAS_HDF5</a>
+<a name="134"><span class="lineNum">     134 </span>            : </a>
+<a name="135"><span class="lineNum">     135 </span>            : /**</a>
+<a name="136"><span class="lineNum">     136 </span>            : * @brief sets populations data from RKI into a Model</a>
+<a name="137"><span class="lineNum">     137 </span>            : * @param model vector of objects in which the data is set</a>
+<a name="138"><span class="lineNum">     138 </span>            : * @param data_dir Path to RKI files</a>
+<a name="139"><span class="lineNum">     139 </span>            : * @param results_dir Path to result files</a>
+<a name="140"><span class="lineNum">     140 </span>            : * @param region vector of keys of the region of interest</a>
+<a name="141"><span class="lineNum">     141 </span>            : * @param year Specifies year at which the data is read</a>
+<a name="142"><span class="lineNum">     142 </span>            : * @param month Specifies month at which the data is read</a>
+<a name="143"><span class="lineNum">     143 </span>            : * @param day Specifies day at which the data is read</a>
+<a name="144"><span class="lineNum">     144 </span>            : * @param scaling_factor_inf factors by which to scale the confirmed cases of rki data</a>
+<a name="145"><span class="lineNum">     145 </span>            : */</a>
+<a name="146"><span class="lineNum">     146 </span>            : template &lt;class Model&gt;</a>
+<a name="147"><span class="lineNum">     147 </span>            : IOResult&lt;void&gt;</a>
+<a name="148"><span class="lineNum">     148 </span><span class="lineCov">          1 : export_input_data_county_timeseries(std::vector&lt;Model&gt;&amp; model, const std::string&amp; dir, std::vector&lt;int&gt; const&amp; region,</span></a>
+<a name="149"><span class="lineNum">     149 </span>            :                                     Date date, const std::vector&lt;double&gt;&amp; scaling_factor_inf, double scaling_factor_icu,</a>
+<a name="150"><span class="lineNum">     150 </span>            :                                     int num_days, const std::string&amp; divi_data_path,</a>
+<a name="151"><span class="lineNum">     151 </span>            :                                     const std::string&amp; confirmed_cases_path, const std::string&amp; population_data_path)</a>
+<a name="152"><span class="lineNum">     152 </span>            : {</a>
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">          3 :     std::vector&lt;std::vector&lt;int&gt;&gt; t_InfectedNoSymptoms{model.size()};</span></a>
+<a name="154"><span class="lineNum">     154 </span><span class="lineCov">          3 :     std::vector&lt;std::vector&lt;int&gt;&gt; t_Exposed{model.size()};</span></a>
+<a name="155"><span class="lineNum">     155 </span><span class="lineCov">          3 :     std::vector&lt;std::vector&lt;int&gt;&gt; t_InfectedSymptoms{model.size()};</span></a>
+<a name="156"><span class="lineNum">     156 </span><span class="lineCov">          3 :     std::vector&lt;std::vector&lt;int&gt;&gt; t_InfectedSevere{model.size()};</span></a>
+<a name="157"><span class="lineNum">     157 </span><span class="lineCov">          3 :     std::vector&lt;std::vector&lt;int&gt;&gt; t_InfectedCritical{model.size()};</span></a>
+<a name="158"><span class="lineNum">     158 </span>            : </a>
+<a name="159"><span class="lineNum">     159 </span><span class="lineCov">          3 :     std::vector&lt;std::vector&lt;double&gt;&gt; mu_C_R{model.size()};</span></a>
+<a name="160"><span class="lineNum">     160 </span><span class="lineCov">          3 :     std::vector&lt;std::vector&lt;double&gt;&gt; mu_I_H{model.size()};</span></a>
+<a name="161"><span class="lineNum">     161 </span><span class="lineCov">          3 :     std::vector&lt;std::vector&lt;double&gt;&gt; mu_H_U{model.size()};</span></a>
+<a name="162"><span class="lineNum">     162 </span><span class="lineCov">          3 :     std::vector&lt;std::vector&lt;double&gt;&gt; mu_U_D{model.size()};</span></a>
+<a name="163"><span class="lineNum">     163 </span>            : </a>
+<a name="164"><span class="lineNum">     164 </span><span class="lineCov">          3 :     std::vector&lt;double&gt; sum_mu_I_U(region.size(), 0);</span></a>
+<a name="165"><span class="lineNum">     165 </span><span class="lineCov">          3 :     std::vector&lt;std::vector&lt;double&gt;&gt; mu_I_U{model.size()};</span></a>
+<a name="166"><span class="lineNum">     166 </span>            : </a>
+<a name="167"><span class="lineNum">     167 </span><span class="lineCov">          2 :     for (size_t county = 0; county &lt; model.size(); county++) {</span></a>
+<a name="168"><span class="lineNum">     168 </span><span class="lineCov">          7 :         for (size_t group = 0; group &lt; ConfirmedCasesDataEntry::age_group_names.size(); group++) {</span></a>
+<a name="169"><span class="lineNum">     169 </span>            : </a>
+<a name="170"><span class="lineNum">     170 </span><span class="lineCov">         12 :             t_InfectedNoSymptoms[county].push_back(static_cast&lt;int&gt;(</span></a>
+<a name="171"><span class="lineNum">     171 </span><span class="lineCov">         18 :                 std::round(2 * (model[county].parameters.template get&lt;IncubationTime&gt;()[AgeGroup(group)] -</span></a>
+<a name="172"><span class="lineNum">     172 </span><span class="lineCov">         12 :                                 model[county].parameters.template get&lt;SerialInterval&gt;()[AgeGroup(group)]))));</span></a>
+<a name="173"><span class="lineNum">     173 </span><span class="lineCov">         12 :             t_Exposed[county].push_back(static_cast&lt;int&gt;(</span></a>
+<a name="174"><span class="lineNum">     174 </span><span class="lineCov">         18 :                 std::round(2 * model[county].parameters.template get&lt;SerialInterval&gt;()[AgeGroup(group)] -</span></a>
+<a name="175"><span class="lineNum">     175 </span><span class="lineCov">         12 :                            model[county].parameters.template get&lt;IncubationTime&gt;()[AgeGroup(group)])));</span></a>
+<a name="176"><span class="lineNum">     176 </span><span class="lineCov">         12 :             t_InfectedSymptoms[county].push_back(static_cast&lt;int&gt;(</span></a>
+<a name="177"><span class="lineNum">     177 </span><span class="lineCov">         12 :                 std::round(model[county].parameters.template get&lt;TimeInfectedSymptoms&gt;()[AgeGroup(group)])));</span></a>
+<a name="178"><span class="lineNum">     178 </span><span class="lineCov">         12 :             t_InfectedSevere[county].push_back(static_cast&lt;int&gt;(</span></a>
+<a name="179"><span class="lineNum">     179 </span><span class="lineCov">         12 :                 std::round(model[county].parameters.template get&lt;TimeInfectedSevere&gt;()[AgeGroup(group)])));</span></a>
+<a name="180"><span class="lineNum">     180 </span><span class="lineCov">         12 :             t_InfectedCritical[county].push_back(static_cast&lt;int&gt;(</span></a>
+<a name="181"><span class="lineNum">     181 </span><span class="lineCov">         12 :                 std::round(model[county].parameters.template get&lt;TimeInfectedCritical&gt;()[(AgeGroup)group])));</span></a>
+<a name="182"><span class="lineNum">     182 </span><span class="lineCov">         12 :             t_InfectedNoSymptoms[county].push_back(static_cast&lt;int&gt;(</span></a>
+<a name="183"><span class="lineNum">     183 </span><span class="lineCov">         18 :                 std::round(2 * (model[county].parameters.template get&lt;IncubationTime&gt;()[AgeGroup(group)] -</span></a>
+<a name="184"><span class="lineNum">     184 </span><span class="lineCov">         12 :                                 model[county].parameters.template get&lt;SerialInterval&gt;()[AgeGroup(group)]))));</span></a>
+<a name="185"><span class="lineNum">     185 </span><span class="lineCov">         12 :             t_Exposed[county].push_back(static_cast&lt;int&gt;(</span></a>
+<a name="186"><span class="lineNum">     186 </span><span class="lineCov">         18 :                 std::round(2 * model[county].parameters.template get&lt;SerialInterval&gt;()[AgeGroup(group)] -</span></a>
+<a name="187"><span class="lineNum">     187 </span><span class="lineCov">         12 :                            model[county].parameters.template get&lt;IncubationTime&gt;()[AgeGroup(group)])));</span></a>
+<a name="188"><span class="lineNum">     188 </span><span class="lineCov">         12 :             t_InfectedSymptoms[county].push_back(static_cast&lt;int&gt;(</span></a>
+<a name="189"><span class="lineNum">     189 </span><span class="lineCov">         12 :                 std::round(model[county].parameters.template get&lt;TimeInfectedSymptoms&gt;()[AgeGroup(group)])));</span></a>
+<a name="190"><span class="lineNum">     190 </span><span class="lineCov">         12 :             t_InfectedSevere[county].push_back(static_cast&lt;int&gt;(</span></a>
+<a name="191"><span class="lineNum">     191 </span><span class="lineCov">         12 :                 std::round(model[county].parameters.template get&lt;TimeInfectedSevere&gt;()[AgeGroup(group)])));</span></a>
+<a name="192"><span class="lineNum">     192 </span><span class="lineCov">         12 :             t_InfectedCritical[county].push_back(static_cast&lt;int&gt;(</span></a>
+<a name="193"><span class="lineNum">     193 </span><span class="lineCov">         12 :                 std::round(model[county].parameters.template get&lt;TimeInfectedCritical&gt;()[(AgeGroup)group])));</span></a>
+<a name="194"><span class="lineNum">     194 </span>            : </a>
+<a name="195"><span class="lineNum">     195 </span><span class="lineCov">         12 :             mu_C_R[county].push_back(</span></a>
+<a name="196"><span class="lineNum">     196 </span><span class="lineCov">         12 :                 model[county].parameters.template get&lt;RecoveredPerInfectedNoSymptoms&gt;()[AgeGroup(group)]);</span></a>
+<a name="197"><span class="lineNum">     197 </span><span class="lineCov">         12 :             mu_I_H[county].push_back(</span></a>
+<a name="198"><span class="lineNum">     198 </span><span class="lineCov">         12 :                 model[county].parameters.template get&lt;SeverePerInfectedSymptoms&gt;()[AgeGroup(group)]);</span></a>
+<a name="199"><span class="lineNum">     199 </span><span class="lineCov">          6 :             mu_H_U[county].push_back(model[county].parameters.template get&lt;CriticalPerSevere&gt;()[AgeGroup(group)]);</span></a>
+<a name="200"><span class="lineNum">     200 </span><span class="lineCov">          6 :             mu_U_D[county].push_back(model[county].parameters.template get&lt;DeathsPerCritical&gt;()[(AgeGroup)group]);</span></a>
+<a name="201"><span class="lineNum">     201 </span>            : </a>
+<a name="202"><span class="lineNum">     202 </span><span class="lineCov">         18 :             sum_mu_I_U[county] += model[county].parameters.template get&lt;CriticalPerSevere&gt;()[AgeGroup(group)] *</span></a>
+<a name="203"><span class="lineNum">     203 </span><span class="lineCov">         12 :                                   model[county].parameters.template get&lt;SeverePerInfectedSymptoms&gt;()[AgeGroup(group)];</span></a>
+<a name="204"><span class="lineNum">     204 </span><span class="lineCov">         12 :             mu_I_U[county].push_back(</span></a>
+<a name="205"><span class="lineNum">     205 </span><span class="lineCov">         24 :                 model[county].parameters.template get&lt;CriticalPerSevere&gt;()[AgeGroup(group)] *</span></a>
+<a name="206"><span class="lineNum">     206 </span><span class="lineCov">         12 :                 model[county].parameters.template get&lt;SeverePerInfectedSymptoms&gt;()[AgeGroup(group)]);</span></a>
+<a name="207"><span class="lineNum">     207 </span>            :         }</a>
+<a name="208"><span class="lineNum">     208 </span>            :     }</a>
+<a name="209"><span class="lineNum">     209 </span>            : </a>
+<a name="210"><span class="lineNum">     210 </span><span class="lineCov">          6 :     std::vector&lt;TimeSeries&lt;double&gt;&gt; rki_data(</span></a>
+<a name="211"><span class="lineNum">     211 </span><span class="lineCov">          2 :         region.size(), TimeSeries&lt;double&gt;::zero(num_days, (size_t)InfectionState::Count *</span></a>
+<a name="212"><span class="lineNum">     212 </span><span class="lineCov">          1 :                                                               ConfirmedCasesDataEntry::age_group_names.size()));</span></a>
+<a name="213"><span class="lineNum">     213 </span>            : </a>
+<a name="214"><span class="lineNum">     214 </span><span class="lineCov">          2 :     for (size_t j = 0; j &lt; static_cast&lt;size_t&gt;(num_days); j++) {</span></a>
+<a name="215"><span class="lineNum">     215 </span><span class="lineCov">          3 :         std::vector&lt;std::vector&lt;double&gt;&gt; num_InfectedSymptoms(</span></a>
+<a name="216"><span class="lineNum">     216 </span><span class="lineCov">          3 :             model.size(), std::vector&lt;double&gt;(ConfirmedCasesDataEntry::age_group_names.size(), 0.0));</span></a>
+<a name="217"><span class="lineNum">     217 </span><span class="lineCov">          3 :         std::vector&lt;std::vector&lt;double&gt;&gt; num_InfectedSymptomsConfirmed(</span></a>
+<a name="218"><span class="lineNum">     218 </span><span class="lineCov">          3 :             model.size(), std::vector&lt;double&gt;(ConfirmedCasesDataEntry::age_group_names.size(), 0.0));</span></a>
+<a name="219"><span class="lineNum">     219 </span><span class="lineCov">          3 :         std::vector&lt;std::vector&lt;double&gt;&gt; num_death(</span></a>
+<a name="220"><span class="lineNum">     220 </span><span class="lineCov">          3 :             model.size(), std::vector&lt;double&gt;(ConfirmedCasesDataEntry::age_group_names.size(), 0.0));</span></a>
+<a name="221"><span class="lineNum">     221 </span><span class="lineCov">          3 :         std::vector&lt;std::vector&lt;double&gt;&gt; num_rec(</span></a>
+<a name="222"><span class="lineNum">     222 </span><span class="lineCov">          3 :             model.size(), std::vector&lt;double&gt;(ConfirmedCasesDataEntry::age_group_names.size(), 0.0));</span></a>
+<a name="223"><span class="lineNum">     223 </span><span class="lineCov">          3 :         std::vector&lt;std::vector&lt;double&gt;&gt; num_Exposed(</span></a>
+<a name="224"><span class="lineNum">     224 </span><span class="lineCov">          3 :             model.size(), std::vector&lt;double&gt;(ConfirmedCasesDataEntry::age_group_names.size(), 0.0));</span></a>
+<a name="225"><span class="lineNum">     225 </span><span class="lineCov">          3 :         std::vector&lt;std::vector&lt;double&gt;&gt; num_InfectedNoSymptoms(</span></a>
+<a name="226"><span class="lineNum">     226 </span><span class="lineCov">          3 :             model.size(), std::vector&lt;double&gt;(ConfirmedCasesDataEntry::age_group_names.size(), 0.0));</span></a>
+<a name="227"><span class="lineNum">     227 </span><span class="lineCov">          3 :         std::vector&lt;std::vector&lt;double&gt;&gt; num_InfectedNoSymptomsConfirmed(</span></a>
+<a name="228"><span class="lineNum">     228 </span><span class="lineCov">          3 :             model.size(), std::vector&lt;double&gt;(ConfirmedCasesDataEntry::age_group_names.size(), 0.0));</span></a>
+<a name="229"><span class="lineNum">     229 </span><span class="lineCov">          3 :         std::vector&lt;std::vector&lt;double&gt;&gt; num_InfectedSevere(</span></a>
+<a name="230"><span class="lineNum">     230 </span><span class="lineCov">          3 :             model.size(), std::vector&lt;double&gt;(ConfirmedCasesDataEntry::age_group_names.size(), 0.0));</span></a>
+<a name="231"><span class="lineNum">     231 </span><span class="lineCov">          3 :         std::vector&lt;std::vector&lt;double&gt;&gt; dummy_icu(</span></a>
+<a name="232"><span class="lineNum">     232 </span><span class="lineCov">          3 :             model.size(), std::vector&lt;double&gt;(ConfirmedCasesDataEntry::age_group_names.size(), 0.0));</span></a>
+<a name="233"><span class="lineNum">     233 </span><span class="lineCov">          2 :         std::vector&lt;double&gt; num_icu(model.size(), 0.0);</span></a>
+<a name="234"><span class="lineNum">     234 </span>            : </a>
+<a name="235"><span class="lineNum">     235 </span><span class="lineCov">          1 :         BOOST_OUTCOME_TRY(details::read_confirmed_cases_data(</span></a>
+<a name="236"><span class="lineNum">     236 </span>            :             confirmed_cases_path, region, date, num_Exposed, num_InfectedNoSymptoms, num_InfectedSymptoms,</a>
+<a name="237"><span class="lineNum">     237 </span>            :             num_InfectedSevere, dummy_icu, num_death, num_rec, t_Exposed, t_InfectedNoSymptoms, t_InfectedSymptoms,</a>
+<a name="238"><span class="lineNum">     238 </span>            :             t_InfectedSevere, t_InfectedCritical, mu_C_R, mu_I_H, mu_H_U, scaling_factor_inf));</a>
+<a name="239"><span class="lineNum">     239 </span><span class="lineCov">          1 :         BOOST_OUTCOME_TRY(details::read_divi_data(divi_data_path, region, date, num_icu));</span></a>
+<a name="240"><span class="lineNum">     240 </span><span class="lineCov">          1 :         BOOST_OUTCOME_TRY(num_population, details::read_population_data(population_data_path, region));</span></a>
+<a name="241"><span class="lineNum">     241 </span>            : </a>
+<a name="242"><span class="lineNum">     242 </span><span class="lineCov">          2 :         for (size_t i = 0; i &lt; region.size(); i++) {</span></a>
+<a name="243"><span class="lineNum">     243 </span><span class="lineCov">          7 :             for (size_t age = 0; age &lt; ConfirmedCasesDataEntry::age_group_names.size(); age++) {</span></a>
+<a name="244"><span class="lineNum">     244 </span><span class="lineCov">          6 :                 rki_data[i][j]((size_t)InfectionState::Exposed + (size_t)InfectionState::Count * age) =</span></a>
+<a name="245"><span class="lineNum">     245 </span>            :                     num_Exposed[i][age];</a>
+<a name="246"><span class="lineNum">     246 </span><span class="lineCov">          6 :                 rki_data[i][j]((size_t)InfectionState::InfectedNoSymptoms + (size_t)InfectionState::Count * age) =</span></a>
+<a name="247"><span class="lineNum">     247 </span>            :                     num_InfectedNoSymptoms[i][age];</a>
+<a name="248"><span class="lineNum">     248 </span><span class="lineCov">          6 :                 rki_data[i][j]((size_t)InfectionState::InfectedNoSymptomsConfirmed +</span></a>
+<a name="249"><span class="lineNum">     249 </span><span class="lineCov">          6 :                                (size_t)InfectionState::Count * age) = num_InfectedNoSymptomsConfirmed[i][age];</span></a>
+<a name="250"><span class="lineNum">     250 </span><span class="lineCov">          6 :                 rki_data[i][j]((size_t)InfectionState::InfectedSymptoms + (size_t)InfectionState::Count * age) =</span></a>
+<a name="251"><span class="lineNum">     251 </span>            :                     num_InfectedSymptoms[i][age];</a>
+<a name="252"><span class="lineNum">     252 </span><span class="lineCov">          6 :                 rki_data[i][j]((size_t)InfectionState::InfectedSymptomsConfirmed +</span></a>
+<a name="253"><span class="lineNum">     253 </span><span class="lineCov">          6 :                                (size_t)InfectionState::Count * age) = num_InfectedSymptomsConfirmed[i][age];</span></a>
+<a name="254"><span class="lineNum">     254 </span><span class="lineCov">          6 :                 rki_data[i][j]((size_t)InfectionState::InfectedSevere + (size_t)InfectionState::Count * age) =</span></a>
+<a name="255"><span class="lineNum">     255 </span>            :                     num_InfectedSevere[i][age];</a>
+<a name="256"><span class="lineNum">     256 </span><span class="lineCov">          6 :                 rki_data[i][j]((size_t)InfectionState::InfectedCritical + (size_t)InfectionState::Count * age) =</span></a>
+<a name="257"><span class="lineNum">     257 </span><span class="lineCov">          6 :                     scaling_factor_icu * num_icu[i] * mu_I_U[i][age] / sum_mu_I_U[i];</span></a>
+<a name="258"><span class="lineNum">     258 </span><span class="lineCov">          6 :                 rki_data[i][j]((size_t)InfectionState::Recovered + (size_t)InfectionState::Count * age) =</span></a>
+<a name="259"><span class="lineNum">     259 </span>            :                     num_rec[i][age];</a>
+<a name="260"><span class="lineNum">     260 </span><span class="lineCov">          6 :                 rki_data[i][j]((size_t)InfectionState::Dead + (size_t)InfectionState::Count * age) = num_death[i][age];</span></a>
+<a name="261"><span class="lineNum">     261 </span><span class="lineCov">          6 :                 rki_data[i][j]((size_t)InfectionState::Susceptible + (size_t)InfectionState::Count * age) =</span></a>
+<a name="262"><span class="lineNum">     262 </span><span class="lineCov">          6 :                     num_population[i][age] - num_Exposed[i][age] - num_InfectedNoSymptoms[i][age] -</span></a>
+<a name="263"><span class="lineNum">     263 </span><span class="lineCov">          6 :                     num_InfectedNoSymptomsConfirmed[i][age] - num_InfectedSymptoms[i][age] -</span></a>
+<a name="264"><span class="lineNum">     264 </span><span class="lineCov">          6 :                     num_InfectedSymptomsConfirmed[i][age] - num_InfectedSevere[i][age] - num_rec[i][age] -</span></a>
+<a name="265"><span class="lineNum">     265 </span><span class="lineCov">          6 :                     num_death[i][age] -</span></a>
+<a name="266"><span class="lineNum">     266 </span><span class="lineCov">         12 :                     rki_data[i][j]((size_t)InfectionState::InfectedCritical + (size_t)InfectionState::Count * age);</span></a>
+<a name="267"><span class="lineNum">     267 </span>            :             }</a>
+<a name="268"><span class="lineNum">     268 </span>            :         }</a>
+<a name="269"><span class="lineNum">     269 </span><span class="lineCov">          1 :         date = offset_date_by_days(date, 1);</span></a>
+<a name="270"><span class="lineNum">     270 </span>            :     }</a>
+<a name="271"><span class="lineNum">     271 </span><span class="lineCov">          1 :     auto num_groups = (int)(size_t)model[0].parameters.get_num_groups();</span></a>
+<a name="272"><span class="lineNum">     272 </span><span class="lineCov">          2 :     BOOST_OUTCOME_TRY(save_result(rki_data, region, num_groups, path_join(dir, &quot;Results_rki.h5&quot;)));</span></a>
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<a name="274"><span class="lineNum">     274 </span><span class="lineCov">          6 :     auto rki_data_sum = sum_nodes(std::vector&lt;std::vector&lt;TimeSeries&lt;double&gt;&gt;&gt;{rki_data});</span></a>
+<a name="275"><span class="lineNum">     275 </span><span class="lineCov">          3 :     BOOST_OUTCOME_TRY(save_result({rki_data_sum[0][0]}, {0}, num_groups, path_join(dir, &quot;Results_rki_sum.h5&quot;)));</span></a>
+<a name="276"><span class="lineNum">     276 </span>            : </a>
+<a name="277"><span class="lineNum">     277 </span><span class="lineCov">          2 :     return success();</span></a>
+<a name="278"><span class="lineNum">     278 </span>            : }</a>
+<a name="279"><span class="lineNum">     279 </span>            : </a>
+<a name="280"><span class="lineNum">     280 </span>            : #endif // MEMILIO_HAS_HDF5</a>
+<a name="281"><span class="lineNum">     281 </span>            : </a>
+<a name="282"><span class="lineNum">     282 </span>            : /**</a>
+<a name="283"><span class="lineNum">     283 </span>            :  * @brief reads population data from population files for the whole country</a>
+<a name="284"><span class="lineNum">     284 </span>            :  * @param model vector of model in which the data is set</a>
+<a name="285"><span class="lineNum">     285 </span>            :  * @param date Date for which the data should be read</a>
+<a name="286"><span class="lineNum">     286 </span>            :  * @param scaling_factor_inf factors by which to scale the confirmed cases of rki data</a>
+<a name="287"><span class="lineNum">     287 </span>            :  * @param scaling_factor_icu factor by which to scale the icu cases of divi data</a>
+<a name="288"><span class="lineNum">     288 </span>            :  * @param dir directory of files</a>
+<a name="289"><span class="lineNum">     289 </span>            :  */</a>
+<a name="290"><span class="lineNum">     290 </span>            : template &lt;class Model&gt;</a>
+<a name="291"><span class="lineNum">     291 </span><span class="lineCov">          1 : IOResult&lt;void&gt; read_input_data_germany(std::vector&lt;Model&gt;&amp; model, Date date,</span></a>
+<a name="292"><span class="lineNum">     292 </span>            :                                        const std::vector&lt;double&gt;&amp; scaling_factor_inf, double scaling_factor_icu,</a>
+<a name="293"><span class="lineNum">     293 </span>            :                                        const std::string&amp; dir)</a>
+<a name="294"><span class="lineNum">     294 </span>            : {</a>
+<a name="295"><span class="lineNum">     295 </span><span class="lineCov">          1 :     if (date &gt; Date(2020, 4, 23)) {</span></a>
+<a name="296"><span class="lineNum">     296 </span><span class="lineCov">          1 :         BOOST_OUTCOME_TRY(</span></a>
+<a name="297"><span class="lineNum">     297 </span>            :             details::set_divi_data(model, path_join(dir, &quot;germany_divi.json&quot;), {0}, date, scaling_factor_icu));</a>
+<a name="298"><span class="lineNum">     298 </span>            :     }</a>
+<a name="299"><span class="lineNum">     299 </span>            :     else {</a>
+<a name="300"><span class="lineNum">     300 </span><span class="lineNoCov">          0 :         log_warning(&quot;No DIVI data available for this date&quot;);</span></a>
+<a name="301"><span class="lineNum">     301 </span>            :     }</a>
+<a name="302"><span class="lineNum">     302 </span><span class="lineCov">          2 :     BOOST_OUTCOME_TRY(details::set_confirmed_cases_data(model, path_join(dir, &quot;cases_all_age_ma7.json&quot;), {0}, date,</span></a>
+<a name="303"><span class="lineNum">     303 </span>            :                                                         scaling_factor_inf));</a>
+<a name="304"><span class="lineNum">     304 </span><span class="lineCov">          2 :     BOOST_OUTCOME_TRY(details::set_confirmed_cases_data(model, path_join(dir, &quot;cases_all_age_ma7.json&quot;), {0}, date,</span></a>
+<a name="305"><span class="lineNum">     305 </span>            :                                                         scaling_factor_inf));</a>
+<a name="306"><span class="lineNum">     306 </span><span class="lineCov">          2 :     BOOST_OUTCOME_TRY(details::set_population_data(model, path_join(dir, &quot;county_current_population.json&quot;), {0}));</span></a>
+<a name="307"><span class="lineNum">     307 </span><span class="lineCov">          2 :     return success();</span></a>
+<a name="308"><span class="lineNum">     308 </span>            : }</a>
+<a name="309"><span class="lineNum">     309 </span>            : </a>
+<a name="310"><span class="lineNum">     310 </span>            : /**</a>
+<a name="311"><span class="lineNum">     311 </span>            :  * @brief reads population data from population files for the specefied state</a>
+<a name="312"><span class="lineNum">     312 </span>            :  * @param model vector of model in which the data is set</a>
+<a name="313"><span class="lineNum">     313 </span>            :  * @param date Date for which the data should be read</a>
+<a name="314"><span class="lineNum">     314 </span>            :  * @param state vector of region keys of states of interest</a>
+<a name="315"><span class="lineNum">     315 </span>            :  * @param scaling_factor_inf factors by which to scale the confirmed cases of rki data</a>
+<a name="316"><span class="lineNum">     316 </span>            :  * @param scaling_factor_icu factor by which to scale the icu cases of divi data</a>
+<a name="317"><span class="lineNum">     317 </span>            :  * @param dir directory of files</a>
+<a name="318"><span class="lineNum">     318 </span>            :  */</a>
+<a name="319"><span class="lineNum">     319 </span>            : template &lt;class Model&gt;</a>
+<a name="320"><span class="lineNum">     320 </span><span class="lineCov">          1 : IOResult&lt;void&gt; read_input_data_state(std::vector&lt;Model&gt;&amp; model, Date date, std::vector&lt;int&gt;&amp; state,</span></a>
+<a name="321"><span class="lineNum">     321 </span>            :                                      const std::vector&lt;double&gt;&amp; scaling_factor_inf, double scaling_factor_icu,</a>
+<a name="322"><span class="lineNum">     322 </span>            :                                      const std::string&amp; dir)</a>
+<a name="323"><span class="lineNum">     323 </span>            : {</a>
+<a name="324"><span class="lineNum">     324 </span><span class="lineCov">          1 :     if (date &gt; Date(2020, 4, 23)) {</span></a>
+<a name="325"><span class="lineNum">     325 </span><span class="lineCov">          1 :         BOOST_OUTCOME_TRY(</span></a>
+<a name="326"><span class="lineNum">     326 </span>            :             details::set_divi_data(model, path_join(dir, &quot;state_divi.json&quot;), state, date, scaling_factor_icu));</a>
+<a name="327"><span class="lineNum">     327 </span>            :     }</a>
+<a name="328"><span class="lineNum">     328 </span>            :     else {</a>
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :         log_warning(&quot;No DIVI data available for this date&quot;);</span></a>
+<a name="330"><span class="lineNum">     330 </span>            :     }</a>
+<a name="331"><span class="lineNum">     331 </span>            : </a>
+<a name="332"><span class="lineNum">     332 </span><span class="lineCov">          2 :     BOOST_OUTCOME_TRY(details::set_confirmed_cases_data(model, path_join(dir, &quot;cases_all_state_age_ma7.json&quot;), state,</span></a>
+<a name="333"><span class="lineNum">     333 </span>            :                                                         date, scaling_factor_inf));</a>
+<a name="334"><span class="lineNum">     334 </span><span class="lineCov">          2 :     BOOST_OUTCOME_TRY(details::set_confirmed_cases_data(model, path_join(dir, &quot;cases_all_state_age_ma7.json&quot;), state,</span></a>
+<a name="335"><span class="lineNum">     335 </span>            :                                                         date, scaling_factor_inf));</a>
+<a name="336"><span class="lineNum">     336 </span><span class="lineCov">          2 :     BOOST_OUTCOME_TRY(details::set_population_data(model, path_join(dir, &quot;county_current_population.json&quot;), state));</span></a>
+<a name="337"><span class="lineNum">     337 </span><span class="lineCov">          2 :     return success();</span></a>
+<a name="338"><span class="lineNum">     338 </span>            : }</a>
+<a name="339"><span class="lineNum">     339 </span>            : </a>
+<a name="340"><span class="lineNum">     340 </span>            : /**</a>
+<a name="341"><span class="lineNum">     341 </span>            :  * @brief reads population data from population files for the specefied county</a>
+<a name="342"><span class="lineNum">     342 </span>            :  * @param model vector of model in which the data is set</a>
+<a name="343"><span class="lineNum">     343 </span>            :  * @param date Date for which the data should be read</a>
+<a name="344"><span class="lineNum">     344 </span>            :  * @param county vector of region keys of counties of interest</a>
+<a name="345"><span class="lineNum">     345 </span>            :  * @param scaling_factor_inf factors by which to scale the confirmed cases of rki data</a>
+<a name="346"><span class="lineNum">     346 </span>            :  * @param scaling_factor_icu factor by which to scale the icu cases of divi data</a>
+<a name="347"><span class="lineNum">     347 </span>            :  * @param dir directory of files</a>
+<a name="348"><span class="lineNum">     348 </span>            :  * @param num_days [Default: 0] Number of days to be simulated; required to extrapolate real data</a>
+<a name="349"><span class="lineNum">     349 </span>            :  * @param export_time_series [Default: false] If true, reads data for each day of simulation and writes it in the same directory as the input files.</a>
+<a name="350"><span class="lineNum">     350 </span>            :  */</a>
+<a name="351"><span class="lineNum">     351 </span>            : template &lt;class Model&gt;</a>
+<a name="352"><span class="lineNum">     352 </span><span class="lineCov">          1 : IOResult&lt;void&gt; read_input_data_county(std::vector&lt;Model&gt;&amp; model, Date date, const std::vector&lt;int&gt;&amp; county,</span></a>
+<a name="353"><span class="lineNum">     353 </span>            :                                       const std::vector&lt;double&gt;&amp; scaling_factor_inf, double scaling_factor_icu,</a>
+<a name="354"><span class="lineNum">     354 </span>            :                                       const std::string&amp; dir, int num_days = 0, bool export_time_series = false)</a>
+<a name="355"><span class="lineNum">     355 </span>            : {</a>
+<a name="356"><span class="lineNum">     356 </span><span class="lineCov">          1 :     if (date &gt; Date(2020, 4, 23)) {</span></a>
+<a name="357"><span class="lineNum">     357 </span><span class="lineCov">          1 :         BOOST_OUTCOME_TRY(details::set_divi_data(model, path_join(dir, &quot;pydata/Germany&quot;, &quot;county_divi_ma7.json&quot;),</span></a>
+<a name="358"><span class="lineNum">     358 </span>            :                                                  county, date, scaling_factor_icu));</a>
+<a name="359"><span class="lineNum">     359 </span>            :     }</a>
+<a name="360"><span class="lineNum">     360 </span>            :     else {</a>
+<a name="361"><span class="lineNum">     361 </span><span class="lineNoCov">          0 :         log_warning(&quot;No DIVI data available for this date&quot;);</span></a>
+<a name="362"><span class="lineNum">     362 </span>            :     }</a>
+<a name="363"><span class="lineNum">     363 </span><span class="lineCov">          2 :     BOOST_OUTCOME_TRY(details::set_confirmed_cases_data(</span></a>
+<a name="364"><span class="lineNum">     364 </span>            :         model, path_join(dir, &quot;pydata/Germany&quot;, &quot;cases_all_county_age_ma7.json&quot;), county, date, scaling_factor_inf));</a>
+<a name="365"><span class="lineNum">     365 </span><span class="lineCov">          2 :     BOOST_OUTCOME_TRY(details::set_population_data(</span></a>
+<a name="366"><span class="lineNum">     366 </span>            :         model, path_join(dir, &quot;pydata/Germany&quot;, &quot;county_current_population.json&quot;), county));</a>
+<a name="367"><span class="lineNum">     367 </span>            : </a>
+<a name="368"><span class="lineNum">     368 </span><span class="lineCov">          1 :     if (export_time_series) {</span></a>
+<a name="369"><span class="lineNum">     369 </span>            :         // Use only if extrapolated real data is needed for comparison. EXPENSIVE !</a>
+<a name="370"><span class="lineNum">     370 </span>            :         // Run time equals run time of the previous functions times the num_days !</a>
+<a name="371"><span class="lineNum">     371 </span>            :         // (This only represents the vectorization of the previous function over all simulation days...)</a>
+<a name="372"><span class="lineNum">     372 </span><span class="lineNoCov">          0 :         log_warning(&quot;Exporting time series of extrapolated real data. This may take some minutes. &quot;</span></a>
+<a name="373"><span class="lineNum">     373 </span>            :                     &quot;For simulation runs over the same time period, deactivate it.&quot;);</a>
+<a name="374"><span class="lineNum">     374 </span><span class="lineNoCov">          0 :         BOOST_OUTCOME_TRY(</span></a>
+<a name="375"><span class="lineNum">     375 </span>            :             export_input_data_county_timeseries(model, dir, county, date, scaling_factor_inf, scaling_factor_icu,</a>
+<a name="376"><span class="lineNum">     376 </span>            :                                                 num_days, path_join(dir, &quot;pydata/Germany&quot;, &quot;county_divi_ma7.json&quot;),</a>
+<a name="377"><span class="lineNum">     377 </span>            :                                                 path_join(dir, &quot;pydata/Germany&quot;, &quot;cases_all_county_age_ma7.json&quot;),</a>
+<a name="378"><span class="lineNum">     378 </span>            :                                                 path_join(dir, &quot;pydata/Germany&quot;, &quot;county_current_population.json&quot;)));</a>
+<a name="379"><span class="lineNum">     379 </span>            :     }</a>
+<a name="380"><span class="lineNum">     380 </span><span class="lineCov">          2 :     return success();</span></a>
+<a name="381"><span class="lineNum">     381 </span>            : }</a>
+<a name="382"><span class="lineNum">     382 </span>            : </a>
+<a name="383"><span class="lineNum">     383 </span>            : /**</a>
+<a name="384"><span class="lineNum">     384 </span>            :  * @brief reads population data from population files for the specefied nodes</a>
+<a name="385"><span class="lineNum">     385 </span>            :  * @param model vector of model in which the data is set</a>
+<a name="386"><span class="lineNum">     386 </span>            :  * @param date Date for which the data should be read</a>
+<a name="387"><span class="lineNum">     387 </span>            :  * @param county vector of region keys of interest</a>
+<a name="388"><span class="lineNum">     388 </span>            :  * @param scaling_factor_inf factors by which to scale the confirmed cases of rki data</a>
+<a name="389"><span class="lineNum">     389 </span>            :  * @param scaling_factor_icu factor by which to scale the icu cases of divi data</a>
+<a name="390"><span class="lineNum">     390 </span>            :  * @param dir directory of files</a>
+<a name="391"><span class="lineNum">     391 </span>            :  */</a>
+<a name="392"><span class="lineNum">     392 </span>            : template &lt;class Model&gt;</a>
+<a name="393"><span class="lineNum">     393 </span><span class="lineCov">          2 : IOResult&lt;void&gt; read_input_data(std::vector&lt;Model&gt;&amp; model, Date date, const std::vector&lt;int&gt;&amp; node_ids,</span></a>
+<a name="394"><span class="lineNum">     394 </span>            :                                const std::vector&lt;double&gt;&amp; scaling_factor_inf, double scaling_factor_icu,</a>
+<a name="395"><span class="lineNum">     395 </span>            :                                const std::string&amp; data_dir, int num_days = 0, bool export_time_series = false)</a>
+<a name="396"><span class="lineNum">     396 </span>            : {</a>
+<a name="397"><span class="lineNum">     397 </span>            : </a>
+<a name="398"><span class="lineNum">     398 </span><span class="lineCov">          2 :     if (date &gt; Date(2020, 4, 23)) {</span></a>
+<a name="399"><span class="lineNum">     399 </span><span class="lineCov">          2 :         BOOST_OUTCOME_TRY(details::set_divi_data(model, path_join(data_dir, &quot;critical_cases.json&quot;), node_ids, date,</span></a>
+<a name="400"><span class="lineNum">     400 </span>            :                                                  scaling_factor_icu));</a>
+<a name="401"><span class="lineNum">     401 </span>            :     }</a>
+<a name="402"><span class="lineNum">     402 </span>            :     else {</a>
+<a name="403"><span class="lineNum">     403 </span><span class="lineNoCov">          0 :         log_warning(&quot;No DIVI data available for this date&quot;);</span></a>
+<a name="404"><span class="lineNum">     404 </span>            :     }</a>
+<a name="405"><span class="lineNum">     405 </span><span class="lineCov">          4 :     BOOST_OUTCOME_TRY(details::set_confirmed_cases_data(model, path_join(data_dir, &quot;confirmed_cases.json&quot;), node_ids,</span></a>
+<a name="406"><span class="lineNum">     406 </span>            :                                                         date, scaling_factor_inf));</a>
+<a name="407"><span class="lineNum">     407 </span><span class="lineCov">          4 :     BOOST_OUTCOME_TRY(details::set_population_data(model, path_join(data_dir, &quot;population_data.json&quot;), node_ids));</span></a>
+<a name="408"><span class="lineNum">     408 </span>            : </a>
+<a name="409"><span class="lineNum">     409 </span><span class="lineCov">          2 :     if (export_time_series) {</span></a>
+<a name="410"><span class="lineNum">     410 </span>            :         // Use only if extrapolated real data is needed for comparison. EXPENSIVE !</a>
+<a name="411"><span class="lineNum">     411 </span>            :         // Run time equals run time of the previous functions times the num_days !</a>
+<a name="412"><span class="lineNum">     412 </span>            :         // (This only represents the vectorization of the previous function over all simulation days...)</a>
+<a name="413"><span class="lineNum">     413 </span><span class="lineNoCov">          0 :         log_warning(&quot;Exporting time series of extrapolated real data. This may take some minutes. &quot;</span></a>
+<a name="414"><span class="lineNum">     414 </span>            :                     &quot;For simulation runs over the same time period, deactivate it.&quot;);</a>
+<a name="415"><span class="lineNum">     415 </span><span class="lineNoCov">          0 :         BOOST_OUTCOME_TRY(export_input_data_county_timeseries(</span></a>
+<a name="416"><span class="lineNum">     416 </span>            :             model, data_dir, node_ids, date, scaling_factor_inf, scaling_factor_icu, num_days,</a>
+<a name="417"><span class="lineNum">     417 </span>            :             path_join(data_dir, &quot;critical_cases.json&quot;), path_join(data_dir, &quot;confirmed_cases.json&quot;),</a>
+<a name="418"><span class="lineNum">     418 </span>            :             path_join(data_dir, &quot;population_data.json&quot;)));</a>
+<a name="419"><span class="lineNum">     419 </span>            :     }</a>
+<a name="420"><span class="lineNum">     420 </span><span class="lineCov">          4 :     return success();</span></a>
+<a name="421"><span class="lineNum">     421 </span>            : }</a>
+<a name="422"><span class="lineNum">     422 </span>            : </a>
+<a name="423"><span class="lineNum">     423 </span>            : } // namespace osecir</a>
+<a name="424"><span class="lineNum">     424 </span>            : } // namespace mio</a>
+<a name="425"><span class="lineNum">     425 </span>            : </a>
+<a name="426"><span class="lineNum">     426 </span>            : #endif // MEMILIO_HAS_JSONCPP</a>
+<a name="427"><span class="lineNum">     427 </span>            : </a>
+<a name="428"><span class="lineNum">     428 </span>            : #endif // ODESECIR_PARAMETERS_IO_H</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

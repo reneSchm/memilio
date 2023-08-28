@@ -1,0 +1,250 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage.info - memilio/data/analyze_result.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">memilio/data</a> - analyze_result.h<span style="font-size: 80%;"> (source / <a href="analyze_result.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">31</td>
+            <td class="headerCovTableEntry">31</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-08-28 12:00:27</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">7</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntryMed">77.8 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* </a>
+<a name="2"><span class="lineNum">       2 </span>            : * Copyright (C) 2020-2022 German Aerospace Center (DLR-SC)</a>
+<a name="3"><span class="lineNum">       3 </span>            : *</a>
+<a name="4"><span class="lineNum">       4 </span>            : * Authors: Wadim Koslow, Daniel Abele, David Kerkmann, Sascha Korf</a>
+<a name="5"><span class="lineNum">       5 </span>            : *</a>
+<a name="6"><span class="lineNum">       6 </span>            : * Contact: Martin J. Kuehn &lt;Martin.Kuehn@DLR.de&gt;</a>
+<a name="7"><span class="lineNum">       7 </span>            : *</a>
+<a name="8"><span class="lineNum">       8 </span>            : * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</a>
+<a name="9"><span class="lineNum">       9 </span>            : * you may not use this file except in compliance with the License.</a>
+<a name="10"><span class="lineNum">      10 </span>            : * You may obtain a copy of the License at</a>
+<a name="11"><span class="lineNum">      11 </span>            : *</a>
+<a name="12"><span class="lineNum">      12 </span>            : *     http://www.apache.org/licenses/LICENSE-2.0</a>
+<a name="13"><span class="lineNum">      13 </span>            : *</a>
+<a name="14"><span class="lineNum">      14 </span>            : * Unless required by applicable law or agreed to in writing, software</a>
+<a name="15"><span class="lineNum">      15 </span>            : * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</a>
+<a name="16"><span class="lineNum">      16 </span>            : * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</a>
+<a name="17"><span class="lineNum">      17 </span>            : * See the License for the specific language governing permissions and</a>
+<a name="18"><span class="lineNum">      18 </span>            : * limitations under the License.</a>
+<a name="19"><span class="lineNum">      19 </span>            : */</a>
+<a name="20"><span class="lineNum">      20 </span>            : #ifndef MEMILIO_DATA_ANALYZE_RESULT_H</a>
+<a name="21"><span class="lineNum">      21 </span>            : #define MEMILIO_DATA_ANALYZE_RESULT_H</a>
+<a name="22"><span class="lineNum">      22 </span>            : </a>
+<a name="23"><span class="lineNum">      23 </span>            : #include &quot;memilio/utils/time_series.h&quot;</a>
+<a name="24"><span class="lineNum">      24 </span>            : #include &quot;memilio/mobility/metapopulation_mobility_instant.h&quot;</a>
+<a name="25"><span class="lineNum">      25 </span>            : </a>
+<a name="26"><span class="lineNum">      26 </span>            : #include &lt;functional&gt;</a>
+<a name="27"><span class="lineNum">      27 </span>            : #include &lt;vector&gt;</a>
+<a name="28"><span class="lineNum">      28 </span>            : </a>
+<a name="29"><span class="lineNum">      29 </span>            : namespace mio</a>
+<a name="30"><span class="lineNum">      30 </span>            : {</a>
+<a name="31"><span class="lineNum">      31 </span>            : </a>
+<a name="32"><span class="lineNum">      32 </span>            : /**</a>
+<a name="33"><span class="lineNum">      33 </span>            :  * @brief interpolate time series with evenly spaced, integer time points that represent whole days.</a>
+<a name="34"><span class="lineNum">      34 </span>            :  * time points [t0, t1, t2, ..., tmax] interpolated as days [ceil(t0), floor(t0) + 1,...,floor(tmax)].</a>
+<a name="35"><span class="lineNum">      35 </span>            :  * tolerances in the first and last time point (t0 and t_max) are accounted for.</a>
+<a name="36"><span class="lineNum">      36 </span>            :  * values at new time points are linearly interpolated from their immediate neighbors from the old time points.</a>
+<a name="37"><span class="lineNum">      37 </span>            :  * @see interpolate_simulation_result</a>
+<a name="38"><span class="lineNum">      38 </span>            :  * @param simulation_result time series to interpolate</a>
+<a name="39"><span class="lineNum">      39 </span>            :  * @param abs_tol  absolute tolerance given for doubles t0 and tmax to account for small deviations from whole days.</a>
+<a name="40"><span class="lineNum">      40 </span>            :  * @return interpolated time series</a>
+<a name="41"><span class="lineNum">      41 </span>            :  */</a>
+<a name="42"><span class="lineNum">      42 </span>            : TimeSeries&lt;double&gt; interpolate_simulation_result(const TimeSeries&lt;double&gt;&amp; simulation_result,</a>
+<a name="43"><span class="lineNum">      43 </span>            :                                                  const double abs_tol = 1e-14);</a>
+<a name="44"><span class="lineNum">      44 </span>            : </a>
+<a name="45"><span class="lineNum">      45 </span>            : /**</a>
+<a name="46"><span class="lineNum">      46 </span>            :  * @brief interpolate time series with freely chosen time points that lie in between the time points of the given time series up to a given tolerance.</a>
+<a name="47"><span class="lineNum">      47 </span>            :  * values at new time points are linearly interpolated from their immediate neighbors from the old time points.</a>
+<a name="48"><span class="lineNum">      48 </span>            :  * @param simulation_result time series to interpolate</a>
+<a name="49"><span class="lineNum">      49 </span>            :  * @param interpolations_times std::vector of time points at which simulation results are interpolated.</a>
+<a name="50"><span class="lineNum">      50 </span>            :  * @return interpolated time series at given interpolation points</a>
+<a name="51"><span class="lineNum">      51 </span>            :  */</a>
+<a name="52"><span class="lineNum">      52 </span>            : TimeSeries&lt;double&gt; interpolate_simulation_result(const TimeSeries&lt;double&gt;&amp; simulation_result,</a>
+<a name="53"><span class="lineNum">      53 </span>            :                                                  const std::vector&lt;double&gt;&amp; interpolation_times);</a>
+<a name="54"><span class="lineNum">      54 </span>            : </a>
+<a name="55"><span class="lineNum">      55 </span>            : /**</a>
+<a name="56"><span class="lineNum">      56 </span>            :  * helper template, type returned by overload interpolate_simulation_result(T t)</a>
+<a name="57"><span class="lineNum">      57 </span>            :  */</a>
+<a name="58"><span class="lineNum">      58 </span>            : template &lt;class T&gt;</a>
+<a name="59"><span class="lineNum">      59 </span>            : using InterpolateResultT = std::decay_t&lt;decltype(interpolate_simulation_result(std::declval&lt;T&gt;()))&gt;;</a>
+<a name="60"><span class="lineNum">      60 </span>            : </a>
+<a name="61"><span class="lineNum">      61 </span>            : /**</a>
+<a name="62"><span class="lineNum">      62 </span>            :  * @brief Interpolates results of all runs with evenly spaced, integer time points that represent whole days.</a>
+<a name="63"><span class="lineNum">      63 </span>            :  * @see interpolate_simulation_result</a>
+<a name="64"><span class="lineNum">      64 </span>            :  * @param ensemble_result result of multiple simulations (single TimeSeries or Graph)</a>
+<a name="65"><span class="lineNum">      65 </span>            :  * @return interpolated time series, one (or as many as nodes in the graph) per result in the ensemble</a>
+<a name="66"><span class="lineNum">      66 </span>            :  */</a>
+<a name="67"><span class="lineNum">      67 </span>            : template &lt;class T&gt;</a>
+<a name="68"><span class="lineNum">      68 </span><span class="lineCov">          1 : std::vector&lt;InterpolateResultT&lt;T&gt;&gt; interpolate_ensemble_results(const std::vector&lt;T&gt;&amp; ensemble_results)</span></a>
+<a name="69"><span class="lineNum">      69 </span>            : {</a>
+<a name="70"><span class="lineNum">      70 </span><span class="lineCov">          1 :     std::vector&lt;InterpolateResultT&lt;T&gt;&gt; interpolated;</span></a>
+<a name="71"><span class="lineNum">      71 </span><span class="lineCov">          1 :     interpolated.reserve(ensemble_results.size());</span></a>
+<a name="72"><span class="lineNum">      72 </span><span class="lineCov">          1 :     std::transform(ensemble_results.begin(), ensemble_results.end(), std::back_inserter(interpolated), [](auto&amp; run) {</span></a>
+<a name="73"><span class="lineNum">      73 </span><span class="lineCov">          2 :         return interpolate_simulation_result(run);</span></a>
+<a name="74"><span class="lineNum">      74 </span>            :     });</a>
+<a name="75"><span class="lineNum">      75 </span><span class="lineCov">          1 :     return interpolated;</span></a>
+<a name="76"><span class="lineNum">      76 </span>            : }</a>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<a name="78"><span class="lineNum">      78 </span>            : std::vector&lt;std::vector&lt;TimeSeries&lt;double&gt;&gt;&gt;</a>
+<a name="79"><span class="lineNum">      79 </span>            : sum_nodes(const std::vector&lt;std::vector&lt;TimeSeries&lt;double&gt;&gt;&gt;&amp; ensemble_result);</a>
+<a name="80"><span class="lineNum">      80 </span>            : </a>
+<a name="81"><span class="lineNum">      81 </span>            : /**</a>
+<a name="82"><span class="lineNum">      82 </span>            :  * @brief computes mean of each compartment, node, and time point over all runs</a>
+<a name="83"><span class="lineNum">      83 </span>            :  * input must be uniform as returned by interpolated_ensemble_result:</a>
+<a name="84"><span class="lineNum">      84 </span>            :  * same number of nodes, same time points and elements.</a>
+<a name="85"><span class="lineNum">      85 </span>            :  * @see interpolated_ensemble_result</a>
+<a name="86"><span class="lineNum">      86 </span>            :  * @param ensemble_results uniform results of multiple simulation runs</a>
+<a name="87"><span class="lineNum">      87 </span>            :  * @return mean of the results over all runs</a>
+<a name="88"><span class="lineNum">      88 </span>            :  */</a>
+<a name="89"><span class="lineNum">      89 </span>            : std::vector&lt;TimeSeries&lt;double&gt;&gt; ensemble_mean(const std::vector&lt;std::vector&lt;TimeSeries&lt;double&gt;&gt;&gt;&amp; ensemble_results);</a>
+<a name="90"><span class="lineNum">      90 </span>            : </a>
+<a name="91"><span class="lineNum">      91 </span>            : /**</a>
+<a name="92"><span class="lineNum">      92 </span>            :  * @brief computes the p percentile of the result for each compartment, node, and time point.</a>
+<a name="93"><span class="lineNum">      93 </span>            :  * Produces for each compartment the value that that is bigger than approximately</a>
+<a name="94"><span class="lineNum">      94 </span>            :  * a p-th share of the values of this compartment over all runs.</a>
+<a name="95"><span class="lineNum">      95 </span>            :  * input must be uniform as returned by interpolated_ensemble_result:</a>
+<a name="96"><span class="lineNum">      96 </span>            :  * same number of nodes, same time points and elements.</a>
+<a name="97"><span class="lineNum">      97 </span>            :  * @see interpolated_ensemble_result</a>
+<a name="98"><span class="lineNum">      98 </span>            :  * @param ensemble_result uniform results of multiple simulation runs</a>
+<a name="99"><span class="lineNum">      99 </span>            :  * @param p percentile value in open interval (0, 1)</a>
+<a name="100"><span class="lineNum">     100 </span>            :  * @return p percentile of the results over all runs</a>
+<a name="101"><span class="lineNum">     101 </span>            :  */</a>
+<a name="102"><span class="lineNum">     102 </span>            : std::vector&lt;TimeSeries&lt;double&gt;&gt; ensemble_percentile(const std::vector&lt;std::vector&lt;TimeSeries&lt;double&gt;&gt;&gt;&amp; ensemble_result,</a>
+<a name="103"><span class="lineNum">     103 </span>            :                                                     double p);</a>
+<a name="104"><span class="lineNum">     104 </span>            : /**</a>
+<a name="105"><span class="lineNum">     105 </span>            :  * interpolate time series with evenly spaced, integer time points for each node.</a>
+<a name="106"><span class="lineNum">     106 </span>            :  * @see interpolate_simulation_result</a>
+<a name="107"><span class="lineNum">     107 </span>            :  * @param graph_result graph of simulations whose results will be interpolated</a>
+<a name="108"><span class="lineNum">     108 </span>            :  * @return one interpolated time series per node</a>
+<a name="109"><span class="lineNum">     109 </span>            :  */</a>
+<a name="110"><span class="lineNum">     110 </span>            : template &lt;class Simulation&gt;</a>
+<a name="111"><span class="lineNum">     111 </span>            : std::vector&lt;TimeSeries&lt;double&gt;&gt;</a>
+<a name="112"><span class="lineNum">     112 </span><span class="lineCov">          7 : interpolate_simulation_result(const Graph&lt;SimulationNode&lt;Simulation&gt;, MigrationEdge&gt;&amp; graph_result)</span></a>
+<a name="113"><span class="lineNum">     113 </span>            : {</a>
+<a name="114"><span class="lineNum">     114 </span><span class="lineCov">          7 :     std::vector&lt;TimeSeries&lt;double&gt;&gt; interpolated;</span></a>
+<a name="115"><span class="lineNum">     115 </span><span class="lineCov">          7 :     interpolated.reserve(graph_result.nodes().size());</span></a>
+<a name="116"><span class="lineNum">     116 </span><span class="lineCov">          7 :     std::transform(graph_result.nodes().begin(), graph_result.nodes().end(), std::back_inserter(interpolated),</span></a>
+<a name="117"><span class="lineNum">     117 </span><span class="lineCov">         14 :                    [](auto&amp; n) {</span></a>
+<a name="118"><span class="lineNum">     118 </span><span class="lineCov">         14 :                        return interpolate_simulation_result(n.property.get_result());</span></a>
+<a name="119"><span class="lineNum">     119 </span>            :                    });</a>
+<a name="120"><span class="lineNum">     120 </span><span class="lineCov">          7 :     return interpolated;</span></a>
+<a name="121"><span class="lineNum">     121 </span>            : }</a>
+<a name="122"><span class="lineNum">     122 </span>            : </a>
+<a name="123"><span class="lineNum">     123 </span>            : /**</a>
+<a name="124"><span class="lineNum">     124 </span>            :  * Compute the distance between two SECIR simulation results.</a>
+<a name="125"><span class="lineNum">     125 </span>            :  * The distance is the 2-norm of the element-wise difference of the two results.</a>
+<a name="126"><span class="lineNum">     126 </span>            :  * The two results (e.g. output of interpolate_simulation_result) must have the same dimensions and number of time points.</a>
+<a name="127"><span class="lineNum">     127 </span>            :  * @param result1 first result.</a>
+<a name="128"><span class="lineNum">     128 </span>            :  * @param result2 second result.</a>
+<a name="129"><span class="lineNum">     129 </span>            :  * @return Computed distance between result1 and result2.</a>
+<a name="130"><span class="lineNum">     130 </span>            :  */</a>
+<a name="131"><span class="lineNum">     131 </span>            : double result_distance_2norm(const std::vector&lt;mio::TimeSeries&lt;double&gt;&gt;&amp; result1,</a>
+<a name="132"><span class="lineNum">     132 </span>            :                              const std::vector&lt;mio::TimeSeries&lt;double&gt;&gt;&amp; result2);</a>
+<a name="133"><span class="lineNum">     133 </span>            : </a>
+<a name="134"><span class="lineNum">     134 </span>            : /**</a>
+<a name="135"><span class="lineNum">     135 </span>            :  * Compute the distance between two compartment model simulation results in one compartment.</a>
+<a name="136"><span class="lineNum">     136 </span>            :  * The distance is the 2-norm of the element-wise difference of the two results in the specified compartment.</a>
+<a name="137"><span class="lineNum">     137 </span>            :  * The two results (e.g. output of interpolate_simulation_result) must have the same dimensions and number of time points.</a>
+<a name="138"><span class="lineNum">     138 </span>            :  * @tparam InfectionState enum type that defines the compartments of the model that produced the results.</a>
+<a name="139"><span class="lineNum">     139 </span>            :  * @param result1 first result.</a>
+<a name="140"><span class="lineNum">     140 </span>            :  * @param result2 second result.</a>
+<a name="141"><span class="lineNum">     141 </span>            :  * @param compartment the compartment to compare.</a>
+<a name="142"><span class="lineNum">     142 </span>            :  * @return Computed distance between result1 and result2.</a>
+<a name="143"><span class="lineNum">     143 </span>            :  */</a>
+<a name="144"><span class="lineNum">     144 </span>            : template &lt;class InfectionState&gt;</a>
+<a name="145"><span class="lineNum">     145 </span><span class="lineCov">          2 : double result_distance_2norm(const std::vector&lt;mio::TimeSeries&lt;double&gt;&gt;&amp; result1,</span></a>
+<a name="146"><span class="lineNum">     146 </span>            :                              const std::vector&lt;mio::TimeSeries&lt;double&gt;&gt;&amp; result2, InfectionState compartment)</a>
+<a name="147"><span class="lineNum">     147 </span>            : {</a>
+<a name="148"><span class="lineNum">     148 </span><span class="lineCov">          2 :     assert(result1.size() == result2.size());</span></a>
+<a name="149"><span class="lineNum">     149 </span><span class="lineCov">          2 :     assert(result1.size() &gt; 0);</span></a>
+<a name="150"><span class="lineNum">     150 </span><span class="lineCov">          2 :     assert(result1[0].get_num_time_points() &gt; 0);</span></a>
+<a name="151"><span class="lineNum">     151 </span><span class="lineCov">          2 :     assert(result1[0].get_num_elements() &gt; 0);</span></a>
+<a name="152"><span class="lineNum">     152 </span>            : </a>
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">          2 :     auto num_compartments = Eigen::Index(InfectionState::Count);</span></a>
+<a name="154"><span class="lineNum">     154 </span><span class="lineCov">          2 :     auto num_age_groups   = result1[0].get_num_elements() / num_compartments;</span></a>
+<a name="155"><span class="lineNum">     155 </span>            : </a>
+<a name="156"><span class="lineNum">     156 </span><span class="lineCov">          2 :     auto norm_sqr = 0.0;</span></a>
+<a name="157"><span class="lineNum">     157 </span><span class="lineCov">          6 :     for (auto iter_node1 = result1.begin(), iter_node2 = result2.begin(); iter_node1 &lt; result1.end();</span></a>
+<a name="158"><span class="lineNum">     158 </span><span class="lineCov">          4 :          ++iter_node1, ++iter_node2) {</span></a>
+<a name="159"><span class="lineNum">     159 </span><span class="lineCov">         12 :         for (Eigen::Index time_idx = 0; time_idx &lt; iter_node1-&gt;get_num_time_points(); ++time_idx) {</span></a>
+<a name="160"><span class="lineNum">     160 </span><span class="lineCov">         16 :             auto v1 = (*iter_node1)[time_idx];</span></a>
+<a name="161"><span class="lineNum">     161 </span><span class="lineCov">         16 :             auto v2 = (*iter_node2)[time_idx];</span></a>
+<a name="162"><span class="lineNum">     162 </span><span class="lineCov">         16 :             for (Eigen::Index age_idx = 0; age_idx &lt; num_age_groups; ++age_idx) {</span></a>
+<a name="163"><span class="lineNum">     163 </span><span class="lineCov">          8 :                 auto d1 = v1[age_idx * num_compartments + Eigen::Index(compartment)];</span></a>
+<a name="164"><span class="lineNum">     164 </span><span class="lineCov">          8 :                 auto d2 = v2[age_idx * num_compartments + Eigen::Index(compartment)];</span></a>
+<a name="165"><span class="lineNum">     165 </span><span class="lineCov">          8 :                 norm_sqr += (d1 - d2) * (d1 - d2);</span></a>
+<a name="166"><span class="lineNum">     166 </span>            :             }</a>
+<a name="167"><span class="lineNum">     167 </span>            :         }</a>
+<a name="168"><span class="lineNum">     168 </span>            :     }</a>
+<a name="169"><span class="lineNum">     169 </span><span class="lineCov">          2 :     return std::sqrt(norm_sqr);</span></a>
+<a name="170"><span class="lineNum">     170 </span>            : }</a>
+<a name="171"><span class="lineNum">     171 </span>            : </a>
+<a name="172"><span class="lineNum">     172 </span>            : } // namespace mio</a>
+<a name="173"><span class="lineNum">     173 </span>            : </a>
+<a name="174"><span class="lineNum">     174 </span>            : #endif //MEMILIO_DATA_ANALYZE_RESULT_H</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,612 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage.info - memilio/epidemiology/contact_matrix.h - functions</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">memilio/epidemiology</a> - contact_matrix.h<span style="font-size: 80%;"> (<a href="contact_matrix.h.gcov.html">source</a> / functions)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">129</td>
+            <td class="headerCovTableEntry">134</td>
+            <td class="headerCovTableEntryHi">96.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-08-28 12:00:27</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">125</td>
+            <td class="headerCovTableEntry">135</td>
+            <td class="headerCovTableEntryHi">92.6 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <center>
+  <table width="60%" cellpadding=1 cellspacing=1 border=0>
+    <tr><td><br></td></tr>
+    <tr>
+      <td width="80%" class="tableHead">Function Name <span class="tableHeadSort"><img src="../../glass.png" width=10 height=14 alt="Sort by function name" title="Sort by function name" border=0></span></td>
+      <td width="20%" class="tableHead">Hit count <span class="tableHeadSort"><a href="contact_matrix.h.func-sort-c.html"><img src="../../updown.png" width=10 height=14 alt="Sort by hit count" title="Sort by hit count" border=0></a></span></td>
+    </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#519">boost::outcome_v2::basic_result&lt;mio::ContactMatrix, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::ContactMatrix::deserialize&lt;mio::JsonContext&gt;(mio::JsonContext&amp;)</a></td>
+              <td class="coverFnHi">9</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#519">boost::outcome_v2::basic_result&lt;mio::ContactMatrix, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::ContactMatrix::deserialize&lt;mio::BinarySerializerContext&gt;(mio::BinarySerializerContext&amp;)</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#549">boost::outcome_v2::basic_result&lt;mio::ContactMatrixGroup, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::ContactMatrixGroup::deserialize&lt;mio::JsonContext&gt;(mio::JsonContext&amp;)</a></td>
+              <td class="coverFnHi">9</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#549">boost::outcome_v2::basic_result&lt;mio::ContactMatrixGroup, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::ContactMatrixGroup::deserialize&lt;mio::BinarySerializerContext&gt;(mio::BinarySerializerContext&amp;)</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt;::add_damping&lt;Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, 0, Eigen::OuterStride&lt;-1&gt; &gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const&amp;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, 0, Eigen::OuterStride&lt;-1&gt; &gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, 0, Eigen::OuterStride&lt;-1&gt; &gt; const&gt;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;&gt;(Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, 0, Eigen::OuterStride&lt;-1&gt; &gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const&amp;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, 0, Eigen::OuterStride&lt;-1&gt; &gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, 0, Eigen::OuterStride&lt;-1&gt; &gt; const&gt;&amp;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;)</a></td>
+              <td class="coverFnHi">3</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt;::add_damping&lt;Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const&amp;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const&gt;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;&gt;(Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const&amp;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const&gt;&amp;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;)</a></td>
+              <td class="coverFnHi">4</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt;::add_damping&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;&gt;(Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;)</a></td>
+              <td class="coverFnHi">3</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt;::add_damping&lt;double, mio::DampingLevel, mio::DampingType, mio::SimulationTime&gt;(double&amp;&amp;, mio::DampingLevel&amp;&amp;, mio::DampingType&amp;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnHi">18</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#123">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt;::get_dampings()</a></td>
+              <td class="coverFnHi">78</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#103">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt;::remove_damping(unsigned long)</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#84">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt;::DampingMatrixExpression&lt;int, int, void&gt;(int, int)</a></td>
+              <td class="coverFnHi">4</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#71">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt;(Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">4</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#56">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt;(Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt; const&amp;, Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">4</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::add_damping&lt;Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, 0, Eigen::InnerStride&lt;1&gt; &gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const&amp;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, 0, Eigen::InnerStride&lt;1&gt; &gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, 0, Eigen::InnerStride&lt;1&gt; &gt; const&gt;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;&gt;(Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, 0, Eigen::InnerStride&lt;1&gt; &gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const&amp;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, 0, Eigen::InnerStride&lt;1&gt; &gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, 0, Eigen::InnerStride&lt;1&gt; &gt; const&gt;&amp;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;)</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::add_damping&lt;Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt;, Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const&amp;, Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const&gt;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;&gt;(Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt;, Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const&amp;, Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const&gt;&amp;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;)</a></td>
+              <td class="coverFnLo">0</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::add_damping&lt;Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const&amp;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;&gt;(Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const&amp;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;&amp;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;)</a></td>
+              <td class="coverFnLo">0</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::add_damping&lt;Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, 0, Eigen::InnerStride&lt;1&gt; &gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; &gt; const&amp;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, 0, Eigen::InnerStride&lt;1&gt; &gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, 0, Eigen::InnerStride&lt;1&gt; &gt; const&gt;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;&gt;(Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, 0, Eigen::InnerStride&lt;1&gt; &gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; &gt; const&amp;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, 0, Eigen::InnerStride&lt;1&gt; &gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const, 0, Eigen::InnerStride&lt;1&gt; &gt; const&gt;&amp;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;)</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::add_damping&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; const&amp;&gt;(mio::Damping&lt;mio::ColumnVectorShape&gt; const&amp;)</a></td>
+              <td class="coverFnLo">0</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::add_damping&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;&amp;, mio::SimulationTime&gt;(Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnHi">9</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::add_damping&lt;Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;&amp;, mio::DampingLevel, mio::DampingType, mio::SimulationTime&gt;(Eigen::CwiseNullaryOp&lt;mio::make_migration_damping_vector&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;&gt;(mio::ColumnVectorShape, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&amp;)::{lambda(long)#1}, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;&amp;, mio::DampingLevel&amp;&amp;, mio::DampingType&amp;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnHi">7</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::add_damping&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;&gt;(Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;)</a></td>
+              <td class="coverFnHi">3</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#253">boost::outcome_v2::basic_result&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::deserialize&lt;mio::JsonContext&gt;(mio::JsonContext&amp;)</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#223">boost::outcome_v2::basic_result&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::deserialize&lt;mio::JsonContext, mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;(mio::JsonContext&amp;, std::in_place_type_t&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;)</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#135">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::get_baseline()</a></td>
+              <td class="coverFnHi">468</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#123">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::get_dampings()</a></td>
+              <td class="coverFnHi">25</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#103">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::remove_damping(unsigned long)</a></td>
+              <td class="coverFnLo">0</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#84">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::DampingMatrixExpression&lt;int, void&gt;(int)</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#84">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::DampingMatrixExpression&lt;unsigned long, void&gt;(unsigned long)</a></td>
+              <td class="coverFnHi">4</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#71">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt;(Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">219</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#56">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt;(Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const&amp;, Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">219</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#71">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">12</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#56">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const&amp;, Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">12</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#56">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const&amp;, Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::add_damping&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, mio::SimulationTime&gt;(Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const&amp;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnLo">0</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::add_damping&lt;Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const&amp;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt; const&gt;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;&gt;(Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const&amp;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt; const&gt;&amp;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;)</a></td>
+              <td class="coverFnLo">0</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::add_damping&lt;Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, 0, Eigen::OuterStride&lt;-1&gt; &gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt; &gt; const&amp;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, 0, Eigen::OuterStride&lt;-1&gt; &gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt; const, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, 0, Eigen::OuterStride&lt;-1&gt; &gt; const&gt;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;&gt;(Eigen::CwiseBinaryOp&lt;mio::max&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, 0, Eigen::OuterStride&lt;-1&gt; &gt;&amp;&gt;(Eigen::MatrixBase&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt; &gt; const&amp;, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, 0, Eigen::OuterStride&lt;-1&gt; &gt;&amp;)::{lambda(auto:1, auto:2)#1}, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt; const, Eigen::Ref&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const, 0, Eigen::OuterStride&lt;-1&gt; &gt; const&gt;&amp;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;)</a></td>
+              <td class="coverFnHi">3</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::add_damping&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; const&amp;&gt;(mio::Damping&lt;mio::SquareMatrixShape&gt; const&amp;)</a></td>
+              <td class="coverFnHi">8</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::add_damping&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt;&amp;, mio::DampingLevel, mio::DampingType, mio::SimulationTime&gt;(Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, Eigen::MatrixWrapper&lt;Eigen::CwiseUnaryOp&lt;Eigen::internal::scalar_sqrt_op&lt;double&gt;, Eigen::ArrayWrapper&lt;Eigen::Product&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; const, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt;, Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_difference_op&lt;double, double&gt;, Eigen::Transpose&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; &gt; &gt; const, Eigen::Transpose&lt;Eigen::CwiseBinaryOp&lt;Eigen::internal::scalar_product_op&lt;double, double&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&gt; const&gt; const&gt;, 0&gt; &gt; const&gt; const&gt; const&gt;&amp;, mio::DampingLevel&amp;&amp;, mio::DampingType&amp;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnHi">35</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::add_damping&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;, mio::DampingLevel, mio::DampingType, mio::SimulationTime&gt;(Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;, mio::DampingLevel&amp;&amp;, mio::DampingType&amp;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::add_damping&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;, mio::SimulationTime&gt;(Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnHi">3</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::add_damping&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;&gt;(Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;, mio::DampingLevel&amp;, mio::DampingType&amp;, mio::SimulationTime&amp;)</a></td>
+              <td class="coverFnHi">3</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::add_damping&lt;double&amp;, mio::DampingLevel, mio::DampingType, mio::SimulationTime&gt;(double&amp;, mio::DampingLevel&amp;&amp;, mio::DampingType&amp;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::add_damping&lt;double, mio::DampingLevel, mio::DampingType, mio::SimulationTime&gt;(double&amp;&amp;, mio::DampingLevel&amp;&amp;, mio::DampingType&amp;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnHi">3</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#94">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::add_damping&lt;double, mio::SimulationTime&gt;(double&amp;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnHi">26</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#223">boost::outcome_v2::basic_result&lt;mio::ContactMatrix, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::deserialize&lt;mio::JsonContext, mio::ContactMatrix&gt;(mio::JsonContext&amp;, std::in_place_type_t&lt;mio::ContactMatrix&gt;)</a></td>
+              <td class="coverFnHi">9</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#223">boost::outcome_v2::basic_result&lt;mio::ContactMatrix, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::deserialize&lt;mio::BinarySerializerContext, mio::ContactMatrix&gt;(mio::BinarySerializerContext&amp;, std::in_place_type_t&lt;mio::ContactMatrix&gt;)</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#147">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::get_minimum()</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#135">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::get_baseline()</a></td>
+              <td class="coverFnHi">34</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#123">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::get_dampings()</a></td>
+              <td class="coverFnHi">46</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#111">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::clear_dampings()</a></td>
+              <td class="coverFnHi">39</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#103">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::remove_damping(unsigned long)</a></td>
+              <td class="coverFnLo">0</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#84">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::DampingMatrixExpression&lt;int, void&gt;(int)</a></td>
+              <td class="coverFnHi">27</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#84">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::DampingMatrixExpression&lt;long, void&gt;(long)</a></td>
+              <td class="coverFnHi">72</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#84">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::DampingMatrixExpression&lt;unsigned long, void&gt;(unsigned long)</a></td>
+              <td class="coverFnLo">0</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#71">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt;(Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">137</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#56">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt;(Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt; const&amp;, Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">137</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#71">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::CwiseNullaryOp&lt;TestUncertain_uncertain_matrix_Test::TestBody()::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt;(Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;TestUncertain_uncertain_matrix_Test::TestBody()::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#56">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::CwiseNullaryOp&lt;TestUncertain_uncertain_matrix_Test::TestBody()::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt;(Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;TestUncertain_uncertain_matrix_Test::TestBody()::{lambda(auto:1, auto:2)#1}, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt; const&amp;, Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#56">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;, Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const&amp;, Eigen::MatrixBase&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#56">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::DampingMatrixExpression&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt;(Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const&amp;, Eigen::MatrixBase&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">10</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#355">void mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::add_damping&lt;Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const, mio::SimulationTime&gt;(Eigen::CwiseNullaryOp&lt;Eigen::internal::scalar_constant_op&lt;double&gt;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; &gt; const&amp;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnLo">0</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#355">void mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::add_damping&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;, mio::SimulationTime&gt;(Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnHi">3</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#355">void mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::add_damping&lt;double, mio::DampingLevel, mio::DampingType, mio::SimulationTime&gt;(double&amp;&amp;, mio::DampingLevel&amp;&amp;, mio::DampingType&amp;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#355">void mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::add_damping&lt;double, mio::SimulationTime&gt;(double&amp;&amp;, mio::SimulationTime&amp;&amp;)</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#447">boost::outcome_v2::basic_result&lt;mio::ContactMatrixGroup, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::deserialize&lt;mio::JsonContext, mio::ContactMatrixGroup&gt;(mio::JsonContext&amp;, std::in_place_type_t&lt;mio::ContactMatrixGroup&gt;)</a></td>
+              <td class="coverFnHi">9</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#447">boost::outcome_v2::basic_result&lt;mio::ContactMatrixGroup, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::deserialize&lt;mio::BinarySerializerContext, mio::ContactMatrixGroup&gt;(mio::BinarySerializerContext&amp;, std::in_place_type_t&lt;mio::ContactMatrixGroup&gt;)</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#365">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::clear_dampings()</a></td>
+              <td class="coverFnHi">39</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#406">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::end()</a></td>
+              <td class="coverFnHi">48</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#402">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::begin()</a></td>
+              <td class="coverFnHi">48</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#304">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::DampingMatrixExpressionGroup(std::vector&lt;mio::ContactMatrix, std::allocator&lt;mio::ContactMatrix&gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">10</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#298">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::DampingMatrixExpressionGroup(std::initializer_list&lt;mio::ContactMatrix&gt;)</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#288">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::DampingMatrixExpressionGroup&lt;int, int&gt;(unsigned long, int)</a></td>
+              <td class="coverFnHi">19</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#288">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::DampingMatrixExpressionGroup&lt;long, int&gt;(unsigned long, long)</a></td>
+              <td class="coverFnHi">71</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#288">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::DampingMatrixExpressionGroup&lt;unsigned long, int&gt;(unsigned long, unsigned long)</a></td>
+              <td class="coverFnLo">0</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#313">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::operator[](unsigned long)</a></td>
+              <td class="coverFnHi">161</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#406">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt; &gt;::end()</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#402">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt; &gt;::begin()</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#288">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt; &gt;::DampingMatrixExpressionGroup&lt;int, int, int&gt;(unsigned long, int, int)</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#313">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt; &gt;::operator[](unsigned long)</a></td>
+              <td class="coverFnHi">13</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#478">boost::outcome_v2::basic_result&lt;mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::deserialize&lt;mio::JsonContext&gt;(mio::JsonContext&amp;)</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#447">boost::outcome_v2::basic_result&lt;mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::deserialize&lt;mio::JsonContext, mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt; &gt;(mio::JsonContext&amp;, std::in_place_type_t&lt;mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt; &gt;)</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#406">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::end()</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#402">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::begin()</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#304">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::DampingMatrixExpressionGroup(std::vector&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;, std::allocator&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt; &gt; const&amp;)</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#298">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::DampingMatrixExpressionGroup(std::initializer_list&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;)</a></td>
+              <td class="coverFnHi">10</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#288">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::DampingMatrixExpressionGroup&lt;int, int&gt;(unsigned long, int)</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#288">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::DampingMatrixExpressionGroup&lt;unsigned long, int&gt;(unsigned long, unsigned long)</a></td>
+              <td class="coverFnHi">4</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#313">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::operator[](unsigned long)</a></td>
+              <td class="coverFnHi">264</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#509">mio::ContactMatrix::get_num_groups() const</a></td>
+              <td class="coverFnHi">125</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#539">mio::ContactMatrixGroup::get_num_groups() const</a></td>
+              <td class="coverFnHi">112</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#119">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt;::get_dampings() const</a></td>
+              <td class="coverFnHi">74</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#155">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::RectMatrixShape&gt; &gt; &gt;::get_shape() const</a></td>
+              <td class="coverFnHi">8</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#143">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::get_minimum() const</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#131">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::get_baseline() const</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#119">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::get_dampings() const</a></td>
+              <td class="coverFnHi">37</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#186">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::get_matrix_at(mio::SimulationTime) const</a></td>
+              <td class="coverFnHi">458</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#190">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::get_matrix_at(double) const</a></td>
+              <td class="coverFnHi">458</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#155">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::get_shape() const</a></td>
+              <td class="coverFnHi">114</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#210">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::serialize&lt;mio::JsonContext&gt;(mio::JsonContext&amp;) const</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#163">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::operator==(mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; const&amp;) const</a></td>
+              <td class="coverFnHi">4</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#143">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::get_minimum() const</a></td>
+              <td class="coverFnHi">24</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#131">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::get_baseline() const</a></td>
+              <td class="coverFnHi">24</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#119">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::get_dampings() const</a></td>
+              <td class="coverFnHi">79</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#186">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::get_matrix_at(mio::SimulationTime) const</a></td>
+              <td class="coverFnHi">2437939</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#190">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::get_matrix_at(double) const</a></td>
+              <td class="coverFnHi">2437939</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#155">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::get_shape() const</a></td>
+              <td class="coverFnHi">4872895</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#210">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::serialize&lt;mio::JsonContext&gt;(mio::JsonContext&amp;) const</a></td>
+              <td class="coverFnHi">23</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#210">void mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::serialize&lt;mio::BinarySerializerContext&gt;(mio::BinarySerializerContext&amp;) const</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#163">mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::operator==(mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt; const&amp;) const</a></td>
+              <td class="coverFnHi">11</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#389">auto mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::get_matrix_at&lt;double&gt;(double) const</a></td>
+              <td class="coverFnHi">2436378</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#325">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::get_num_matrices() const</a></td>
+              <td class="coverFnHi">18</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#414">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::end() const</a></td>
+              <td class="coverFnHi">24</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#410">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::begin() const</a></td>
+              <td class="coverFnHi">24</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#333">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::get_shape() const</a></td>
+              <td class="coverFnHi">4872756</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#435">void mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::serialize&lt;mio::JsonContext&gt;(mio::JsonContext&amp;) const</a></td>
+              <td class="coverFnHi">23</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#435">void mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::serialize&lt;mio::BinarySerializerContext&gt;(mio::BinarySerializerContext&amp;) const</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#341">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::operator==(mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt; const&amp;) const</a></td>
+              <td class="coverFnHi">11</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#317">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::operator[](unsigned long) const</a></td>
+              <td class="coverFnHi">112</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#389">auto mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::get_matrix_at&lt;double&gt;(double) const</a></td>
+              <td class="coverFnHi">40</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#414">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::end() const</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#410">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::begin() const</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#333">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::get_shape() const</a></td>
+              <td class="coverFnHi">96</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#435">void mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::serialize&lt;mio::JsonContext&gt;(mio::JsonContext&amp;) const</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#341">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::operator==(mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt; const&amp;) const</a></td>
+              <td class="coverFnHi">4</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#317">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::operator[](unsigned long) const</a></td>
+              <td class="coverFnHi">6</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#231">boost::outcome_v2::basic_result&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;::deserialize&lt;mio::JsonContext, mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;(mio::JsonContext&amp;, std::in_place_type_t&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;)::{lambda(auto:1&amp;&amp;, auto:2&amp;&amp;, auto:3&amp;&amp;)#1}::operator()&lt;Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&amp;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&amp;, std::vector&lt;mio::Damping&lt;mio::ColumnVectorShape&gt;, std::allocator&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; const&amp;&gt;(mio::JsonContext&amp;&amp;, Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt; const&amp;, std::vector&lt;mio::Damping&lt;mio::ColumnVectorShape&gt;, std::allocator&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; const&amp;) const</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#231">boost::outcome_v2::basic_result&lt;mio::ContactMatrix, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::deserialize&lt;mio::JsonContext, mio::ContactMatrix&gt;(mio::JsonContext&amp;, std::in_place_type_t&lt;mio::ContactMatrix&gt;)::{lambda(auto:1&amp;&amp;, auto:2&amp;&amp;, auto:3&amp;&amp;)#1}::operator()&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const&amp;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const&amp;, std::vector&lt;mio::Damping&lt;mio::SquareMatrixShape&gt;, std::allocator&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt; const&amp;&gt;(mio::JsonContext&amp;&amp;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const&amp;, std::vector&lt;mio::Damping&lt;mio::SquareMatrixShape&gt;, std::allocator&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt; const&amp;) const</a></td>
+              <td class="coverFnHi">9</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#231">boost::outcome_v2::basic_result&lt;mio::ContactMatrix, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt;::deserialize&lt;mio::BinarySerializerContext, mio::ContactMatrix&gt;(mio::BinarySerializerContext&amp;, std::in_place_type_t&lt;mio::ContactMatrix&gt;)::{lambda(auto:1&amp;&amp;, auto:2&amp;&amp;, auto:3&amp;&amp;)#1}::operator()&lt;Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const&amp;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const&amp;, std::vector&lt;mio::Damping&lt;mio::SquareMatrixShape&gt;, std::allocator&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt; const&amp;&gt;(mio::BinarySerializerContext&amp;&amp;, Eigen::Matrix&lt;double, -1, -1, 0, -1, -1&gt; const&amp;, std::vector&lt;mio::Damping&lt;mio::SquareMatrixShape&gt;, std::allocator&lt;mio::Damping&lt;mio::SquareMatrixShape&gt; &gt; &gt; const&amp;) const</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#453">boost::outcome_v2::basic_result&lt;mio::ContactMatrixGroup, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::deserialize&lt;mio::JsonContext, mio::ContactMatrixGroup&gt;(mio::JsonContext&amp;, std::in_place_type_t&lt;mio::ContactMatrixGroup&gt;)::{lambda(auto:1&amp;&amp;)#1}::operator()&lt;std::vector&lt;mio::ContactMatrix, std::allocator&lt;mio::ContactMatrix&gt; &gt; const&amp;&gt;(mio::JsonContext&amp;&amp;) const</a></td>
+              <td class="coverFnHi">9</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#453">boost::outcome_v2::basic_result&lt;mio::ContactMatrixGroup, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::deserialize&lt;mio::BinarySerializerContext, mio::ContactMatrixGroup&gt;(mio::BinarySerializerContext&amp;, std::in_place_type_t&lt;mio::ContactMatrixGroup&gt;)::{lambda(auto:1&amp;&amp;)#1}::operator()&lt;std::vector&lt;mio::ContactMatrix, std::allocator&lt;mio::ContactMatrix&gt; &gt; const&amp;&gt;(mio::BinarySerializerContext&amp;&amp;) const</a></td>
+              <td class="coverFnHi">1</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#453">boost::outcome_v2::basic_result&lt;mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;, mio::IOStatus, boost::outcome_v2::policy::all_narrow&gt; mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::deserialize&lt;mio::JsonContext, mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt; &gt;(mio::JsonContext&amp;, std::in_place_type_t&lt;mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt; &gt;)::{lambda(auto:1&amp;&amp;)#1}::operator()&lt;std::vector&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt;, std::allocator&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt; &gt; const&amp;&gt;(mio::JsonContext&amp;&amp;) const</a></td>
+              <td class="coverFnHi">2</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#392">mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::get_matrix_at&lt;double&gt;(double) const::{lambda(long, long)#1}::operator()(long, long) const</a></td>
+              <td class="coverFnHi">2436394</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#392">mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::get_matrix_at&lt;double&gt;(double) const::{lambda(long, long)#1}::operator()(long, long) const</a></td>
+              <td class="coverFnHi">438</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#393">auto mio::DampingMatrixExpressionGroup&lt;mio::ContactMatrix&gt;::get_matrix_at&lt;double&gt;(double) const::{lambda(long, long)#1}::operator()(long, long) const::{lambda(double, auto:1&amp;)#1}::operator()&lt;mio::ContactMatrix const&gt;(double, mio::ContactMatrix const&amp;) const</a></td>
+              <td class="coverFnHi">2436430</td>
+            </tr>
+    <tr>
+              <td class="coverFn"><a href="contact_matrix.h.gcov.html#393">auto mio::DampingMatrixExpressionGroup&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; &gt;::get_matrix_at&lt;double&gt;(double) const::{lambda(long, long)#1}::operator()(long, long) const::{lambda(double, auto:1&amp;)#1}::operator()&lt;mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; const&gt;(double, mio::DampingMatrixExpression&lt;mio::Dampings&lt;mio::Damping&lt;mio::ColumnVectorShape&gt; &gt; &gt; const&amp;) const</a></td>
+              <td class="coverFnHi">438</td>
+            </tr>
+  </table>
+  <br>
+  </center>
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>
