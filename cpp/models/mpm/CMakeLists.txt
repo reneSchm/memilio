@@ -7,6 +7,7 @@ add_library(mpm
     smm.h
     utility.cpp
     utility.h
+    potentials/potential_germany.h
 )
 target_link_libraries(mpm PUBLIC memilio)
 target_include_directories(mpm PUBLIC
