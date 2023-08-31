@@ -4,6 +4,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from shapely.geometry.polygon import Polygon
 
+# download and extract the data into the tools path below. Download link:
+# https://daten.gdz.bkg.bund.de/produkte/vg/vg2500/aktuell/vg2500_12-31.gk3.shape.zip
 map_data = geopandas.read_file(os.path.join(
     os.getcwd(), 'tools/vg2500_12-31.gk3.shape/vg2500/VG2500_LAN.shp'))
 geometries = map_data.geometry

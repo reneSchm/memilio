@@ -1,87 +1,33 @@
 // WORK IN PROGRESS - use at your own risk
 // compile command (requires a proir successfull build of memilio):
-// g++ --std=c++14 -Wall --pedantic -o map_reader map_reader.cpp
+// g++ --std=c++14 -Wall --pedantic -Icpp -Icpp/build/_deps/eigen-src -o map_reader map_reader.cpp cpp/models/mpm/potentials/map_reader.cpp
 // generate pgm's using map.py with .shp files from https://daten.gdz.bkg.bund.de/produkte/vg/vg2500/aktuell/vg2500_12-31.gk3.shape.zip (unpack into tools/)
 
-#include <deque>
-#include <fstream>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <vector>
+#include "cpp/models/mpm/potentials/map_reader.h"
 
-#include "build/_deps/eigen-src/Eigen/Core"
-#define DEBUG(cout_args) std::cerr << cout_args << std::endl << std::flush;
-typedef double ScalarType;
-
-Eigen::MatrixXd read_pgm(std::istream& pgm_file)
-{
-    size_t height, width, color_range;
-    std::string reader;
-    std::stringstream parser;
-    // ignore magic number (P2)
-    std::getline(pgm_file, reader);
-    // get dims
-    std::getline(pgm_file, reader);
-    parser.str(reader);
-    parser >> width >> height;
-    // get color range (max value for colors)
-    std::getline(pgm_file, reader);
-    parser.clear();
-    parser.str(reader);
-    parser >> color_range;
-    // read image data
-    // we assume (0,0) to be at the bottom left
-    Eigen::MatrixXd data(width, height);
-    for (size_t j = height; j > 0; j--) {
-        std::getline(pgm_file, reader);
-        parser.clear();
-        parser.str(reader);
-        for (size_t i = 0; i < width; i++) {
-            parser >> data(i, j - 1);
-            data(i, j - 1) = data(i, j - 1) / color_range;
-        }
-    }
-    return data;
-}
-
-void write_pgm(std::ostream& pgm_file, Eigen::Ref<const Eigen::MatrixXd> image, size_t color_range = 255)
-{
-    // write pgm header
-    pgm_file << "P2\n" << image.rows() << " " << image.cols() << "\n" << color_range << "\n";
-    // write image data
-    // we assume (0,0) to be at the bottom left
-    const auto max = image.maxCoeff();
-    for (Eigen::Index j = image.rows(); j > 0; j--) {
-        for (Eigen::Index i = 0; i < image.cols(); i++) {
-            pgm_file << size_t(image(i, j - 1) / max * color_range);
-            if (i != image.cols() - 1)
-                pgm_file << " ";
-        }
-        pgm_file << "\n";
-    }
-}
+using namespace mio::mpm;
 
 typedef Eigen::Vector2d Position;
+typedef double ScalarType;
 
 // Add neighbouring (matrix) indices to queue
-void enqueue_neighbours_if(const std::pair<ScalarType, ScalarType>& index, const std::pair<ScalarType, ScalarType>& max,
-                           std::deque<std::pair<size_t, size_t>>& queue,
-                           const std::function<bool(size_t, size_t)>& predicate)
-{
-    if (index.first > 0 && predicate(index.first - 1, index.second)) {
-        queue.push_back({index.first - 1, index.second});
-    }
-    if (index.first + 1 < max.first && predicate(index.first + 1, index.second)) {
-        queue.push_back({index.first + 1, index.second});
-    }
-    if (index.second > 0 && predicate(index.first, index.second - 1)) {
-        queue.push_back({index.first, index.second - 1});
-    }
-    if (index.second + 1 < max.second && predicate(index.first, index.second + 1)) {
-        queue.push_back({index.first, index.second + 1});
-    }
-}
+// void enqueue_neighbours_if(const std::pair<ScalarType, ScalarType>& index, const std::pair<ScalarType, ScalarType>& max,
+//                            std::deque<std::pair<size_t, size_t>>& queue,
+//                            const std::function<bool(size_t, size_t)>& predicate)
+// {
+//     if (index.first > 0 && predicate(index.first - 1, index.second)) {
+//         queue.push_back({index.first - 1, index.second});
+//     }
+//     if (index.first + 1 < max.first && predicate(index.first + 1, index.second)) {
+//         queue.push_back({index.first + 1, index.second});
+//     }
+//     if (index.second > 0 && predicate(index.first, index.second - 1)) {
+//         queue.push_back({index.first, index.second - 1});
+//     }
+//     if (index.second + 1 < max.second && predicate(index.first, index.second + 1)) {
+//         queue.push_back({index.first, index.second + 1});
+//     }
+// }
 
 // Add neighbouring (matrix) indices to queue
 void enqueue_neighbours(const std::pair<ScalarType, ScalarType>& index, const std::pair<ScalarType, ScalarType>& max,
@@ -139,12 +85,13 @@ Eigen::MatrixXd find_connected_image_region(Eigen::Ref<const Eigen::MatrixXd> im
 // Eigen::MatrixXd find_bounded_image_region(Eigen::Ref<Eigen::MatrixXd> image, const size_t start_x, const size_t start_y,
 //                                           ScalarType boundary_color, ScalarType color_tolerance = 0);
 
+// should work with any stencil, but odd number of rows/cols is recommended
 void apply_stencil(Eigen::Ref<Eigen::MatrixXd> image, Eigen::Ref<const Eigen::MatrixXd> stencil, ScalarType color,
                    ScalarType color_tolerance = 0)
 {
     const Eigen::Index rows = stencil.rows();
     const Eigen::Index cols = stencil.cols();
-    assert(rows > 0 && cols > 0 && "The stencil must have static size.");
+    assert(rows > 0 && cols > 0);
     Eigen::MatrixXd canvas = Eigen::MatrixXd::Zero(image.rows() + rows, image.cols() + cols);
     // canvas.block(rows / 2, cols / 2, image.rows(), image.cols()) = image;
     for (Eigen::Index i = 0; i < image.rows(); i++) {
@@ -156,6 +103,23 @@ void apply_stencil(Eigen::Ref<Eigen::MatrixXd> image, Eigen::Ref<const Eigen::Ma
         }
     }
     image = canvas.block(rows / 2, cols / 2, image.rows(), image.cols());
+}
+
+void extend_bitmap(Eigen::Ref<Eigen::MatrixXi> image, Eigen::Index width)
+{
+    Eigen::Index extent    = 2 * width + 1;
+    Eigen::MatrixXi canvas = Eigen::MatrixXi::Zero(image.rows() + extent, image.cols() + extent);
+    // canvas.block(rows / 2, cols / 2, image.rows(), image.cols()) = image;
+    for (Eigen::Index i = 0; i < image.rows(); i++) {
+        for (Eigen::Index j = 0; j < image.cols(); j++) {
+            for (Eigen::Index k = 0; k < extent; k++) {
+                for (Eigen::Index l = 0; l < extent; l++) {
+                    canvas(i + k, j + l) |= image(i, j);
+                }
+            }
+        }
+    }
+    image = canvas.block(width, width, image.rows(), image.cols());
 }
 
 std::vector<Position> laender = {
@@ -211,6 +175,38 @@ int main()
     stencil_ext(0, 3) = 0.75;
     stencil_ext(0, 4) = 0.5;
 
+    DEBUG("identify boundary segments")
+    Eigen::MatrixXi boundaries            = Eigen::MatrixXi::Zero(image.rows(), image.cols());
+    Eigen::MatrixXi boundaries_simplified = Eigen::MatrixXi::Zero(image.rows(), image.cols());
+    Eigen::MatrixXi is_outside            = find_connected_image_region(image, 0, 0).cast<int>();
+    extend_bitmap(is_outside, 1);
+    // iterate image, leave out two outermost rows/cols
+    int check_width = 3;
+    for (Eigen::Index i = check_width; i < image.rows() - check_width; i++) {
+        for (Eigen::Index j = check_width; j < image.cols() - check_width; j++) {
+            // skip interior
+            if (canvas(i, j) != 0 or is_outside(i, j))
+                continue;
+            // look for land ids in a 5x5 square
+            u_int16_t ids = 0;
+            for (int k = -check_width; k <= check_width; k++) {
+                for (int l = -check_width; l <= check_width; l++) {
+                    ids |= 1 << (int)(canvas(i + k, j + l) - 1);
+                }
+            }
+            if (num_bits_set(ids) > 1) { // 0 or 1 should only occur on exterior pixels
+                boundaries(i, j)            = ids;
+                boundaries_simplified(i, j) = 2;
+            }
+            else {
+                boundaries_simplified(i, j) = 1;
+            }
+            assert(num_bits_set(ids) < 4);
+        }
+    }
+    extend_bitmap(boundaries, stencil.cols() / 2);
+    extend_bitmap(boundaries_simplified, stencil.cols() / 2);
+
     // DEBUG(stencil.transpose() * stencil);
 
     DEBUG("apply stencil")
@@ -236,6 +232,20 @@ int main()
         return 1;
     }
     write_pgm(ofile, canvas, 16);
+    ofile.close();
+    ofile.open("boundary_ids.pgm");
+    if (!ofile.is_open()) {
+        DEBUG("Could not open file boundary_ids.pgm");
+        return 1;
+    }
+    write_pgm(ofile, boundaries);
+    ofile.close();
+    ofile.open("boundary_simplyfied.pgm");
+    if (!ofile.is_open()) {
+        DEBUG("Could not open file boundary_simplyfied.pgm");
+        return 1;
+    }
+    write_pgm(ofile, boundaries_simplified);
     ofile.close();
 
     // DEBUG("print")

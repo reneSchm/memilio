@@ -5,6 +5,7 @@
 #include "memilio/utils/time_series.h"
 #include "mpm/abm.h"
 #include "mpm/potentials/potential_germany.h"
+#include "mpm/potentials/map_reader.h"
 #include "mpm/model.h"
 #include "mpm/region.h"
 #include "mpm/smm.h"
@@ -254,7 +255,7 @@ int main(int argc, char** argv)
             return 1;
         }
         else {
-            potential = read_pgm(ifile);
+            potential = mio::mpm::read_pgm(ifile);
             ifile.close();
         }
     }
@@ -267,11 +268,7 @@ int main(int argc, char** argv)
             return 1;
         }
         else {
-            metaregions = (16 * read_pgm(ifile))
-                              .unaryExpr([](double c) {
-                                  return std::round(c);
-                              })
-                              .cast<int>();
+            metaregions = mio::mpm::read_pgm_raw(ifile).first;
             ifile.close();
         }
     }

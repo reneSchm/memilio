@@ -8,6 +8,8 @@ add_library(mpm
     utility.cpp
     utility.h
     potentials/potential_germany.h
+    potentials/map_reader.h
+    potentials/map_reader.cpp
 )
 target_link_libraries(mpm PUBLIC memilio)
 target_include_directories(mpm PUBLIC

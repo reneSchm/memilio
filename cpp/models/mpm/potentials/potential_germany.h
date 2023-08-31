@@ -180,7 +180,7 @@ public:
         // }
         const auto land = metaregions(agent.position[0], agent.position[1]);
         if (land > 0) {
-            agent.land = land - 1;
+            agent.land = land - 1; // shift land so we can use it as index
         }
         const bool makes_transition = (land_old != agent.land);
         if (makes_transition) {
@@ -279,34 +279,4 @@ private:
     std::vector<Eigen::MatrixXd> m_number_transitions;
 };
 
-Eigen::MatrixXd read_pgm(std::istream& pgm_file)
-{
-    size_t height, width, color_range;
-    std::string reader;
-    std::stringstream parser;
-    // ignore magic number (P2)
-    std::getline(pgm_file, reader);
-    // get dims
-    std::getline(pgm_file, reader);
-    parser.str(reader);
-    parser >> width >> height;
-    // get color range (max value for colors)
-    std::getline(pgm_file, reader);
-    parser.clear();
-    parser.str(reader);
-    parser >> color_range;
-    // read image data
-    // we assume (0,0) to be at the bottom left
-    Eigen::MatrixXd data(width, height);
-    for (size_t j = height; j > 0; j--) {
-        std::getline(pgm_file, reader);
-        parser.clear();
-        parser.str(reader);
-        for (size_t i = 0; i < width; i++) {
-            parser >> data(i, j - 1);
-            data(i, j - 1) = data(i, j - 1) / color_range;
-        }
-    }
-    return data;
-}
 #endif // POTENTIAL_GERMANY_H_

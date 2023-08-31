@@ -2,6 +2,7 @@
 #include "mpm/utility.h"
 #include "memilio/io/json_serializer.h"
 #include "mpm/potentials/potential_germany.h"
+#include "mpm/potentials/map_reader.h"
 #include "memilio/data/analyze_result.h"
 #include <json/value.h>
 
@@ -432,7 +433,7 @@ int main()
             return 1;
         }
         else {
-            potential = 8 * read_pgm(ifile);
+            potential = 8 * mio::mpm::read_pgm(ifile);
             ifile.close();
         }
     }
@@ -445,11 +446,7 @@ int main()
             return 1;
         }
         else {
-            metaregions = (16 * read_pgm(ifile))
-                              .unaryExpr([](double c) {
-                                  return std::round(c);
-                              })
-                              .cast<int>();
+            metaregions = mio::mpm::read_pgm_raw(ifile).first;
             ifile.close();
         }
     }
