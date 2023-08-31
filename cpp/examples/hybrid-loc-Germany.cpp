@@ -184,7 +184,7 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
             }
         }
         { //move agents from abm to pdmm
-            auto& pop = simPDMM.get_result().get_last_value();
+            auto pop = simPDMM.get_result().get_last_value();
             for (int i = 0; i < (int)InfectionState::Count; i++) {
                 auto& p = pop[simPDMM.get_model().populations.get_flat_index({mio::mpm::Region(8), (InfectionState)i})];
                 if (p > 0) {

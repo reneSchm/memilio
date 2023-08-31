@@ -32,8 +32,8 @@ target_link_libraries(abm_example PRIVATE memilio abm)
 add_executable(abm_minimal_example abm_minimal.cpp)
 target_link_libraries(abm_minimal_example PRIVATE memilio abm)
 
-add_executable(mpm_abm_example mpm_abm.cpp)
-target_link_libraries(mpm_abm_example PRIVATE memilio mpm)
+add_executable(mpm_abm_rate_estimation mpm_abm_rate_estimation.cpp)
+target_link_libraries(mpm_abm_rate_estimation PRIVATE memilio mpm)
 
 add_executable(mpm_pdmm_example mpm_pdmm.cpp)
 target_link_libraries(mpm_pdmm_example PRIVATE memilio mpm)
