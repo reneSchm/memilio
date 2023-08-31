@@ -169,14 +169,14 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
         simABM.advance(t);
         simPDMM.advance(t);
         { //move agents from abm to pdmm
-            auto& agents = simABM.get_model().populations;
-            auto itr     = agents.begin();
+            const auto pop     = simPDMM.get_model().populations;
+            auto simPDMM_state = simPDMM.get_result().get_last_value();
+            auto& agents       = simABM.get_model().populations;
+            auto itr           = agents.begin();
             while (itr != agents.end()) {
                 if (itr->land != 8) {
                     //simPDMM.get_result().get_last_value()[m_model->populations.get_flat_index({rate.from, rate.status})] -= 1;
-                    simPDMM.get_result().get_last_value()[simPDMM.get_model().populations.get_flat_index(
-                        {mio::mpm::Region(itr->land), itr->status})] += 1;
-                    simPDMM.get_model().populations[{mio::mpm::Region(itr->land), itr->status}] += 1;
+                    simPDMM_state[pop.get_flat_index({mio::mpm::Region(itr->land), itr->status})] += 1;
                     itr = agents.erase(itr);
                 }
                 else {
@@ -184,23 +184,14 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
                 }
             }
         }
-        { //move agents from abm to pdmm
-            auto pop = simPDMM.get_result().get_last_value();
+        { //move agents from pdmm to abm
+            const auto pop     = simPDMM.get_model().populations;
+            auto simPDMM_state = simPDMM.get_result().get_last_value();
             for (int i = 0; i < (int)InfectionState::Count; i++) {
-                auto& p = pop[simPDMM.get_model().populations.get_flat_index({mio::mpm::Region(8), (InfectionState)i})];
-                if (p > 0) {
-                    if (floor(p) != p) {
-                        std::cout << "p is not whole\n";
-                    }
-                }
-                for (auto agents =
-                         pop[simPDMM.get_model().populations.get_flat_index({mio::mpm::Region(8), (InfectionState)i})];
-                     agents > 0; --agents) {
-                    // auto& val = simPDMM.get_result().get_last_value()[simPDMM.get_model().populations.get_flat_index(
-                    //     {mio::mpm::Region(8), (InfectionState)i})];
+                auto p = simPDMM_state[pop.get_flat_index({mio::mpm::Region(8), (InfectionState)i})];
+                for (auto& agents = simPDMM_state[pop.get_flat_index({mio::mpm::Region(8), (InfectionState)i})];
+                     agents > 0; agents -= 1) {
                     simABM.get_model().populations.push_back({{420, 765}, (InfectionState)i, focus_region});
-                    simPDMM.get_result().get_last_value()[simPDMM.get_model().populations.get_flat_index(
-                        {mio::mpm::Region(8), (InfectionState)i})] -= 1;
                 }
             }
         }
