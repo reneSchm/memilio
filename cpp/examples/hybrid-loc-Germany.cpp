@@ -10,6 +10,7 @@
 #include "mpm/smm.h"
 #include "mpm/pdmm.h"
 #include "mpm/utility.h"
+#include "memilio/data/analyze_result.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -134,6 +135,11 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
         populations.push_back(pop);
     }
 
+    //delete adoption rates for focus reagion i.e. set rates for focus region to 0
+    adoption_rates.erase(std::remove_if(adoption_rates.begin(), adoption_rates.end(),
+                                        [focus_region](mio::mpm::AdoptionRate<InfectionState> rate) {
+                                            return rate.region == mio::mpm::Region(focus_region);
+                                        }));
     mio::mpm::SMModel<regions, InfectionState> smm;
     smm.parameters.get<mio::mpm::AdoptionRates<InfectionState>>()   = adoption_rates;
     smm.parameters.get<mio::mpm::TransitionRates<InfectionState>>() = transition_rates;
@@ -166,6 +172,9 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
             auto itr     = agents.begin();
             while (itr != agents.end()) {
                 if (itr->land != 8) {
+                    //simPDMM.get_result().get_last_value()[m_model->populations.get_flat_index({rate.from, rate.status})] -= 1;
+                    simPDMM.get_result().get_last_value()[simPDMM.get_model().populations.get_flat_index(
+                        {mio::mpm::Region(itr->land), itr->status})] += 1;
                     simPDMM.get_model().populations[{mio::mpm::Region(itr->land), itr->status}] += 1;
                     itr = agents.erase(itr);
                 }
@@ -175,11 +184,22 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
             }
         }
         { //move agents from abm to pdmm
-            auto& pop = simPDMM.get_model().populations;
+            auto& pop = simPDMM.get_result().get_last_value();
             for (int i = 0; i < (int)InfectionState::Count; i++) {
-                for (auto& agents = pop[{mio::mpm::Region(8), (InfectionState)i}]; agents > 0; agents -= 1) {
-                    //TODO: put agent to center of focus region
+                auto& p = pop[simPDMM.get_model().populations.get_flat_index({mio::mpm::Region(8), (InfectionState)i})];
+                if (p > 0) {
+                    if (floor(p) != p) {
+                        std::cout << "p is not whole\n";
+                    }
+                }
+                for (auto agents =
+                         pop[simPDMM.get_model().populations.get_flat_index({mio::mpm::Region(8), (InfectionState)i})];
+                     agents > 0; --agents) {
+                    // auto& val = simPDMM.get_result().get_last_value()[simPDMM.get_model().populations.get_flat_index(
+                    //     {mio::mpm::Region(8), (InfectionState)i})];
                     simABM.get_model().populations.push_back({{420, 765}, (InfectionState)i, focus_region});
+                    simPDMM.get_result().get_last_value()[simPDMM.get_model().populations.get_flat_index(
+                        {mio::mpm::Region(8), (InfectionState)i})] -= 1;
                 }
             }
         }
@@ -198,20 +218,27 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
         std::copy(c.begin(), c.end(), comps.begin() + i * int(InfectionState::Count));
     }
 
-    auto outpath_abm =
-        "C:/Users/bick_ju/Documents/results/agent_init/outputABMHybrid" + std::to_string(num_agents) + ".txt";
-    auto outpath_pdmm =
-        "C:/Users/bick_ju/Documents/results/agent_init/outputPDMMHybrid" + std::to_string(num_agents) + ".txt";
-    FILE* outfile1 = fopen(outpath_abm.c_str(), "w");
+    auto outpath_abm_int  = "/outputABMHybrid" + std::to_string(num_agents) + "_interpolated.txt";
+    auto outpath_pdmm_int = "/outputPDMMHybrid" + std::to_string(num_agents) + "_interpolated.txt";
+    auto outpath_abm      = "/outputABMHybrid" + std::to_string(num_agents) + ".txt";
+    auto outpath_pdmm     = "/outputPDMMHybrid" + std::to_string(num_agents) + ".txt";
+    FILE* outfile1        = fopen(outpath_abm.c_str(), "w");
     mio::mpm::print_to_file(outfile1, simABM.get_result(), comps);
     fclose(outfile1);
     FILE* outfile2 = fopen(outpath_pdmm.c_str(), "w");
     mio::mpm::print_to_file(outfile2, simPDMM.get_result(), comps);
     fclose(outfile2);
+    FILE* outfile3 = fopen(outpath_abm_int.c_str(), "w");
+    mio::mpm::print_to_file(outfile3, mio::interpolate_simulation_result(simABM.get_result()), comps);
+    fclose(outfile3);
+    FILE* outfile4 = fopen(outpath_pdmm_int.c_str(), "w");
+    mio::mpm::print_to_file(outfile4, mio::interpolate_simulation_result(simPDMM.get_result()), comps);
+    fclose(outfile4);
 }
 
 int main(int argc, char** argv)
 {
+    mio::set_log_level(mio::LogLevel::warn);
     using namespace mio::mpm;
     using Status = ABM<PotentialGermany<InfectionState>>::Status;
 
@@ -220,8 +247,7 @@ int main(int argc, char** argv)
 
     std::cerr << "Setup: Read potential.\n" << std::flush;
     {
-        const auto fname =
-            "C:/Users/bick_ju/Documents/repos/hybrid/example-hybrid/data/potential/potentially_germany.pgm";
+        const auto fname = "/potentially_germany.pgm";
         std::ifstream ifile(fname);
         if (!ifile.is_open()) {
             mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
@@ -234,7 +260,7 @@ int main(int argc, char** argv)
     }
     std::cerr << "Setup: Read metaregions.\n" << std::flush;
     {
-        const auto fname = "C:/Users/bick_ju/Documents/repos/hybrid/example-hybrid/data/potential/metagermany.pgm";
+        const auto fname = "/metagermany.pgm";
         std::ifstream ifile(fname);
         if (!ifile.is_open()) {
             mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
@@ -279,8 +305,8 @@ int main(int argc, char** argv)
         {{Region(5), Region(9)}, 0.0154723},     {{Region(6), Region(5)}, 0.194719},
         {{Region(7), Region(4)}, 0.0131677},     {{Region(7), Region(5)}, 0.0206938},
         {{Region(7), Region(9)}, 0.0127716},     {{Region(7), Region(10)}, 0.0218821},
-        {{Region(8), Region(4)}, 0.0121594},     {{Region(8), Region(11)}, 0.0085584},
-        {{Region(8), Region(12)}, 0.0109351},    {{Region(9), Region(5)}, 0.0194815},
+        {{Region(8), Region(4)}, 0.0},           {{Region(8), Region(11)}, 0.0},
+        {{Region(8), Region(12)}, 0.0},          {{Region(9), Region(5)}, 0.0},
         {{Region(9), Region(7)}, 0.0126395},     {{Region(9), Region(10)}, 0.0157604},
         {{Region(9), Region(14)}, 0.000504141},  {{Region(10), Region(4)}, 0.00289281},
         {{Region(10), Region(7)}, 0.0223142},    {{Region(10), Region(9)}, 0.014332},
@@ -290,7 +316,7 @@ int main(int argc, char** argv)
         {{Region(11), Region(14)}, 0.0483255},   {{Region(11), Region(15)}, 0.0064458},
         {{Region(12), Region(8)}, 0.0122674},    {{Region(12), Region(11)}, 0.0433201},
         {{Region(12), Region(13)}, 0.0362502},   {{Region(12), Region(15)}, 0.00447725},
-        {{Region(13), Region(12)}, 0.0403793},   {{Region(14), Region(9)}, 0.00037204},
+        {{Region(13), Region(12)}, 0.0403793},   {{Region(14), Region(9)}, 0.000372104},
         {{Region(14), Region(10)}, 0.010851},    {{Region(14), Region(11)}, 0.0403553},
         {{Region(14), Region(15)}, 0.0218821},   {{Region(15), Region(11)}, 0.00590565},
         {{Region(15), Region(12)}, 0.00650582},  {{Region(15), Region(14)}, 0.0246309}};
@@ -301,8 +327,7 @@ int main(int argc, char** argv)
         }
     }
 
-    run_simulation("C:/Users/bick_ju/Documents/results/agent_init/initialization100000.json", adoption_rates,
-                   transition_rates, potential, metaregions, 100.0, 0.05);
+    run_simulation("/initialization10000.json", adoption_rates, transition_rates, potential, metaregions, 100.0, 0.05);
 
     return 0;
 }

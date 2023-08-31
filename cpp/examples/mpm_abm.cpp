@@ -2,6 +2,7 @@
 #include "mpm/utility.h"
 #include "memilio/io/json_serializer.h"
 #include "mpm/potentials/potential_germany.h"
+#include "memilio/data/analyze_result.h"
 #include <json/value.h>
 
 #include <iostream>
@@ -404,6 +405,10 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
     FILE* outfile = fopen(outpath.c_str(), "w");
     mio::mpm::print_to_file(outfile, result, comps);
     fclose(outfile);
+    auto outpath_int = "~/results/outputABMSim" + std::to_string(num_agents) + "_interpolated.txt";
+    FILE* outfile1   = fopen(outpath_int.c_str(), "w");
+    mio::mpm::print_to_file(outfile1, mio::interpolate_simulation_result(result), comps);
+    fclose(outfile1);
 }
 
 int main()
@@ -419,7 +424,8 @@ int main()
 
     std::cerr << "Setup: Read potential.\n" << std::flush;
     {
-        const auto fname = "~/input/potentially_germany.pgm";
+        const auto fname =
+            "C:/Users/bick_ju/Documents/repos/hybrid/example-hybrid/data/potential/potentially_germany.pgm";
         std::ifstream ifile(fname);
         if (!ifile.is_open()) {
             mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
@@ -432,7 +438,7 @@ int main()
     }
     std::cerr << "Setup: Read metaregions.\n" << std::flush;
     {
-        const auto fname = "~/input/metagermany.pgm";
+        const auto fname = "C:/Users/bick_ju/Documents/repos/hybrid/example-hybrid/data/potential/metagermany.pgm";
         std::ifstream ifile(fname);
         if (!ifile.is_open()) {
             mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
@@ -455,15 +461,15 @@ int main()
     //     {1.0, 0.0, 0.0, 0.0, 0.0},    {1.0, 0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0}};
 
     // create_initialization_for_Germany<ABM<PotentialGermany<InfectionState>>::Agent, Position>(
-    //     pop_dists, "~/results/population_data_states.json", 1, potential, metaregions);
+    //     pop_dists, "C:/Users/bick_ju/Documents/results/population_data_states.json", 8000, potential, metaregions);
 
+    // std::cerr << "Finished\n" << std::flush;
     //get_agent_movement(10, potential, metaregions);
 
     //std::vector<ABM<PotentialGermany<InfectionState>>::Agent> agents;
 
     // //std::vector<double> pop_dist{0.9, 0.05, 0.05, 0.0, 0.0};
     // //create_start_initialization<Status, ABM<PotentialGermany>::Agent>(agents, pop_dist, potential, metaregions);
-
     //set adoption rates for every federal state
     std::vector<AdoptionRate<Status>> adoption_rates;
     for (int i = 0; i < 16; i++) {
@@ -476,9 +482,15 @@ int main()
     }
 
     run_simulation("~/input/initialization10000.json", adoption_rates, potential, metaregions, 100.0, 0.05);
-    // ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
-    // //calculate_rates_for_mpm(model, adoption_rates, 10, 100);
+    //std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents;
+    //read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(
+    //    "C:/Users/bick_ju/Documents/results/agent_init/initialization10000.json", agents);
 
+    //create model
+    //mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
+
+    // ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
+    //calculate_rates_for_mpm(model, adoption_rates, 10, 100);
     // std::cerr << "Starting simulation.\n" << std::flush;
 
     // auto result = mio::simulate(0, 100, 0.05, model);
