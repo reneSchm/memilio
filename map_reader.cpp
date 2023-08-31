@@ -87,7 +87,7 @@ void apply_stencil(Eigen::Ref<Eigen::MatrixXd> image, Eigen::Ref<const Eigen::Ma
 {
     const Eigen::Index rows = stencil.rows();
     const Eigen::Index cols = stencil.cols();
-    assert(rows > 0 && cols > 0 && "The stencil must have static size.");
+    assert(rows > 0 && cols > 0);
     Eigen::MatrixXd canvas = Eigen::MatrixXd::Zero(image.rows() + rows, image.cols() + cols);
     // canvas.block(rows / 2, cols / 2, image.rows(), image.cols()) = image;
     for (Eigen::Index i = 0; i < image.rows(); i++) {
@@ -99,6 +99,23 @@ void apply_stencil(Eigen::Ref<Eigen::MatrixXd> image, Eigen::Ref<const Eigen::Ma
         }
     }
     image = canvas.block(rows / 2, cols / 2, image.rows(), image.cols());
+}
+
+void extend_bitmap(Eigen::Ref<Eigen::MatrixXi> image, Eigen::Index width)
+{
+    Eigen::Index extent    = 2 * width + 1;
+    Eigen::MatrixXi canvas = Eigen::MatrixXi::Zero(image.rows() + extent, image.cols() + extent);
+    // canvas.block(rows / 2, cols / 2, image.rows(), image.cols()) = image;
+    for (Eigen::Index i = 0; i < image.rows(); i++) {
+        for (Eigen::Index j = 0; j < image.cols(); j++) {
+            for (Eigen::Index k = 0; k < extent; k++) {
+                for (Eigen::Index l = 0; l < extent; l++) {
+                    canvas(i + k, j + l) |= image(i, j);
+                }
+            }
+        }
+    }
+    image = canvas.block(width, width, image.rows(), image.cols());
 }
 
 std::vector<Position> laender = {
@@ -139,10 +156,26 @@ int main()
         canvas += i * find_connected_image_region(image, x, y, 0);
     }
 
+    DEBUG("set stencil")
+    Eigen::Matrix<double, 1, 5> stencil;
+    stencil(0, 0) = 0.5;
+    stencil(0, 1) = 1.0;
+    stencil(0, 2) = 1.0;
+    stencil(0, 3) = 1.0;
+    stencil(0, 4) = 0.5;
+
+    Eigen::Matrix<double, 1, 5> stencil_ext;
+    stencil_ext(0, 0) = 0.5;
+    stencil_ext(0, 1) = 0.75;
+    stencil_ext(0, 2) = 1.0;
+    stencil_ext(0, 3) = 0.75;
+    stencil_ext(0, 4) = 0.5;
+
     DEBUG("identify boundary segments")
     Eigen::MatrixXi boundaries            = Eigen::MatrixXi::Zero(image.rows(), image.cols());
     Eigen::MatrixXi boundaries_simplified = Eigen::MatrixXi::Zero(image.rows(), image.cols());
-    auto is_outside                       = find_connected_image_region(image, 0, 0);
+    Eigen::MatrixXi is_outside            = find_connected_image_region(image, 0, 0).cast<int>();
+    extend_bitmap(is_outside, 1);
     // iterate image, leave out two outermost rows/cols
     int check_width = 3;
     for (Eigen::Index i = check_width; i < image.rows() - check_width; i++) {
@@ -167,21 +200,8 @@ int main()
             assert(num_bits_set(ids) < 4);
         }
     }
-
-    DEBUG("set stencil")
-    Eigen::Matrix<double, 1, 5> stencil;
-    stencil(0, 0) = 0.5;
-    stencil(0, 1) = 1.0;
-    stencil(0, 2) = 1.0;
-    stencil(0, 3) = 1.0;
-    stencil(0, 4) = 0.5;
-
-    Eigen::Matrix<double, 1, 5> stencil_ext;
-    stencil_ext(0, 0) = 0.5;
-    stencil_ext(0, 1) = 0.75;
-    stencil_ext(0, 2) = 1.0;
-    stencil_ext(0, 3) = 0.75;
-    stencil_ext(0, 4) = 0.5;
+    extend_bitmap(boundaries, stencil.cols() / 2);
+    extend_bitmap(boundaries_simplified, stencil.cols() / 2);
 
     // DEBUG(stencil.transpose() * stencil);
 
