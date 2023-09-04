@@ -33,23 +33,23 @@ typedef double ScalarType;
 
 // Add neighbouring (matrix) indices to queue
 void enqueue_neighbours(const std::pair<ScalarType, ScalarType>& index, const std::pair<ScalarType, ScalarType>& max,
-                        Eigen::Ref<Eigen::MatrixXd> mask, std::deque<std::pair<size_t, size_t>>& queue)
+                        Eigen::Ref<Eigen::MatrixXi> mask, std::deque<std::pair<size_t, size_t>>& queue)
 {
     // mask encoding : -1 - not , 1 - identified
-    if (index.first > 0 && mask(index.first - 1, index.second) == 0.0) {
-        mask(index.first - 1, index.second) = -1.0;
+    if (index.first > 0 && mask(index.first - 1, index.second) == 0) {
+        mask(index.first - 1, index.second) = -1;
         queue.push_back({index.first - 1, index.second});
     }
-    if (index.first + 1 < max.first && mask(index.first + 1, index.second) == 0.0) {
-        mask(index.first + 1, index.second) = -1.0;
+    if (index.first + 1 < max.first && mask(index.first + 1, index.second) == 0) {
+        mask(index.first + 1, index.second) = -1;
         queue.push_back({index.first + 1, index.second});
     }
-    if (index.second > 0 && mask(index.first, index.second - 1) == 0.0) {
-        mask(index.first, index.second - 1) = -1.0;
+    if (index.second > 0 && mask(index.first, index.second - 1) == 0) {
+        mask(index.first, index.second - 1) = -1;
         queue.push_back({index.first, index.second - 1});
     }
-    if (index.second + 1 < max.second && mask(index.first, index.second + 1) == 0.0) {
-        mask(index.first, index.second + 1) = -1.0;
+    if (index.second + 1 < max.second && mask(index.first, index.second + 1) == 0) {
+        mask(index.first, index.second + 1) = -1;
         queue.push_back({index.first, index.second + 1});
     }
 }
@@ -62,23 +62,23 @@ void enqueue_neighbours(const std::pair<ScalarType, ScalarType>& index, const st
  * @param color_tolerance Absolute tolerance for matching adjacent colors.
  * @return A matrix with entries 1.0 if the point is within the connected region, 0 otherwise.
  */
-Eigen::MatrixXd find_connected_image_region(Eigen::Ref<const Eigen::MatrixXd> image, const size_t start_x,
+Eigen::MatrixXi find_connected_image_region(Eigen::Ref<const Eigen::MatrixXd> image, const size_t start_x,
                                             const size_t start_y, const ScalarType color_tolerance = 0)
 {
     // setup
     size_t x, y;
     ScalarType color = image(start_x, start_y);
     std::deque<std::pair<size_t, size_t>> queue({{start_x, start_y}});
-    Eigen::MatrixXd mask = Eigen::MatrixXd::Zero(image.rows(), image.cols());
+    Eigen::MatrixXi mask = Eigen::MatrixXi::Zero(image.rows(), image.cols());
     // iterate (BFS)
     for (; not queue.empty(); queue.pop_front()) {
         std::tie(x, y) = queue.front();
         if (std::abs(color - image(x, y)) <= color_tolerance) {
-            mask(x, y) = 1.0;
+            mask(x, y) = 1;
             enqueue_neighbours({x, y}, {image.rows(), image.cols()}, mask, queue);
         }
         else {
-            mask(x, y) = 0.0;
+            mask(x, y) = 0;
         }
     }
     return mask;
@@ -153,15 +153,33 @@ int main()
     file.close();
     image = (1 - image.array()).matrix(); // invert colors
 
-    DEBUG("map federal states")
-    size_t i               = 0;
-    Eigen::MatrixXd canvas = Eigen::MatrixXd::Zero(image.rows(), image.cols());
-    for (auto land : laender) {
-        ++i;
-        const auto x = land[1] * canvas.rows();
-        const auto y = (1 - land[0]) * canvas.cols();
-        canvas += i * find_connected_image_region(image, x, y, 0);
+    DEBUG("manually fix a isolated pixel in the corner Fuerstenfeldbruck/LH Muenchen/Muenchen")
+    image(508, 574) = 1;
+
+    // DEBUG("map federal states")
+    // size_t i               = 0;
+    // Eigen::MatrixXd metaregions = Eigen::MatrixXd::Zero(image.rows(), image.cols());
+    // for (auto land : laender) {
+    //     ++i;
+    //     const auto x = land[1] * metaregions.rows();
+    //     const auto y = (1 - land[0]) * metaregions.cols();
+    //     metaregions += i * find_connected_image_region(image, x, y, 0);
+    // }
+
+    DEBUG("map metaregions")
+    size_t region              = 1;
+    Eigen::MatrixXi is_outside = find_connected_image_region(image, 0, 0);
+    extend_bitmap(is_outside, 1);
+    Eigen::MatrixXi metaregions = Eigen::MatrixXi::Zero(image.rows(), image.cols());
+    for (Eigen::Index i = 0; i < image.rows(); i++) {
+        for (Eigen::Index j = 0; j < image.cols(); j++) {
+            if (!is_outside(i, j) && image(i, j) == 0 && metaregions(i, j) == 0) {
+                metaregions += region * find_connected_image_region(image, i, j);
+                region++;
+            }
+        }
     }
+    DEBUG(" -> found " << region - 1);
 
     DEBUG("set stencil")
     Eigen::Matrix<double, 1, 5> stencil;
@@ -181,20 +199,18 @@ int main()
     DEBUG("identify boundary segments")
     Eigen::MatrixXi boundaries            = Eigen::MatrixXi::Zero(image.rows(), image.cols());
     Eigen::MatrixXi boundaries_simplified = Eigen::MatrixXi::Zero(image.rows(), image.cols());
-    Eigen::MatrixXi is_outside            = find_connected_image_region(image, 0, 0).cast<int>();
-    extend_bitmap(is_outside, 1);
     // iterate image, leave out two outermost rows/cols
     int check_width = 3;
     for (Eigen::Index i = check_width; i < image.rows() - check_width; i++) {
         for (Eigen::Index j = check_width; j < image.cols() - check_width; j++) {
             // skip interior
-            if (canvas(i, j) != 0 or is_outside(i, j))
+            if (metaregions(i, j) != 0 or is_outside(i, j))
                 continue;
             // look for land ids in a 5x5 square
             u_int16_t ids = 0;
             for (int k = -check_width; k <= check_width; k++) {
                 for (int l = -check_width; l <= check_width; l++) {
-                    ids |= 1 << (int)(canvas(i + k, j + l) - 1);
+                    ids |= 1 << (int)(metaregions(i + k, j + l) - 1);
                 }
             }
             if (num_bits_set(ids) > 1) { // 0 or 1 should only occur on exterior pixels
@@ -216,7 +232,7 @@ int main()
     apply_stencil(image, stencil.transpose() * stencil, 1.0);
 
     DEBUG("expand border")
-    auto exterior = find_connected_image_region(image, 0, 0, 0.75);
+    Eigen::MatrixXd exterior = find_connected_image_region(image, 0, 0, 0.75).cast<ScalarType>();
     apply_stencil(exterior, stencil_ext.transpose() * stencil_ext, 1.0);
     image = image.array().max(4 * exterior.array()).matrix();
     // image = 4 * exterior;
@@ -234,7 +250,7 @@ int main()
         DEBUG("Could not open file metagermany.pgm");
         return 1;
     }
-    write_pgm(ofile, canvas, 16);
+    write_pgm(ofile, metaregions);
     ofile.close();
     ofile.open("boundary_ids.pgm");
     if (!ofile.is_open()) {
