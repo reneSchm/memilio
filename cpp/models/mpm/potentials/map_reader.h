@@ -10,8 +10,6 @@
 #include <sstream>
 #include <vector>
 
-#define DEBUG(cout_args) std::cerr << cout_args << std::endl << std::flush;
-
 namespace mio
 {
 namespace mpm
@@ -25,6 +23,11 @@ void write_pgm(std::ostream& pgm_file, Eigen::Ref<const Eigen::MatrixXd> image, 
 
 void write_pgm(std::ostream& pgm_file, Eigen::Ref<const Eigen::MatrixXi> image);
 
+/**
+ * @brief Counts the numbers of bits that are set to 1.
+ * @param i Any Integer value.
+ * @tparam Integer Any integer type.
+ */
 template <class Integer>
 size_t num_bits_set(Integer i)
 {

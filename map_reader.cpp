@@ -5,6 +5,8 @@
 
 #include "cpp/models/mpm/potentials/map_reader.h"
 
+#define DEBUG(cout_args) std::cerr << cout_args << std::endl << std::flush;
+
 using namespace mio::mpm;
 
 typedef Eigen::Vector2d Position;
@@ -85,6 +87,7 @@ Eigen::MatrixXd find_connected_image_region(Eigen::Ref<const Eigen::MatrixXd> im
 // Eigen::MatrixXd find_bounded_image_region(Eigen::Ref<Eigen::MatrixXd> image, const size_t start_x, const size_t start_y,
 //                                           ScalarType boundary_color, ScalarType color_tolerance = 0);
 
+// apply a weight stencil to each entry of image, merging the results using the elementwise maximum
 // should work with any stencil, but odd number of rows/cols is recommended
 void apply_stencil(Eigen::Ref<Eigen::MatrixXd> image, Eigen::Ref<const Eigen::MatrixXd> stencil, ScalarType color,
                    ScalarType color_tolerance = 0)
@@ -105,21 +108,21 @@ void apply_stencil(Eigen::Ref<Eigen::MatrixXd> image, Eigen::Ref<const Eigen::Ma
     image = canvas.block(rows / 2, cols / 2, image.rows(), image.cols());
 }
 
-void extend_bitmap(Eigen::Ref<Eigen::MatrixXi> image, Eigen::Index width)
+// extend a bitmap in each direction by width, merging entries using bitwise or
+void extend_bitmap(Eigen::Ref<Eigen::MatrixXi> bitmap, Eigen::Index width)
 {
     Eigen::Index extent    = 2 * width + 1;
-    Eigen::MatrixXi canvas = Eigen::MatrixXi::Zero(image.rows() + extent, image.cols() + extent);
-    // canvas.block(rows / 2, cols / 2, image.rows(), image.cols()) = image;
-    for (Eigen::Index i = 0; i < image.rows(); i++) {
-        for (Eigen::Index j = 0; j < image.cols(); j++) {
+    Eigen::MatrixXi canvas = Eigen::MatrixXi::Zero(bitmap.rows() + extent, bitmap.cols() + extent);
+    for (Eigen::Index i = 0; i < bitmap.rows(); i++) {
+        for (Eigen::Index j = 0; j < bitmap.cols(); j++) {
             for (Eigen::Index k = 0; k < extent; k++) {
                 for (Eigen::Index l = 0; l < extent; l++) {
-                    canvas(i + k, j + l) |= image(i, j);
+                    canvas(i + k, j + l) |= bitmap(i, j);
                 }
             }
         }
     }
-    image = canvas.block(width, width, image.rows(), image.cols());
+    bitmap = canvas.block(width, width, bitmap.rows(), bitmap.cols());
 }
 
 std::vector<Position> laender = {

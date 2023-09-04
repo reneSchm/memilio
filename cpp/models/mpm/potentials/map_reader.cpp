@@ -5,6 +5,13 @@ namespace mio
 namespace mpm
 {
 
+/**
+ * @brief Reads a pgm image (greyscale) from the given input stream.
+ * Convention: Index (0, 0) is at the bottom left of the image.
+ * Does not support comments within the pgm file.
+ * @param pgm_file[in] Input stream containing a pgm file.
+ * @return Tuple containing the image (integer matrix) and color range.
+ */
 std::pair<Eigen::MatrixXi, size_t> read_pgm_raw(std::istream& pgm_file)
 {
     size_t height, width, color_range;
@@ -35,12 +42,26 @@ std::pair<Eigen::MatrixXi, size_t> read_pgm_raw(std::istream& pgm_file)
     return std::make_pair(data, color_range);
 }
 
+/**
+ * @brief Reads a pgm image (greyscale) from the given input stream.
+ * Convention: Index (0, 0) is at the bottom left of the image.
+ * Does not support comments within the pgm file.
+ * @param pgm_file[in] Input stream containing a pgm file.
+ * @return Image with colors normalized to [0,1].
+ */
 Eigen::MatrixXd read_pgm(std::istream& pgm_file)
 {
     auto raw = read_pgm_raw(pgm_file);
     return raw.first.cast<double>() / raw.second; // convert matrix and normalize color range
 }
 
+/**
+ * @brief Writes a pgm image (greyscale) to the given output stream.
+ * Convention: Index (0, 0) is at the bottom left of the image.
+ * @param pgm_file[in] An output stream.
+ * @param image[in] A matrix containing grey values.
+ * @param color_range[in] Colors will be normalized and converted to integers in range [0, color_range].
+ */
 void write_pgm(std::ostream& pgm_file, Eigen::Ref<const Eigen::MatrixXd> image, size_t color_range)
 {
     // write pgm header
@@ -58,6 +79,13 @@ void write_pgm(std::ostream& pgm_file, Eigen::Ref<const Eigen::MatrixXd> image, 
     }
 }
 
+/**
+ * @brief Writes a pgm image (greyscale) to the given output stream.
+ * Convention: Index (0, 0) is at the bottom left of the image.
+ * Uses the maximum coefficient as color range.
+ * @param pgm_file[in] An output stream.
+ * @param image[in] A matrix containing grey values.
+ */
 void write_pgm(std::ostream& pgm_file, Eigen::Ref<const Eigen::MatrixXi> image)
 {
     // write pgm header
