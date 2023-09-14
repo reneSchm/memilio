@@ -8,6 +8,7 @@
 using namespace mio::mpm;
 
 struct Weights {
+    using Type = std::vector<std::vector<ScalarType>>;
     const static std::string name()
     {
         return "Weights";
@@ -16,7 +17,54 @@ struct Weights {
     {
         return "w";
     }
-    using Type = std::vector<std::vector<ScalarType>>;
+};
+
+struct Potential {
+    using Type = std::string;
+    const static std::string name()
+    {
+        return "Potential";
+    }
+    const static std::string alias()
+    {
+        return "p";
+    }
+    static Type get_default()
+    {
+        return "potentially_germany.pgm";
+    }
+};
+
+struct BoundaryIDs {
+    using Type = std::string;
+    const static std::string name()
+    {
+        return "BoundaryIDs";
+    }
+    const static std::string alias()
+    {
+        return "b";
+    }
+    static Type get_default()
+    {
+        return "boundary_ids.pgm";
+    }
+};
+
+struct OutputFile {
+    using Type = std::string;
+    const static std::string name()
+    {
+        return "OutputFile";
+    }
+    const static std::string alias()
+    {
+        return "o";
+    }
+    static Type get_default()
+    {
+        return "weighted_germany.pgm";
+    }
 };
 
 std::map<std::pair<int, int>, int> missing_keys;
@@ -95,7 +143,7 @@ ScalarType get_weight(const std::map<std::pair<int, int>, ScalarType>& w, int bi
 int main(int argc, char** argv)
 {
     // allows setting the weights via cli
-    mio::ParameterSet<Weights> p;
+    mio::ParameterSet<Weights, Potential, BoundaryIDs, OutputFile> p;
     p.get<Weights>().push_back({5, 9, 2.0});
     auto result = mio::command_line_interface(argv[0], argc, argv, p);
     if (!result) {
@@ -109,13 +157,19 @@ int main(int argc, char** argv)
         weights[{(int)weight[0], (int)weight[1]}] = weight[2];
     }
     // open the potential and bitkey files
-    std::fstream ifile;
-    ifile.open("potentially_germany.pgm");
-    Eigen::MatrixXd potential = read_pgm(ifile);
-    ifile.close();
-    ifile.open("boundary_ids.pgm");
-    Eigen::MatrixXi bitkeys = read_pgm_raw(ifile).first;
-    ifile.close();
+    std::fstream file;
+    file.open(p.get<Potential>());
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file " << p.get<Potential>() << "\n";
+    }
+    Eigen::MatrixXd potential = read_pgm(file);
+    file.close();
+    file.open(p.get<BoundaryIDs>());
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file " << p.get<BoundaryIDs>() << "\n";
+    }
+    Eigen::MatrixXi bitkeys = read_pgm_raw(file).first;
+    file.close();
     assert(potential.cols() == bitkeys.cols());
     assert(potential.rows() == bitkeys.rows());
     // scale potential by the above weights
@@ -126,9 +180,12 @@ int main(int argc, char** argv)
         }
     }
     // write out weighted potential
-    ifile.open("weighted_germany.pgm");
-    write_pgm(ifile, potential);
-    ifile.close();
+    file.open(p.get<OutputFile>());
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file " << p.get<BoundaryIDs>() << "\n";
+    }
+    write_pgm(file, potential);
+    file.close();
     // echo missing map entries
     for (auto m : missing_keys) {
         std::cerr << "Missing weight for key pair <" << m.first.first << ", " << m.first.second << ">\n";
