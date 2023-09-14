@@ -113,6 +113,7 @@ endif()
 # add parts of the project
 include(thirdparty/CMakeLists.txt)
 add_subdirectory(memilio)
+add_subdirectory(hybrid_paper)
 
 if(MEMILIO_BUILD_MODELS)
     add_subdirectory(models/abm)
