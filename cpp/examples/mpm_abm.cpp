@@ -43,8 +43,8 @@ int main()
 
     std::vector<AdoptionRate<Status>> adoption_rates;
     for (int i = 0; i < 16; i++) {
-        adoption_rates.push_back({Status::S, Status::I, i, 0.3, {Status::I}, {1}});
-        adoption_rates.push_back({Status::I, Status::R, i, 0.1});
+        adoption_rates.push_back({Status::S, Status::I, mio::mpm::Region(i), 0.3, {Status::I}, {1}});
+        adoption_rates.push_back({Status::I, Status::R, mio::mpm::Region(i), 0.1});
     }
 
     Eigen::MatrixXd potential;

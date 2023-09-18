@@ -53,15 +53,17 @@ public:
     };
 
     PotentialGermany(const std::vector<Agent>& agents, const typename mio::mpm::AdoptionRates<Status>::Type& rates,
-                     Eigen::Ref<const Eigen::MatrixXd> potential, Eigen::Ref<const Eigen::MatrixXi> metaregions)
+                     Eigen::Ref<const Eigen::MatrixXd> potential, Eigen::Ref<const Eigen::MatrixXi> metaregions,
+                     const std::vector<double>& sigma = std::vector<double>(8, 1440.0 / 200.0))
         : potential(potential)
         , metaregions(metaregions)
         , populations(agents)
-        , sigma((double)potential.cols() / 200)
+        , sigma(sigma)
         , contact_radius((double)potential.cols())
         , accumulated_contact_rates{0.}
         , contact_rates_count{0}
-        , m_number_transitions(static_cast<size_t>(Status::Count), Eigen::Matrix<double, 16, 16>::Zero())
+        , m_number_transitions(static_cast<size_t>(Status::Count),
+                               Eigen::MatrixXd::Zero(metaregions.maxCoeff(), metaregions.maxCoeff()))
     {
         for (auto& agent : populations) {
             assert(is_in_domain(agent.position));
@@ -133,7 +135,7 @@ public:
 
         auto land_old    = agent.land;
         auto pnew        = agent.position;
-        auto noise       = (sigma * std::sqrt(dt)) * p;
+        auto noise       = (sigma[land_old] * std::sqrt(dt)) * p;
         int num_substeps = std::max<int>(noise.norm(), 1);
         for (int substep = 0; substep < num_substeps; ++substep) {
             pnew -= (dt * grad_U(pnew) - noise) / num_substeps;
@@ -141,52 +143,14 @@ public:
         if (potential(pnew[0], pnew[1]) < 8) {
             agent.position = pnew;
         }
-        // auto pos = agent.position;
-        // for (int k = 0; k < noise.norm(); k++) {
-        //     pos = +k / noise.norm() * noise;
-        //     agent.position += dt * grad_U(pos) + 1 / noise.norm() * noise;
-        // }
-        // agent.position = agent.position - dt * grad + noise; //grad_U(agent.position)
-        // if (agent.position[0] < 0 || agent.position[1] < 0) {
-        //     std::cout << "postion<0\n" << std::flush;
-        //     std::cout << "land old: " << land_old << std::endl;
-        //     std::cout << "x " << agent.position[0] << "y " << agent.position[1] << std::endl;
-        //     std::cout << "x_old" << pold[0] << "y_old" << pold[1] << std::endl;
-        //     std::cout << "grad " << grad_U(pold) << std::endl;
-        //     std::cout << "sigma " << sigma << std::endl;
-        //     std::cout << "p[0]:" << p[0] << "p[1]: " << p[1] << std::endl;
-        //     agent.position[0] = std::max(0.0, agent.position[0]);
-        //     agent.position[1] = std::max(0.0, agent.position[1]);
-        //     std::cout << "maximizing worked" << std::endl;
-        //     // const auto land = metaregions(agent.position[0], agent.position[1]);
-        //     // std::cout << "worked" << std::endl;
-        // }
-        // if (agent.position[0] > double(potential.rows() - 1) || agent.position[1] > double(potential.cols() - 1)) {
-        //     std::cout << "position>cols\n" << std::flush;
-        //     std::cout << "land old: " << land_old << std::endl;
-        //     std::cout << "x " << agent.position[0] << "y " << agent.position[1] << std::endl;
-        //     std::cout << "x_old" << pold[0] << "y_old" << pold[1] << std::endl;
-        //     std::cout << "grad " << grad_U(pold) << std::endl;
-        //     std::cout << "sigma " << sigma << std::endl;
-        //     std::cout << "p[0]:" << p[0] << "p[1]: " << p[1] << std::endl;
-        //     agent.position[0] = std::min((double)potential.rows() - 1, agent.position[0]);
-        //     agent.position[1] = std::min((double)potential.cols() - 1, agent.position[1]);
-        //     std::cout << "minimizing worked" << std::endl;
-        //     // const auto land = metaregions(agent.position[0], agent.position[1]);
-        //     // std::cout << "worked" << std::endl;
-        // }
-        // if (potential(pold[0], pold[1]) == 0 && potential(agent.position[0], agent.position[1]) == 8) {
-        //     std::cout << "agent jumps over border!" << std::endl;
-        // }
+
         const auto land = metaregions(agent.position[0], agent.position[1]);
         if (land > 0) {
             agent.land = land - 1; // shift land so we can use it as index
         }
         const bool makes_transition = (land_old != agent.land);
         if (makes_transition) {
-            //std::cout << "num_transitions" << std::endl;
             m_number_transitions[static_cast<size_t>(agent.status)](land_old, agent.land)++;
-            //std::cout << "num transitions done" << std::endl;
         }
     }
 
@@ -275,7 +239,8 @@ private:
     Eigen::Ref<const Eigen::MatrixXd> potential;
     Eigen::Ref<const Eigen::MatrixXi> metaregions;
     std::map<std::tuple<mio::mpm::Region, Status, Status>, mio::mpm::AdoptionRate<Status>> m_adoption_rates;
-    const double sigma, contact_radius;
+    const std::vector<double> sigma;
+    const double contact_radius;
     std::vector<Eigen::MatrixXd> m_number_transitions;
 };
 
