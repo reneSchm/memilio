@@ -54,12 +54,13 @@ public:
 
     PotentialGermany(const std::vector<Agent>& agents, const typename mio::mpm::AdoptionRates<Status>::Type& rates,
                      Eigen::Ref<const Eigen::MatrixXd> potential, Eigen::Ref<const Eigen::MatrixXi> metaregions,
-                     const std::vector<double>& sigma = std::vector<double>(8, 1440.0 / 200.0))
+                     const std::vector<double>& sigma  = std::vector<double>(8, 1440.0 / 200.0),
+                     const double contact_radius_in_km = 1000000)
         : potential(potential)
         , metaregions(metaregions)
         , populations(agents)
         , sigma(sigma)
-        , contact_radius((double)potential.cols())
+        , contact_radius(get_contact_radius_factor() * contact_radius_in_km)
         , accumulated_contact_rates{0.}
         , contact_rates_count{0}
         , m_number_transitions(static_cast<size_t>(Status::Count),
@@ -179,6 +180,35 @@ public:
     size_t contact_rates_count;
 
 private:
+    double get_contact_radius_factor(std::vector<double> areas = std::vector<double>{435, 579, 488, 310.7, 667.3, 800,
+                                                                                     870.4, 549.3})
+    {
+        assert(areas.size() == metaregions.maxCoeff());
+        std::vector<double> factors(metaregions.maxCoeff());
+        //count pixels
+        for (size_t metaregion = 1; metaregion <= metaregions.maxCoeff(); ++metaregion) {
+            int num = 0;
+            for (size_t row = 0; row < metaregions.rows(); ++row) {
+                for (size_t pixel = 0; pixel < metaregions.cols(); ++pixel) {
+                    if (metaregions(row, pixel) == metaregion) {
+                        num += 1;
+                        if (pixel > 0 && metaregions(row, pixel - 1) != metaregion) {
+                            num += 1;
+                        }
+                    }
+                }
+            }
+            for (size_t col = 0; col < metaregions.cols(); ++col) {
+                for (size_t pixel = 1; pixel < metaregions.rows(); ++pixel) {
+                    if (metaregions(pixel, col) == metaregion && metaregions(pixel - 1, col) != metaregion) {
+                        num += 1;
+                    }
+                }
+            }
+            factors[metaregion - 1] = sqrt(num / areas[metaregion - 1]);
+        }
+        return std::accumulate(factors.begin(), factors.end(), 0.0) / metaregions.maxCoeff();
+    }
     // static Position grad_U(const Position x)
     // {
     //     // U is a double well potential
