@@ -2,126 +2,357 @@
 #include "models/mpm/potentials/potential_germany.h"
 #include "models/mpm/potentials/map_reader.h"
 #include "models/mpm/abm.h"
+#include "memilio/io/mobility_io.h"
 
-#include <sys/wait.h>
-#include <unistd.h>
+#include <dlib/global_optimization.h>
 
+#include <set>
+
+// #include <sys/wait.h>
+// #include <unistd.h>
+
+// the minimum needed "Infection States", since we do not consider adoption processes here
 enum class States
 {
     Default,
     Count
 };
 
-int main()
+// load mobility data between all german counties
+mio::IOResult<Eigen::MatrixXd> get_transition_matrices(std::string data_dir)
 {
-    using namespace mio::mpm;
-    using Model     = ABM<PotentialGermany<States>>;
-    using Status    = Model::Status;
-    size_t n_agents = 100;
+    BOOST_OUTCOME_TRY(matrix_commuter, mio::read_mobility_plain(data_dir + "/commuter_migration_scaled.txt"));
+    BOOST_OUTCOME_TRY(matrix_twitter, mio::read_mobility_plain(data_dir + "/twitter_scaled_1252.txt"));
+    Eigen::MatrixXd travel_to_matrix = matrix_commuter + matrix_twitter;
+    Eigen::MatrixXd transitions_per_day(travel_to_matrix.rows(), travel_to_matrix.cols());
+    for (int from = 0; from < travel_to_matrix.rows(); ++from) {
+        for (int to = 0; to < travel_to_matrix.cols(); ++to) {
+            transitions_per_day(from, to) = travel_to_matrix(from, to) + travel_to_matrix(to, from);
+        }
+    }
+    return mio::success(transitions_per_day);
+}
 
-    std::vector<AdoptionRate<Status>> adoption_rates;
+// struct to store and reapply weights to a potential
+// reads a base potential and boundary ids from pgm files during construction. the potential can be accessed as a
+// public member, and weights are applied to this potential using the apply_weights function
+struct WeightedPotential {
+    const Eigen::MatrixXd base_potential; // unweighted potential
+    const Eigen::MatrixXi boundary_ids; // bondaries to apply weights to
     Eigen::MatrixXd potential;
-    Eigen::MatrixXi metaregions;
 
-    pid_t child_pid;
-    int wait_status;
+private:
+    std::set<std::pair<int, int>> missing_keys;
 
-    switch (child_pid = fork()) {
-    case -1:
-        std::cerr << "Failed to create fork.\n";
-        return 1;
-    case 0: // child process goes here
-        execl("../../../a.out", "", "-p", "\"../../../potentially_germany.pgm\"", "-b", "\"../../../boundary_ids.pgm\"",
-              "-w", "[]", NULL);
-        break;
-    default: // parent process goes here
-        std::cerr << "Waiting for child process...\n";
-        pid_t pid = wait(&wait_status);
-        if (pid != child_pid) {
-            std::cerr << "Child process failed. Exiting.\n";
-            return 1;
-        }
-        std::cerr << "Running parent process\n";
-        break;
-    }
+public:
+    const size_t num_weights;
 
-    std::cerr << "Setup: Read potential.\n" << std::flush;
+private:
+    std::map<std::pair<int, int>, ScalarType> weight_map;
+
+public:
+    // first load base potential and boundary ids, then find needed weight keys and set up weight_map
+    explicit WeightedPotential(const std::string& potential_pgm_file, const std::string& boundary_ids_pgm_file)
+        // this uses a lot of immediately invoked lambdas
+        : base_potential([&potential_pgm_file] {
+            // load and read pgm file
+            std::ifstream ifile(potential_pgm_file);
+            if (!ifile.is_open()) { // write error and abort
+                mio::log(mio::LogLevel::critical, "Could not open potential file {}", potential_pgm_file);
+                exit(1);
+            }
+            else { // read pgm from file and return matrix
+                Eigen::MatrixXd tmp = 8.0 * mio::mpm::read_pgm(ifile);
+                ifile.close();
+                return tmp;
+            }
+        }())
+        , boundary_ids([&boundary_ids_pgm_file]() {
+            // load and read pgm file
+            std::ifstream ifile(boundary_ids_pgm_file);
+            if (!ifile.is_open()) { // write error and abort
+                mio::log(mio::LogLevel::critical, "Could not open boundary ids file {}", boundary_ids_pgm_file);
+                exit(1);
+            }
+            else { // read pgm from file and return matrix
+                auto tmp = mio::mpm::read_pgm_raw(ifile).first;
+                ifile.close();
+                return tmp;
+            }
+        }())
+        , potential(base_potential) // assign base_potential, as we have no weights yet
+        , missing_keys() // missing keys are set during initialisation of num_weights below
+        , num_weights([this]() {
+            // abuse get_weight to create a list of all needed keys
+            std::map<std::pair<int, int>, ScalarType> empty_map; // provide no existing keys, so all are missing
+            // test all bitkeys boundary_ids
+            for (Eigen::Index i = 0; i < boundary_ids.rows(); i++) {
+                for (Eigen::Index j = 0; j < boundary_ids.cols(); j++) {
+                    if (boundary_ids(i, j) > 0) // skip non-boundary entries
+                        get_weight(empty_map, boundary_ids(i, j), missing_keys);
+                }
+            }
+            return missing_keys.size();
+        }())
+        , weight_map([this]() {
+            // add a map entry for each key found during initialisation of num_weights above.
+            // the weights are set to a default value, which will be overwritten by apply_weights()
+            std::map<std::pair<int, int>, ScalarType> map;
+            for (auto key : missing_keys) {
+                map[key] = 0;
+            }
+            return map;
+        }())
     {
-        const auto fname = "../../../potentially_germany.pgm";
-        std::ifstream ifile(fname);
-        if (!ifile.is_open()) {
-            mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
-            return 1;
-        }
-        else {
-            potential = 8 * read_pgm(ifile);
-            ifile.close();
-        }
+        assert(base_potential.cols() == boundary_ids.cols());
+        assert(base_potential.rows() == boundary_ids.rows());
     }
-    std::cerr << "Setup: Read metaregions.\n" << std::flush;
+
+    void apply_weights(const std::vector<ScalarType> weights)
     {
-        const auto fname = "../../../metagermany.pgm";
-        std::ifstream ifile(fname);
-        if (!ifile.is_open()) {
-            mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
-            return 1;
+        assert(base_potential.cols() == potential.cols());
+        assert(base_potential.rows() == potential.rows());
+        assert(weights.size() == num_weights);
+        // assign weights to map values
+        {
+            size_t i = 0;
+            for (auto& weight : weight_map) {
+                weight.second = weights[i];
+                i++;
+            }
         }
-        else {
-            metaregions = mio::mpm::read_pgm_raw(ifile).first;
-            ifile.close();
+        // recompute potential
+        for (Eigen::Index i = 0; i < potential.rows(); i++) {
+            for (Eigen::Index j = 0; j < potential.cols(); j++) {
+                if (boundary_ids(i, j) > 0) // skip non-boundary entries
+                    potential(i, j) = base_potential(i, j) * get_weight(weight_map, boundary_ids(i, j), missing_keys);
+            }
         }
     }
 
-    int metaregion = 4;
-    std::vector<double> avg_rel_disp(999, 0);
-    // for (int metaregion = 0; metaregion < metaregions.maxCoeff(); metaregion++)
-    for (int k = 0; k < 10; k++) {
+private:
+    // Return the (maximum) weight corresponding to (all) bits in bitkey. Accepts bitkeys with 0, 2 or 3 bits set.
+    // Weights are requested from the map w as a pair (a, b), where a and b are the positions of the bits set in
+    // bitkey, and a < b. If no entry is present, the weight defaults to 0.
+    // Missing pairs are added to the set missing_keys.
+    static ScalarType get_weight(const std::map<std::pair<int, int>, ScalarType> w, int bitkey,
+                                 std::set<std::pair<int, int>>& missing_keys)
+    {
+        // in a map (i.e. the potential), the bitkey encodes which (meta)regions are adjacent to a given boundary
+        // point. if a boundary point is next to (or at least close to) the i-th region (index starting at 1), then
+        // the (i-1)-th bit in bitkey is set to 1. we only treat the cases that there are two or three adjacent
+        // regions, as other cases do not appear in the maps we consider.
 
-        std::vector<Model::Agent> agents;
-        for (Eigen::Index i = 0; i < metaregions.rows(); i++) {
-            for (Eigen::Index j = 0; j < metaregions.cols(); j++) {
-                if (metaregions(i, j) == metaregion + 1) {
-                    agents.push_back({{i, j}, Status::Default, metaregion});
+        auto num_bits = mio::mpm::num_bits_set(bitkey);
+        if (num_bits == 2) { // border between two regions
+            // read positions (key) from bitkey
+            std::array<int, 2> key;
+            int i = 0; // key index
+            // iterate bit positions
+            for (int k = 0; k < 8 * sizeof(int); k++) {
+                if ((bitkey >> k) & 1) { // check that the k-th bit is set
+                    // write down keys in increasing order
+                    key[i] = k;
+                    i++;
+                }
+            }
+            // try to get weight an return it. failing that, register missing key
+            // note that find either returns an iterator to the correct entry, or to end if the entry does not exist
+            auto map_itr = w.find({key[0], key[1]});
+            if (map_itr != w.end()) {
+                return map_itr->second;
+            }
+            else {
+                missing_keys.insert({key[0], key[1]});
+                return 0;
+            }
+        }
+        else if (num_bits == 3) {
+            // read positions (key) from bitkey
+            int i = 0;
+            std::array<int, 3> key;
+            for (int k = 0; k < 8 * sizeof(int); k++) {
+                if ((bitkey >> k) & 1) {
+                    key[i] = k;
+                    i++;
+                }
+            }
+            // try to get weight for all 3 pairs of positions, taking its maximum
+            // any failure registers a missing key
+            ScalarType val = -std::numeric_limits<ScalarType>::max();
+            // first pair
+            auto map_itr = w.find({key[0], key[1]});
+            if (map_itr != w.end()) {
+                val = std::max(val, map_itr->second);
+            }
+            else {
+                missing_keys.insert({key[0], key[1]});
+            }
+            // second pair
+            map_itr = w.find({key[1], key[2]});
+            if (map_itr != w.end()) {
+                val = std::max(val, map_itr->second);
+            }
+            else {
+                missing_keys.insert({key[1], key[2]});
+            }
+            // third pair
+            map_itr = w.find({key[0], key[2]});
+            if (map_itr != w.end()) {
+                val = std::max(val, map_itr->second);
+            }
+            else {
+                missing_keys.insert({key[0], key[2]});
+            }
+            // return the maximum weight, or 0 by default
+            return std::max(0.0, val);
+        }
+        else if (num_bits == 0) { // handle non-boundary points
+            return 0;
+        }
+        else { // warn and abort if 1 or more than 3 bits are set
+            mio::log(mio::LogLevel::critical, "Number of bits set should be 2 or 3, was {}.\n", num_bits);
+            exit(EXIT_FAILURE);
+        }
+    }
+};
+
+struct FittingFunctionSetup {
+    using Model  = mio::mpm::ABM<PotentialGermany<States>>;
+    using Status = Model::Status;
+
+    const Eigen::MatrixXd& potential; // reference to a WeightedPotential.potential
+    const Eigen::MatrixXi metaregions;
+    Eigen::MatrixXd reference_commuters; // number of commuters between regions
+    double t_max;
+    std::vector<Model::Agent> agents;
+
+    // <index>: <County Name> <County ID>
+    // 0:   Fürstenfeldbruck    9179
+    // 1:   Dachau              9174
+    // 2:   Starnberg           9188
+    // 3:   München LH          9162
+    // 4:   München             9184
+    // 5:   Freising            9178
+    // 6:   Erding              9177
+    // 7:   Ebersberg           9175
+    // county_ids are the indices of the counties above in the dict "County" from
+    // pycode/memilio-epidata/memilio/epidata/defaultDict.py
+    const std::vector<int> county_ids = {233, 228, 242, 238, 223, 232, 231, 229};
+    // county population data
+    const std::vector<double> reference_populations = {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
+    // total population in all considered counties
+    const double reference_population =
+        std::accumulate(reference_populations.begin(), reference_populations.end(), 0.0);
+
+    // uses a weighted potential, loads metaregions and commuter data, prepares agents and reference values.
+    // needed for the model setup and error calculation in single_run_mobility_error
+    explicit FittingFunctionSetup(const WeightedPotential& wp, const std::string& metaregions_pgm_file,
+                                  const std::string& mobility_data_directory, const double t_max)
+        : potential(wp.potential)
+        , metaregions([&metaregions_pgm_file]() {
+            std::ifstream ifile(metaregions_pgm_file);
+            if (!ifile.is_open()) { // write error and abort
+                mio::log(mio::LogLevel::critical, "Could not open metaregion file {}", metaregions_pgm_file);
+                exit(1);
+            }
+            else { // read pgm from file and return matrix
+                auto tmp = mio::mpm::read_pgm_raw(ifile).first;
+                ifile.close();
+                return tmp;
+            }
+        }())
+        , reference_commuters([&mobility_data_directory]() {
+            // try and load mobility data
+            auto res = get_transition_matrices(mobility_data_directory);
+            if (res) { // return the commuter matrix
+                return res.value();
+            }
+            else { /// write error and abort
+                mio::log(mio::LogLevel::critical, res.error().formatted_message());
+                exit(res.error().code().value());
+            }
+        }())
+        , t_max(t_max)
+        , agents() // filled below
+    {
+        // set one agent per every four pixels
+        // the concentration of agents does not appear to have a strong influence on the error of single_run_mobility_error below
+
+        // while (std::accumulate(subpopulations.begin(), subpopulations.end(), 0.0) > 0) {
+        for (Eigen::Index i = 0; i < metaregions.rows(); i += 2) {
+            for (Eigen::Index j = 0; j < metaregions.cols(); j += 2) {
+                // auto& pop = subpopulations[metaregions(i, j) - 1];
+                if (metaregions(i, j) != 0) {
+                    // if (metaregions(i, j) != 0 && pop > 0) {
+                    agents.push_back({{i, j}, Model::Status::Default, metaregions(i, j) - 1});
+                    // --pop;
                 }
             }
         }
-
-        // std::ofstream ofile("../../../agents_pre.txt");
-        // for (auto& a : agents) {
-        //     ofile << a.position[0] << " " << potential.cols() - a.position[1] << "\n";
         // }
-        // ofile.close();
+    }
+};
 
-        Model model(agents, adoption_rates, potential, metaregions);
+// creates a model, runs it, and calculates the l2 error for transition rates
+double single_run_mobility_error(const FittingFunctionSetup& ffs)
+{
+    using Model = FittingFunctionSetup::Model;
 
-        std::cerr << "Starting simulation for region " << metaregion << " ( " << agents.size() << " agents).\n";
+    // create model
+    Model model(ffs.agents, {}, ffs.potential, ffs.metaregions);
 
-        // mio::Simulation<Model> sim(model, 0, 0.05);
-        // sim.advance(10);
-        // auto result = sim.get_result();
-        auto result = mio::simulate(0, 1000, 0.05, model);
+    // run simulation
+    mio::Simulation<Model> sim(model, 0, 0.05);
+    sim.advance(ffs.t_max);
+    auto result = sim.get_result();
 
-        // ofile.open("../../../agents_post.txt");
-        // for (auto& a : sim.get_model().populations) {
-        //     ofile << a.position[0] << " " << potential.cols() - a.position[1] << "\n";
-        // }
-        // ofile.close();
+    // shorthand for model
+    auto& m = sim.get_model();
 
-        // print_to_terminal(result, {});
-        auto daily_result = mio::interpolate_simulation_result(result);
-        for (int i = 1; i < daily_result.get_num_time_points(); i++) {
-            avg_rel_disp[i - 1] += (daily_result.get_value(i - 1)[metaregion] - daily_result.get_value(i)[metaregion]) /
-                                   daily_result.get_value(i - 1)[metaregion];
+    // calculate and return error
+    double l_2 = 0;
+    // double l_inf = 0;
+    for (int from = 0; from < ffs.reference_populations.size(); from++) {
+        for (int to = 0; to < ffs.reference_populations.size(); to++) {
+            const auto val = m.number_transitions({Model::Status::Default, from, to}) /
+                             (m.populations.size() * (sim.get_result().get_last_time() - sim.get_result().get_time(0)));
+            const auto ref =
+                ffs.reference_commuters(ffs.county_ids[from], ffs.county_ids[to]) / ffs.reference_population;
+            const auto err = std::abs(val - ref);
+            l_2 += err * err;
+            // l_inf = std::max(l_inf, err);
+            // std::cout << from << "->" << to << ":  value=";
+            // set_ostream_format(std::cout) << val << "  error=";
+            // set_ostream_format(std::cout) << err << "  rel_error=";
+            // set_ostream_format(std::cout) << ((ref > 0) ? err / ref : 0) << "\n";
         }
+    }
+    // std::cout << "l2 err=" << std::sqrt(l_2) << "\n";
+    // std::cout << "linf err=" << l_inf << "\n";
+    return std::sqrt(l_2);
+}
 
-        // std::cerr << "Total displacement: " << result.get_value(0)[metaregion] - result.get_last_value()[metaregion]
-        //           << ".\n";
-    }
-    std::cerr << "Daily relative displacement: ";
-    for (int i = 0; i < avg_rel_disp.size(); i++) {
-        std::cerr << avg_rel_disp[i] / 10 << " ";
-    }
-    std::cerr << "\n";
+int main()
+{
+    WeightedPotential wp("../../../potentially_germany.pgm", "../../../boundary_ids.pgm");
+    FittingFunctionSetup ffs(wp, "../../../metagermany.pgm", "../../../data/mobility/", 100);
+
+    auto result = dlib::find_min_global(
+        [&](auto&& w1, auto&& w2, auto&& w3, auto&& w4, auto&& w5, auto&& w6, auto&& w7, auto&& w8, auto&& w9,
+            auto&& w10, auto&& w11, auto&& w12, auto&& w13, auto&& w14) {
+            // let dlib set the weights for the potential
+            wp.apply_weights({w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14});
+            // calculate the transition rate error
+            return single_run_mobility_error(ffs);
+        },
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // lower bounds
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // upper bounds
+        std::chrono::seconds(20) // run this long
+    );
+
+    std::cout << "Minimizer:\n" << result.x << "\n";
+    std::cout << "Minimum error:\n" << result.y << "\n";
 
     return 0;
 }
