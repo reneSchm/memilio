@@ -5,3 +5,6 @@ target_link_libraries(fitting_trial dlib::dlib memilio mpm)
 
 add_executable(dlib_example dlib_example.cpp)
 target_link_libraries(dlib_example dlib::dlib)
+
+add_executable(estimate_transition_rates estimate_transition_rates.cpp)
+target_link_libraries(estimate_transition_rates memilio mpm)

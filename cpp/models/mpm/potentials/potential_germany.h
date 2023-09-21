@@ -53,13 +53,14 @@ public:
     };
 
     PotentialGermany(const std::vector<Agent>& agents, const typename mio::mpm::AdoptionRates<Status>::Type& rates,
-                     Eigen::Ref<const Eigen::MatrixXd> potential, Eigen::Ref<const Eigen::MatrixXi> metaregions,
+                     Eigen::Ref<const Eigen::MatrixXd> potential, Eigen::Ref<const Eigen::MatrixXi> metaregions, std::vector<InfectionState> non_moving_states ={},
                      const std::vector<double>& sigma  = std::vector<double>(8, 1440.0 / 200.0),
                      const double contact_radius_in_km = 1000000)
         : potential(potential)
         , metaregions(metaregions)
         , populations(agents)
         , sigma(sigma)
+        , non_moving_states(non_moving_states)
         , contact_radius(get_contact_radius_factor() * contact_radius_in_km)
         , accumulated_contact_rates{0.}
         , contact_rates_count{0}
@@ -131,6 +132,7 @@ public:
 
     void move(const double t, const double dt, Agent& agent)
     {
+        if(std::find(non_moving_states.begin(), non_moving_states.end(), agent.status) == non_moving_states.end()){
         Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
                       mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
 
@@ -153,6 +155,7 @@ public:
         if (makes_transition) {
             m_number_transitions[static_cast<size_t>(agent.status)](land_old, agent.land)++;
         }
+    }
     }
 
     Eigen::VectorXd time_point() const
@@ -272,6 +275,7 @@ private:
     const std::vector<double> sigma;
     const double contact_radius;
     std::vector<Eigen::MatrixXd> m_number_transitions;
+    std::vector<InfectionState> non_moving_states;
 };
 
 #endif // POTENTIAL_GERMANY_H_

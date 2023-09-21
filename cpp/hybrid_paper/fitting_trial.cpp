@@ -306,7 +306,7 @@ double single_run_mobility_error(const FittingFunctionSetup& ffs, std::vector<do
     using Model = FittingFunctionSetup::Model;
 
     // create model
-    Model model(ffs.agents, {}, ffs.potential, ffs.metaregions, sigma);
+    Model model(ffs.agents, {}, ffs.potential, ffs.metaregions, {}, sigma);
 
     // run simulation
     mio::Simulation<Model> sim(model, 0, 0.05);
