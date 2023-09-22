@@ -53,9 +53,10 @@ public:
     };
 
     PotentialGermany(const std::vector<Agent>& agents, const typename mio::mpm::AdoptionRates<Status>::Type& rates,
-                     Eigen::Ref<const Eigen::MatrixXd> potential, Eigen::Ref<const Eigen::MatrixXi> metaregions, std::vector<InfectionState> non_moving_states ={},
-                     const std::vector<double>& sigma  = std::vector<double>(8, 1440.0 / 200.0),
-                     const double contact_radius_in_km = 1000000)
+                     Eigen::Ref<const Eigen::MatrixXd> potential, Eigen::Ref<const Eigen::MatrixXi> metaregions,
+                     std::vector<InfectionState> non_moving_states = {},
+                     const std::vector<double>& sigma              = std::vector<double>(8, 1440.0 / 200.0),
+                     const double contact_radius_in_km             = 1000000)
         : potential(potential)
         , metaregions(metaregions)
         , populations(agents)
@@ -132,30 +133,30 @@ public:
 
     void move(const double t, const double dt, Agent& agent)
     {
-        if(std::find(non_moving_states.begin(), non_moving_states.end(), agent.status) == non_moving_states.end()){
-        Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
-                      mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
+        if (std::find(non_moving_states.begin(), non_moving_states.end(), agent.status) == non_moving_states.end()) {
+            Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
+                          mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
 
-        auto land_old    = agent.land;
-        auto pnew        = agent.position;
-        auto noise       = (sigma[land_old] * std::sqrt(dt)) * p;
-        int num_substeps = std::max<int>(noise.norm(), 1);
-        for (int substep = 0; substep < num_substeps; ++substep) {
-            pnew -= (dt * grad_U(pnew) - noise) / num_substeps;
-        }
-        if (potential(pnew[0], pnew[1]) < 8) {
-            agent.position = pnew;
-        }
+            auto land_old    = agent.land;
+            auto pnew        = agent.position;
+            auto noise       = (sigma[land_old] * std::sqrt(dt)) * p;
+            int num_substeps = std::max<int>(noise.norm(), 1);
+            for (int substep = 0; substep < num_substeps; ++substep) {
+                pnew -= (dt * grad_U(pnew) - noise) / num_substeps;
+            }
+            if (potential(pnew[0], pnew[1]) < 8) {
+                agent.position = pnew;
+            }
 
-        const auto land = metaregions(agent.position[0], agent.position[1]);
-        if (land > 0) {
-            agent.land = land - 1; // shift land so we can use it as index
+            const auto land = metaregions(agent.position[0], agent.position[1]);
+            if (land > 0) {
+                agent.land = land - 1; // shift land so we can use it as index
+            }
+            const bool makes_transition = (land_old != agent.land);
+            if (makes_transition) {
+                m_number_transitions[static_cast<size_t>(agent.status)](land_old, agent.land)++;
+            }
         }
-        const bool makes_transition = (land_old != agent.land);
-        if (makes_transition) {
-            m_number_transitions[static_cast<size_t>(agent.status)](land_old, agent.land)++;
-        }
-    }
     }
 
     Eigen::VectorXd time_point() const

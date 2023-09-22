@@ -303,7 +303,7 @@ struct FittingFunctionSetup {
 double single_run_mobility_error(const FittingFunctionSetup& ffs, std::vector<double> sigma)
 {
     TIME_TYPE pre_run = TIME_NOW;
-    using Model = FittingFunctionSetup::Model;
+    using Model       = FittingFunctionSetup::Model;
 
     // create model
     Model model(ffs.agents, {}, ffs.potential, ffs.metaregions, {}, sigma);
@@ -321,8 +321,9 @@ double single_run_mobility_error(const FittingFunctionSetup& ffs, std::vector<do
     // double l_inf = 0;
     for (int from = 0; from < ffs.reference_populations.size(); from++) {
         for (int to = 0; to < ffs.reference_populations.size(); to++) {
-            const auto val = m.number_transitions({Model::Status::Default, from, to}) /
-                             (m.populations.size() * (sim.get_result().get_last_time() - sim.get_result().get_time(0)));
+            const auto val =
+                m.number_transitions({Model::Status::Default, mio::mpm::Region(from), mio::mpm::Region(to)}) /
+                (m.populations.size() * (sim.get_result().get_last_time() - sim.get_result().get_time(0)));
             const auto ref =
                 ffs.reference_commuters(ffs.county_ids[from], ffs.county_ids[to]) / ffs.reference_population;
             const auto err = std::abs(val - ref);
@@ -341,12 +342,13 @@ double single_run_mobility_error(const FittingFunctionSetup& ffs, std::vector<do
     return std::sqrt(l_2);
 }
 
-double average_run_mobility_error(const FittingFunctionSetup& ffs, std::vector<double> sigma, int num_runs){
+double average_run_mobility_error(const FittingFunctionSetup& ffs, std::vector<double> sigma, int num_runs)
+{
     std::vector<double> errors(num_runs);
-    for(int run=0; run<num_runs; ++run){
+    for (int run = 0; run < num_runs; ++run) {
         errors[run] = single_run_mobility_error(ffs, sigma);
     }
-    return std::accumulate(errors.begin(), errors.end(), 0.0)/errors.size();
+    return std::accumulate(errors.begin(), errors.end(), 0.0) / errors.size();
 }
 
 int main()
@@ -354,34 +356,37 @@ int main()
     TIME_TYPE pre_potential = TIME_NOW;
     WeightedPotential wp("../../potentially_germany.pgm", "../../boundary_ids.pgm");
     TIME_TYPE post_potential = TIME_NOW;
-    fprintf(stdout, "# Time for creating weighted potential: %.*g\n", PRECISION, PRINTABLE_TIME(post_potential - pre_potential));
+    fprintf(stdout, "# Time for creating weighted potential: %.*g\n", PRECISION,
+            PRINTABLE_TIME(post_potential - pre_potential));
     TIME_TYPE pre_fitting_function_setup = TIME_NOW;
     FittingFunctionSetup ffs(wp, "../../metagermany.pgm", "../../data/mobility/", 100);
     TIME_TYPE post_fitting_function_setup = TIME_NOW;
-    fprintf(stdout, "# Time for fitting function setup: %.*g\n", PRECISION, PRINTABLE_TIME(post_fitting_function_setup - pre_fitting_function_setup));
+    fprintf(stdout, "# Time for fitting function setup: %.*g\n", PRECISION,
+            PRINTABLE_TIME(post_fitting_function_setup - pre_fitting_function_setup));
 
     TIME_TYPE pre_min_function = TIME_NOW;
-    auto result = dlib::find_min_global(
+    auto result                = dlib::find_min_global(
         [&](auto&& w1, auto&& w2, auto&& w3, auto&& w4, auto&& w5, auto&& w6, auto&& w7, auto&& w8, auto&& w9,
-            auto&& w10, auto&& w11, auto&& w12, auto&& w13, auto&& w14, auto&& sigma1, auto&& sigma2, auto&& sigma3, auto&& sigma4, auto&& sigma5, auto&& sigma6, auto&& sigma7, auto&& sigma8) {
+            auto&& w10, auto&& w11, auto&& w12, auto&& w13, auto&& w14, auto&& sigma1, auto&& sigma2, auto&& sigma3,
+            auto&& sigma4, auto&& sigma5, auto&& sigma6, auto&& sigma7, auto&& sigma8) {
             // let dlib set the weights for the potential
             wp.apply_weights({w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14});
             // calculate the transition rate error
             return average_run_mobility_error(ffs, {sigma1, sigma2, sigma3, sigma4, sigma5, sigma6, sigma7, sigma8}, 3);
         },
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0}, // lower bounds
-        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,15,15,15,15,15,15,15,15}, // upper bounds
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // lower bounds
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 15, 15, 15, 15, 15, 15, 15, 15}, // upper bounds
         std::chrono::seconds(200) // run this long
     );
     TIME_TYPE post_min_function = TIME_NOW;
     fprintf(stdout, "# Time for minimizing: %.*g\n", PRECISION, PRINTABLE_TIME(post_min_function - pre_min_function));
 
     std::cout << "Minimizer borders:\n";
-    for(size_t border=0;border<14;++border){
+    for (size_t border = 0; border < 14; ++border) {
         std::cout << result.x(border) << "\n";
     }
     std::cout << "Minimizer sigma: \n";
-    for(size_t s=14;s<result.x.size();++s){
+    for (size_t s = 14; s < result.x.size(); ++s) {
         std::cout << result.x(s) << "\n";
     }
     std::cout << "Minimum error:\n" << result.y << "\n";
