@@ -5,6 +5,7 @@
 #include "memilio/io/mobility_io.h"
 
 #include <dlib/global_optimization.h>
+#include <omp.h>
 
 #include <set>
 
@@ -300,7 +301,7 @@ struct FittingFunctionSetup {
 };
 
 // creates a model, runs it, and calculates the l2 error for transition rates
-double single_run_mobility_error(const FittingFunctionSetup& ffs, std::vector<double> sigma)
+double single_run_mobility_error(const FittingFunctionSetup& ffs, const std::vector<double>& sigma)
 {
     TIME_TYPE pre_run = TIME_NOW;
     using Model       = FittingFunctionSetup::Model;
@@ -342,9 +343,10 @@ double single_run_mobility_error(const FittingFunctionSetup& ffs, std::vector<do
     return std::sqrt(l_2);
 }
 
-double average_run_mobility_error(const FittingFunctionSetup& ffs, std::vector<double> sigma, int num_runs)
+double average_run_mobility_error(const FittingFunctionSetup& ffs, const std::vector<double>& sigma, int num_runs)
 {
     std::vector<double> errors(num_runs);
+#pragma omp parallel for
     for (int run = 0; run < num_runs; ++run) {
         errors[run] = single_run_mobility_error(ffs, sigma);
     }
@@ -353,6 +355,9 @@ double average_run_mobility_error(const FittingFunctionSetup& ffs, std::vector<d
 
 int main()
 {
+    int num_runs = (omp_get_max_threads() > 1) ? omp_get_max_threads() : 3;
+    std::cout << "num_runs = " << num_runs << "\n";
+
     TIME_TYPE pre_potential = TIME_NOW;
     WeightedPotential wp("../../potentially_germany.pgm", "../../boundary_ids.pgm");
     TIME_TYPE post_potential = TIME_NOW;
@@ -372,11 +377,12 @@ int main()
             // let dlib set the weights for the potential
             wp.apply_weights({w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14});
             // calculate the transition rate error
-            return average_run_mobility_error(ffs, {sigma1, sigma2, sigma3, sigma4, sigma5, sigma6, sigma7, sigma8}, 3);
+            return average_run_mobility_error(ffs, {sigma1, sigma2, sigma3, sigma4, sigma5, sigma6, sigma7, sigma8},
+                                                             num_runs);
         },
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // lower bounds
         {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 15, 15, 15, 15, 15, 15, 15, 15}, // upper bounds
-        std::chrono::seconds(200) // run this long
+        std::chrono::hours(24) // run this long
     );
     TIME_TYPE post_min_function = TIME_NOW;
     fprintf(stdout, "# Time for minimizing: %.*g\n", PRECISION, PRINTABLE_TIME(post_min_function - pre_min_function));
