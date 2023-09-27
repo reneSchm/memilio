@@ -1,89 +1,8 @@
-#include "memilio/io/epi_data.h"
-#include "memilio/io/io.h"
-#include "hybrid_paper/infection_state.h"
-#include "memilio/utils/date.h"
-#include "mpm/abm.h"
-#include "mpm/potentials/potential_germany.h"
-#include "mpm/utility.h"
-#include "memilio/io/json_serializer.h"
-#include "mpm/potentials/map_reader.h"
+#include "hybrid_paper/initialization.h"
 
 #define TIME_TYPE std::chrono::high_resolution_clock::time_point
 #define TIME_NOW std::chrono::high_resolution_clock::now()
 #define PRINTABLE_TIME(_time) (std::chrono::duration_cast<std::chrono::duration<double>>(_time)).count()
-
-//district, county or state id of a data entry if available, 0 (for whole country) otherwise
-//used to compare data entries to integer ids in STL algorithms
-template <class EpiDataEntry>
-int get_region_id(const EpiDataEntry& entry)
-{
-    return entry.county_id
-               ? entry.county_id->get()
-               : (entry.state_id ? entry.state_id->get() : (entry.district_id ? entry.district_id->get() : 0));
-}
-//overload for integers, so the comparison of data entry to integers is symmetric (required by e.g. equal_range)
-int get_region_id(int id)
-{
-    return id;
-}
-
-mio::IOResult<std::vector<std::vector<double>>>
-set_confirmed_case_data(std::vector<int>& regions, std::vector<double>& populations, mio::Date start_date, double t_E,
-                        double t_C, double t_I, double mu_C_R, double scaling_factor_infected = 1.0)
-{
-    std::vector<double> pop_dist((size_t)mio::mpm::paper::InfectionState::Count);
-    std::vector<std::vector<double>> pop_dist_per_region(regions.size(), pop_dist);
-    BOOST_OUTCOME_TRY(confirmed_case_data,
-                      mio::read_confirmed_cases_data("../../data/Germany/cases_all_county_age_ma7.json"));
-    //sort data
-    std::sort(confirmed_case_data.begin(), confirmed_case_data.end(), [](auto&& a, auto&& b) {
-        return std::make_tuple(get_region_id(a), a.date) < std::make_tuple(get_region_id(b), b.date);
-    });
-
-    for (auto region_idx = size_t(0); region_idx < regions.size(); ++region_idx) {
-
-        //get entries for region
-        auto region_entry_range_it = std::equal_range(confirmed_case_data.begin(), confirmed_case_data.end(),
-                                                      regions[region_idx], [](auto&& a, auto&& b) {
-                                                          return get_region_id(a) < get_region_id(b);
-                                                      });
-        auto region_entry_range    = mio::make_range(region_entry_range_it);
-
-        //TODO: seek correct date(e.g. with find_if) instead of iterating over all
-        for (auto&& region_entry : region_entry_range) {
-            auto date_df = region_entry.date;
-            if (date_df == mio::offset_date_by_days(start_date, 0)) {
-                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::I] +=
-                    scaling_factor_infected * region_entry.num_confirmed;
-                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::C] -=
-                    1 / (1 - mu_C_R) * scaling_factor_infected * region_entry.num_confirmed;
-            }
-            if (date_df == mio::offset_date_by_days(start_date, t_C)) {
-                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::C] +=
-                    1 / (1 - mu_C_R) * scaling_factor_infected * region_entry.num_confirmed;
-                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::E] -=
-                    1 / (1 - mu_C_R) * scaling_factor_infected * region_entry.num_confirmed;
-            }
-            if (date_df == mio::offset_date_by_days(start_date, t_E + t_C)) {
-                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::E] +=
-                    1 / (1 - mu_C_R) * scaling_factor_infected * region_entry.num_confirmed;
-            }
-            if (date_df == mio::offset_date_by_days(start_date, -t_I)) {
-                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::I] -=
-                    scaling_factor_infected * region_entry.num_confirmed;
-                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::R] +=
-                    region_entry.num_recovered;
-                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::D] += region_entry.num_deaths;
-            }
-        }
-        auto comp_sum =
-            std::accumulate(pop_dist_per_region[region_idx].begin(), pop_dist_per_region[region_idx].end(), 0.0);
-        pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::S] =
-            populations[region_idx] - comp_sum;
-    }
-
-    return mio::success(pop_dist_per_region);
-}
 
 mio::IOResult<std::vector<mio::mpm::ABM<PotentialGermany<mio::mpm::paper::InfectionState>>::Agent>>
 create_agents(std::vector<std::vector<double>>& pop_dists, std::vector<double>& populations, double persons_per_agent,
@@ -153,5 +72,4 @@ int main()
     auto agents = create_agents(pop_dists, populations, 100, metaregions, true);
 
     return 0;
-    ;
 }
