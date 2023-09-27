@@ -1,3 +1,4 @@
+# standalone python scrip - generates a pgm image used by map_reader.cpp
 import os
 import geopandas
 import numpy as np
