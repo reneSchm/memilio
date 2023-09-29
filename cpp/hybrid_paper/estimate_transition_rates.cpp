@@ -3,7 +3,7 @@
 #include "mpm/model.h"
 #include "models/mpm/potentials/map_reader.h"
 #include "mpm/potentials/potential_germany.h"
-
+#include "hybrid_paper/weighted_potential.h"
 namespace mio
 {
 namespace mpm
@@ -78,19 +78,26 @@ int main()
     Eigen::MatrixXd potential;
     Eigen::MatrixXi metaregions;
 
-    std::cerr << "Setup: Read potential.\n" << std::flush;
-    {
-        const auto fname = "../../potentially_germany.pgm";
-        std::ifstream ifile(fname);
-        if (!ifile.is_open()) {
-            mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
-            return 1;
-        }
-        else {
-            potential = 8 * mio::mpm::read_pgm(ifile);
-            ifile.close();
-        }
-    }
+    WeightedPotential wp("../../potentially_germany.pgm", "../../boundary_ids.pgm");
+
+    const std::vector<double> weights{6.22485, 9.99625,   9.99997, 0.0000887, 4.78272, 0.000177, 7.80954,
+                                      7.84763, 0.0000798, 9.99982, 9.99987,   3.77446, 10, 2.92137};
+    const std::vector<double> sigmas{0.00114814, 0.0000000504, 15, 15, 14.9999, 0.000246785, 14.4189, 14.9999};
+    wp.apply_weights(weights);
+
+    // std::cerr << "Setup: Read potential.\n" << std::flush;
+    // {
+    //     const auto fname = "../../potentially_germany.pgm";
+    //     std::ifstream ifile(fname);
+    //     if (!ifile.is_open()) {
+    //         mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
+    //         return 1;
+    //     }
+    //     else {
+    //         potential = 8 * mio::mpm::read_pgm(ifile);
+    //         ifile.close();
+    //     }
+    // }
     std::cerr << "Setup: Read metaregions.\n" << std::flush;
     {
         const auto fname = "../../metagermany.pgm";
@@ -114,9 +121,9 @@ int main()
         }
     }
 
-    mio::mpm::ABM<PotentialGermany<mio::mpm::paper::InfectionState>> model(agents, {}, potential, metaregions);
+    mio::mpm::ABM<PotentialGermany<mio::mpm::paper::InfectionState>> model(agents, {}, wp.potential, metaregions, {mio::mpm::paper::InfectionState::D}, sigmas);
 
-    calculate_transition_rates(model, 10, 100, 8);
+    calculate_transition_rates(model, 3, 10, 8);
 
     return 0;
 }
