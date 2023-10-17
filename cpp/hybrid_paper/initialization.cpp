@@ -13,11 +13,17 @@ create_agents(std::vector<std::vector<double>>& pop_dists, std::vector<double>& 
         int num_agents = populations[region] / persons_per_agent;
         std::transform(pop_dists[region].begin(), pop_dists[region].end(), pop_dists[region].begin(),
                        [&persons_per_agent](auto& c) {
-                           return c * persons_per_agent;
+                           return c / persons_per_agent;
                        });
         while (num_agents > 0) {
             for (Eigen::Index i = 0; i < metaregions.rows(); i += 2) {
+                if (num_agents <= 0) {
+                    break;
+                }
                 for (Eigen::Index j = 0; j < metaregions.cols(); j += 2) {
+                    if (num_agents <= 0) {
+                        break;
+                    }
                     if (metaregions(i, j) == int(region) + 1) {
                         auto status = mio::DiscreteDistribution<int>::get_instance()(pop_dists[region]);
                         agents.push_back({{i, j}, static_cast<mio::mpm::paper::InfectionState>(status), int(region)});
@@ -44,16 +50,20 @@ create_agents(std::vector<std::vector<double>>& pop_dists, std::vector<double>& 
 
 int main()
 {
+    //number inhabitants per region
     std::vector<double> populations = {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
+    //county ids
     std::vector<int> regions        = {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175};
     double t_Exposed                = 4.2;
     double t_Carrier                = 4.2;
     double t_Infected               = 7.5;
     double mu_C_R                   = 0.23;
+    //vector with entry for every region. Entries are vector with population for every infection state according to initialization
     std::vector<std::vector<double>> pop_dists =
         set_confirmed_case_data(regions, populations, mio::Date(2020, 12, 12), t_Exposed, t_Carrier, t_Infected, mu_C_R)
             .value();
 
+    //read map with metaregions
     Eigen::MatrixXi metaregions;
 
     std::cerr << "Setup: Read metaregions.\n" << std::flush;
@@ -69,6 +79,7 @@ int main()
             ifile.close();
         }
     }
+    //returns vector with agents. The agents' infection state is set according to pop_dists
     auto agents = create_agents(pop_dists, populations, 100, metaregions, true);
 
     return 0;
