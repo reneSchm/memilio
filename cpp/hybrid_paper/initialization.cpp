@@ -58,9 +58,12 @@ int main()
     double t_Carrier                = 4.2;
     double t_Infected               = 7.5;
     double mu_C_R                   = 0.23;
+
+    std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =  mio::read_confirmed_cases_data("../../data/Germany/cases_all_county_age_ma7.json").value();
+
     //vector with entry for every region. Entries are vector with population for every infection state according to initialization
     std::vector<std::vector<double>> pop_dists =
-        set_confirmed_case_data(regions, populations, mio::Date(2020, 12, 12), t_Exposed, t_Carrier, t_Infected, mu_C_R)
+        set_confirmed_case_data(confirmed_cases, regions, populations, mio::Date(2020, 12, 12), t_Exposed, t_Carrier, t_Infected, mu_C_R)
             .value();
 
     //read map with metaregions
