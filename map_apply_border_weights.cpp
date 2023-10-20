@@ -2,6 +2,7 @@
 #include "cpp/memilio/io/cli.h"
 #include <map>
 
+// superseeded by WeightedPotential class in cpp/hyprid_paper/fitting_trial.cpp
 // use the following command to compile
 // g++ --std=c++17 -Wall --pedantic -Icpp -Icpp/build/memilio -Icpp/build/_deps/eigen-src -Icpp/build/_deps/jsoncpp-src/include/ -Wl,-rpath,$(pwd)/cpp/build/lib map_apply_border_weights.cpp cpp/build/lib/libjsoncpp.so cpp/models/mpm/potentials/map_reader.cpp
 

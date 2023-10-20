@@ -15,3 +15,6 @@ target_link_libraries(initialization memilio mpm)
 
 add_executable(adoption_rate_fitting adoption_rate_fitting.cpp)
 target_link_libraries(adoption_rate_fitting dlib::dlib memilio mpm)
+
+add_executable(map_reader map_reader.cpp)
+target_link_libraries(map_reader memilio mpm)

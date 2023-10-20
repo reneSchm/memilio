@@ -3,9 +3,8 @@
 // g++ --std=c++14 -Wall --pedantic -Icpp -Icpp/build/_deps/eigen-src -o map_reader map_reader.cpp cpp/models/mpm/potentials/map_reader.cpp
 // generate pgm's using map.py with .shp files from https://daten.gdz.bkg.bund.de/produkte/vg/vg2500/aktuell/vg2500_12-31.gk3.shape.zip (unpack into tools/)
 
-#include "cpp/models/mpm/potentials/map_reader.h"
-
-#define DEBUG(cout_args) std::cerr << cout_args << std::endl << std::flush;
+#include "models/mpm/potentials/map_reader.h"
+#include "memilio/utils/logging.h"
 
 using namespace mio::mpm;
 
@@ -125,48 +124,51 @@ void extend_bitmap(Eigen::Ref<Eigen::MatrixXi> bitmap, Eigen::Index width)
     bitmap = canvas.block(width, width, bitmap.rows(), bitmap.cols());
 }
 
-std::vector<Position> laender = {
-    {0.16458333333333333, 0.4479166666666667}, // Schleswig-Holstein
-    {0.21666666666666667, 0.6333333333333333}, // MVP
-    {0.23958333333333334, 0.46458333333333335}, // Hamburg
-    {0.28958333333333336, 0.38958333333333334}, // Bremen
-    {0.3020833333333333, 0.4479166666666667}, // Niedersachsen
-    {0.30416666666666664, 0.6916666666666667}, // Brandenburg
-    {0.34375, 0.69375}, // Berlin
-    {0.4270833333333333, 0.58125}, // Sachsen Anhalt
-    {0.46875, 0.2916666666666667}, // NRW
-    {0.5083333333333333, 0.6979166666666666}, // Sachsen
-    {0.525, 0.5354166666666667}, // Thüringen
-    {0.5895833333333333, 0.38958333333333334}, // Hessen
-    {0.6354166666666666, 0.28541666666666665}, // RLP
-    {0.69375, 0.25416666666666665}, // Saarland
-    {0.74375, 0.6104166666666667}, // Bayern
-    {0.8, 0.4}, // BaWü
-};
+// metaregions are now  detected dynamically. the county data is unused
+// std::vector<Position> laender = {
+//     {0.16458333333333333, 0.4479166666666667}, // Schleswig-Holstein
+//     {0.21666666666666667, 0.6333333333333333}, // MVP
+//     {0.23958333333333334, 0.46458333333333335}, // Hamburg
+//     {0.28958333333333336, 0.38958333333333334}, // Bremen
+//     {0.3020833333333333, 0.4479166666666667}, // Niedersachsen
+//     {0.30416666666666664, 0.6916666666666667}, // Brandenburg
+//     {0.34375, 0.69375}, // Berlin
+//     {0.4270833333333333, 0.58125}, // Sachsen Anhalt
+//     {0.46875, 0.2916666666666667}, // NRW
+//     {0.5083333333333333, 0.6979166666666666}, // Sachsen
+//     {0.525, 0.5354166666666667}, // Thüringen
+//     {0.5895833333333333, 0.38958333333333334}, // Hessen
+//     {0.6354166666666666, 0.28541666666666665}, // RLP
+//     {0.69375, 0.25416666666666665}, // Saarland
+//     {0.74375, 0.6104166666666667}, // Bayern
+//     {0.8, 0.4}, // BaWü
+// };
 
 int main()
 {
-    DEBUG("open file")
-    std::ifstream file("potential_dpi=300.pgm");
-    DEBUG("read file")
+    const std::string file_prefix                = "../../../";
+    const std::string potential_filename         = file_prefix + "potential_dpi=300.pgm";
+    const std::string output_potential           = file_prefix + "potentially_germany.pgm";
+    const std::string output_metaregions         = file_prefix + "metagermany.pgm";
+    const std::string output_boundary_ids        = file_prefix + "boundary_ids.pgm";
+    const std::string output_boundary_simplyfied = file_prefix + "boundary_simplyfied.pgm";
+
+    mio::log_info("open file");
+    std::ifstream file(potential_filename);
+    if (!file.is_open()) { // write error and abort
+        mio::log(mio::LogLevel::critical, "Could not open file {}", potential_filename);
+        return 1;
+    }
+
+    mio::log_info("read file");
     auto image = read_pgm(file);
     file.close();
     image = (1 - image.array()).matrix(); // invert colors
 
-    DEBUG("manually fix a isolated pixel in the corner Fuerstenfeldbruck/LH Muenchen/Muenchen")
+    mio::log_info("manually fix an isolated pixel in the corner Fuerstenfeldbruck/LH Muenchen/Muenchen");
     image(508, 574) = 1;
 
-    // DEBUG("map federal states")
-    // size_t i               = 0;
-    // Eigen::MatrixXd metaregions = Eigen::MatrixXd::Zero(image.rows(), image.cols());
-    // for (auto land : laender) {
-    //     ++i;
-    //     const auto x = land[1] * metaregions.rows();
-    //     const auto y = (1 - land[0]) * metaregions.cols();
-    //     metaregions += i * find_connected_image_region(image, x, y, 0);
-    // }
-
-    DEBUG("map metaregions")
+    mio::log_info("map metaregions");
     size_t region              = 1;
     Eigen::MatrixXi is_outside = find_connected_image_region(image, 0, 0);
     extend_bitmap(is_outside, 1);
@@ -179,15 +181,28 @@ int main()
             }
         }
     }
-    DEBUG(" -> found " << region - 1);
+    mio::log_info(" -> found {}", region - 1);
 
-    DEBUG("set stencil")
-    Eigen::Matrix<double, 1, 5> stencil;
-    stencil(0, 0) = 0.5;
-    stencil(0, 1) = 1.0;
-    stencil(0, 2) = 1.0;
-    stencil(0, 3) = 1.0;
-    stencil(0, 4) = 0.5;
+    mio::log_info("set stencil");
+    // clang-format off
+    // generated using https://stackoverflow.com/questions/28342968/how-to-plot-a-2d-gaussian-with-different-sigma/55737551#55737551
+    // with: N = 9, Sigma = [[1,0],[0,1]]
+    // stored: np.savetxt("tst.txt", (Z - Z.min())/(Z.max() - Z.min()))
+    // used only central 7x7 data
+    std::vector<ScalarType> gauss_data = {
+        8.870833551280334073e-02, 1.819281669245390864e-01, 2.731928597373864953e-01, 3.120522650710688128e-01, 2.731928597373864953e-01, 1.819281669245390864e-01, 8.870833551280334073e-02,
+        1.819281669245390864e-01, 3.560857401120277599e-01, 5.265906335159235008e-01, 5.991895604387955654e-01, 5.265906335159235008e-01, 3.560857401120277599e-01, 1.819281669245390864e-01,
+        2.731928597373864953e-01, 5.265906335159235008e-01, 7.746737895689834730e-01, 8.803046049522565974e-01, 7.746737895689834730e-01, 5.265906335159235008e-01, 2.731928597373864953e-01,
+        3.120522650710688128e-01, 5.991895604387955654e-01, 8.803046049522565974e-01, 1.000000000000000000e+00, 8.803046049522565974e-01, 5.991895604387955654e-01, 3.120522650710688128e-01,
+        2.731928597373864953e-01, 5.265906335159235008e-01, 7.746737895689834730e-01, 8.803046049522565974e-01, 7.746737895689834730e-01, 5.265906335159235008e-01, 2.731928597373864953e-01,
+        1.819281669245390864e-01, 3.560857401120277599e-01, 5.265906335159235008e-01, 5.991895604387955654e-01, 5.265906335159235008e-01, 3.560857401120277599e-01, 1.819281669245390864e-01,
+        8.870833551280334073e-02, 1.819281669245390864e-01, 2.731928597373864953e-01, 3.120522650710688128e-01, 2.731928597373864953e-01, 1.819281669245390864e-01, 8.870833551280334073e-02
+    };
+    // clang-format on
+    Eigen::Matrix<double, 7, 7> stencil;
+    for (int i = 0; i < 7; i++)
+        for (int j = 0; j < 7; j++)
+            stencil(i, j) = gauss_data[i + 7 * j];
 
     Eigen::Matrix<double, 1, 5> stencil_ext;
     stencil_ext(0, 0) = 0.5;
@@ -196,7 +211,7 @@ int main()
     stencil_ext(0, 3) = 0.75;
     stencil_ext(0, 4) = 0.5;
 
-    DEBUG("identify boundary segments")
+    mio::log_info("identify boundary segments");
     Eigen::MatrixXi boundaries            = Eigen::MatrixXi::Zero(image.rows(), image.cols());
     Eigen::MatrixXi boundaries_simplified = Eigen::MatrixXi::Zero(image.rows(), image.cols());
     // iterate image, leave out two outermost rows/cols
@@ -226,53 +241,45 @@ int main()
     extend_bitmap(boundaries, stencil.cols() / 2);
     extend_bitmap(boundaries_simplified, stencil.cols() / 2);
 
-    // DEBUG(stencil.transpose() * stencil);
+    mio::log_info("apply stencil");
+    apply_stencil(image, stencil, 1.0);
 
-    DEBUG("apply stencil")
-    apply_stencil(image, stencil.transpose() * stencil, 1.0);
-
-    DEBUG("expand border")
+    mio::log_info("expand border");
     Eigen::MatrixXd exterior = find_connected_image_region(image, 0, 0, 0.75).cast<ScalarType>();
     apply_stencil(exterior, stencil_ext.transpose() * stencil_ext, 1.0);
     image = image.array().max(4 * exterior.array()).matrix();
     // image = 4 * exterior;
 
-    DEBUG("write files")
-    std::ofstream ofile("potentially_germany.pgm");
+    mio::log_info("write files");
+    std::ofstream ofile(output_potential);
     if (!ofile.is_open()) {
-        DEBUG("Could not open file potentially_germany.pgm");
+        mio::log(mio::LogLevel::critical, "Could not open file {}", output_potential);
         return 1;
     }
     write_pgm(ofile, image);
     ofile.close();
-    ofile.open("metagermany.pgm");
+    ofile.open(output_metaregions);
     if (!ofile.is_open()) {
-        DEBUG("Could not open file metagermany.pgm");
+        mio::log(mio::LogLevel::critical, "Could not open file {}", output_metaregions);
         return 1;
     }
     write_pgm(ofile, metaregions);
     ofile.close();
-    ofile.open("boundary_ids.pgm");
+    ofile.open(output_boundary_ids);
     if (!ofile.is_open()) {
-        DEBUG("Could not open file boundary_ids.pgm");
+        mio::log(mio::LogLevel::critical, "Could not open file {}", output_boundary_ids);
+
         return 1;
     }
     write_pgm(ofile, boundaries);
     ofile.close();
-    ofile.open("boundary_simplyfied.pgm");
+    ofile.open(output_boundary_simplyfied);
     if (!ofile.is_open()) {
-        DEBUG("Could not open file boundary_simplyfied.pgm");
+        mio::log(mio::LogLevel::critical, "Could not open file {}", output_boundary_simplyfied);
         return 1;
     }
     write_pgm(ofile, boundaries_simplified);
     ofile.close();
 
-    // DEBUG("print")
-    // for (Eigen::Index j = 0; j < image.cols(); j++) {
-    //     for (Eigen::Index i = 0; i < image.rows(); i++) {
-    //         std::cout << image(i, image.cols() - 1 - j) << " ";
-    //     }
-    //     std::cout << "\n";
-    // }
-    DEBUG("success")
+    mio::log_info("success");
 }
