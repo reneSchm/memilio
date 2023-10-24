@@ -3,7 +3,7 @@
 #include "models/mpm/potentials/map_reader.h"
 #include "models/mpm/abm.h"
 #include "memilio/io/mobility_io.h"
-#include "hybrid_paper/weighted_potential.h"
+#include "hybrid_paper/weighted_gradient.h"
 
 #include <dlib/global_optimization.h>
 #include <omp.h>
@@ -44,10 +44,10 @@ mio::IOResult<Eigen::MatrixXd> get_transition_matrices(std::string data_dir)
 }
 
 struct FittingFunctionSetup {
-    using Model  = mio::mpm::ABM<PotentialGermany<States>>;
+    using Model  = mio::mpm::ABM<GradientGermany<States>>;
     using Status = Model::Status;
 
-    const Eigen::MatrixXd& potential; // reference to a WeightedPotential.potential
+    const WeightedGradient::GradientMatrix& gradient; // reference to a WeightedGradient.gradient
     const Eigen::MatrixXi metaregions;
     Eigen::MatrixXd reference_commuters; // number of commuters between regions
     double t_max;
@@ -75,9 +75,9 @@ struct FittingFunctionSetup {
 
     // uses a weighted potential, loads metaregions and commuter data, prepares agents and reference values.
     // needed for the model setup and error calculation in single_run_mobility_error
-    explicit FittingFunctionSetup(WeightedPotential& wp, const std::string& metaregions_pgm_file,
+    explicit FittingFunctionSetup(WeightedGradient& wg, const std::string& metaregions_pgm_file,
                                   const std::string& mobility_data_directory, const double t_max)
-        : potential(wp.potential)
+        : gradient(wg.gradient)
         , metaregions([&metaregions_pgm_file]() {
             std::ifstream ifile(metaregions_pgm_file);
             if (!ifile.is_open()) { // write error and abort
@@ -103,24 +103,24 @@ struct FittingFunctionSetup {
         }())
         , t_max(t_max)
         , agents() // filled below
-        , border_pairs(wp.get_keys())
+        , border_pairs(wg.get_keys())
     {
         // set one agent per every four pixels
         // the concentration of agents does not appear to have a strong influence on the error of single_run_mobility_error below
         //std::vector<double> subpopulations(reference_populations.begin(), reference_populations.end());
         // while (std::accumulate(subpopulations.begin(), subpopulations.end(), 0.0) > 0) {
-            for (Eigen::Index i = 0; i < metaregions.rows(); i += 2) {
-                for (Eigen::Index j = 0; j < metaregions.cols(); j += 2) {
-                    // auto& pop = subpopulations[metaregions(i, j) - 1];
-                    if (metaregions(i, j) != 0) {
-                        // if (metaregions(i, j) != 0 && pop > 0) {
-                            agents.push_back({{i, j}, Model::Status::Default, metaregions(i, j) - 1});
-                            // --pop;
-                        }
-                    }
+        for (Eigen::Index i = 0; i < metaregions.rows(); i += 2) {
+            for (Eigen::Index j = 0; j < metaregions.cols(); j += 2) {
+                // auto& pop = subpopulations[metaregions(i, j) - 1];
+                if (metaregions(i, j) != 0) {
+                    // if (metaregions(i, j) != 0 && pop > 0) {
+                    agents.push_back({{i, j}, Model::Status::Default, metaregions(i, j) - 1});
+                    // --pop;
                 }
-           // }
+            }
         }
+        // }
+    }
 };
 
 // creates a model, runs it, and calculates the l2 error for transition rates
@@ -130,7 +130,7 @@ double single_run_mobility_error(const FittingFunctionSetup& ffs, const std::vec
     using Model       = FittingFunctionSetup::Model;
 
     // create model
-    Model model(ffs.agents, {}, ffs.potential, ffs.metaregions, {}, sigma);
+    Model model(ffs.agents, {}, ffs.gradient, ffs.metaregions, {}, sigma);
 
     // run simulation
     mio::Simulation<Model> sim(model, 0, 0.05);
@@ -182,12 +182,12 @@ int main()
 
     std::cout << "Current path is " << fs::current_path() << '\n';
     TIME_TYPE pre_potential = TIME_NOW;
-    WeightedPotential wp("../../potentially_germany.pgm", "../../boundary_ids.pgm");
+    WeightedGradient wg("../../potentially_germany_grad.json", "../../boundary_ids.pgm");
     TIME_TYPE post_potential = TIME_NOW;
     fprintf(stdout, "# Time for creating weighted potential: %.*g\n", PRECISION,
             PRINTABLE_TIME(post_potential - pre_potential));
     TIME_TYPE pre_fitting_function_setup = TIME_NOW;
-    FittingFunctionSetup ffs(wp, "../../metagermany.pgm", "../../data/mobility/", 2);
+    FittingFunctionSetup ffs(wg, "../../metagermany.pgm", "../../data/mobility/", 2);
     TIME_TYPE post_fitting_function_setup = TIME_NOW;
     fprintf(stdout, "# Time for fitting function setup: %.*g\n", PRECISION,
             PRINTABLE_TIME(post_fitting_function_setup - pre_fitting_function_setup));
@@ -198,10 +198,10 @@ int main()
             auto&& w10, auto&& w11, auto&& w12, auto&& w13, auto&& w14, auto&& sigma1, auto&& sigma2, auto&& sigma3,
             auto&& sigma4, auto&& sigma5, auto&& sigma6, auto&& sigma7, auto&& sigma8) {
             // let dlib set the weights for the potential
-            wp.apply_weights({w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14});
+            wg.apply_weights({w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14});
             // calculate the transition rate error
             return average_run_mobility_error(ffs, {sigma1, sigma2, sigma3, sigma4, sigma5, sigma6, sigma7, sigma8},
-                                              num_runs);
+                                                             num_runs);
         },
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // lower bounds
         {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 15, 15, 15, 15, 15, 15, 15, 15}, // upper bounds

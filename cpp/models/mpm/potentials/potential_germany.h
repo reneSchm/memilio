@@ -20,9 +20,9 @@ public:
         int land;
 
         /**
-     * serialize agents. 
-     * @see mio::serialize
-     */
+         * serialize agents. 
+         * @see mio::serialize
+         */
         template <class IOContext>
         void serialize(IOContext& io) const
         {
@@ -33,9 +33,9 @@ public:
         }
 
         /**
-     * deserialize an object of this class.
-     * @see mio::deserialize
-     */
+         * deserialize an object of this class.
+         * @see mio::deserialize
+         */
         template <class IOContext>
         static mio::IOResult<Agent> deserialize(IOContext& io)
         {
@@ -183,7 +183,7 @@ public:
     double accumulated_contact_rates;
     size_t contact_rates_count;
 
-private:
+protected:
     double get_contact_radius_factor(std::vector<double> areas = std::vector<double>{435, 579, 488, 310.7, 667.3, 800,
                                                                                      870.4, 549.3})
     {
@@ -234,7 +234,7 @@ private:
     // discrete germany (nearest neighbour)
     Position grad_U(const Position p)
     {
-        size_t x = std::round(p[0]), y = std::round(p[1]); // take floor of each coordinate
+        size_t x = std::round(p[0]), y = std::round(p[1]); // round each coordinate to the nearest integer
         if (x <= 0 || x >= potential.cols() - 1) {
             std::cout << "x is out of bounds " << std::endl;
         }
@@ -267,7 +267,7 @@ private:
     bool is_in_domain(const Position& p) const
     {
         // restrict domain to [-2, 2]^2 where "escaping" is impossible, i.e. it holds x <= grad_U(x)
-        return 0 <= p[0] && p[0] <= potential.rows() && 0 <= p[1] && p[1] <= potential.cols();
+        return 0 <= p[0] && p[0] <= metaregions.rows() && 0 <= p[1] && p[1] <= metaregions.cols();
     }
 
     Eigen::Ref<const Eigen::MatrixXd> potential;
@@ -277,6 +277,64 @@ private:
     const double contact_radius;
     std::vector<Eigen::MatrixXd> m_number_transitions;
     std::vector<InfectionState> non_moving_states;
+};
+
+template <class InfectionState>
+class GradientGermany : public PotentialGermany<InfectionState>
+{
+    using GradientMatrix = Eigen::Matrix<Eigen::Vector2d, Eigen::Dynamic, Eigen::Dynamic>;
+    using Base           = PotentialGermany<InfectionState>;
+
+public:
+    using Agent    = typename Base::Agent;
+    using Position = typename Base::Position;
+    using Status   = typename Base::Status;
+
+    GradientGermany(const std::vector<Agent>& agents, const typename mio::mpm::AdoptionRates<Status>::Type& rates,
+                    Eigen::Ref<const GradientMatrix> potential_gradient, Eigen::Ref<const Eigen::MatrixXi> metaregions,
+                    std::vector<InfectionState> non_moving_states = {},
+                    const std::vector<double>& sigma              = std::vector<double>(8, 1440.0 / 200.0),
+                    const double contact_radius_in_km             = 1000000)
+        : PotentialGermany<InfectionState>(agents, rates, Eigen::MatrixXd::Zero(0, 0), metaregions, non_moving_states,
+                                           sigma, contact_radius_in_km)
+        , potential_gradient(potential_gradient)
+    {
+    }
+
+    void move(const double t, const double dt, Agent& agent)
+    {
+        if (std::find(this->non_moving_states.begin(), this->non_moving_states.end(), agent.status) ==
+            this->non_moving_states.end()) {
+            Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
+                          mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
+
+            auto land_old    = agent.land;
+            auto noise       = (this->sigma[land_old] * std::sqrt(dt)) * p;
+            int num_substeps = std::max<int>(noise.norm(), 1);
+            for (int substep = 0; substep < num_substeps; ++substep) {
+                agent.position -= (dt * grad_U(agent.position) - noise) / num_substeps;
+            }
+
+            const auto land = this->metaregions(agent.position[0], agent.position[1]);
+            if (land > 0) {
+                agent.land = land - 1; // shift land so we can use it as index
+            }
+            const bool makes_transition = (land_old != agent.land);
+            if (makes_transition) {
+                this->m_number_transitions[static_cast<size_t>(agent.status)](land_old, agent.land)++;
+            }
+        }
+    }
+
+private:
+    // precomputet discrete gradient
+    Position grad_U(const Position p)
+    {
+        const size_t x = std::round(p[0]), y = std::round(p[1]); // round each coordinate to the nearest integer
+        return potential_gradient(x, y);
+    }
+
+    Eigen::Ref<const GradientMatrix> potential_gradient;
 };
 
 #endif // POTENTIAL_GERMANY_H_

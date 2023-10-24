@@ -4,7 +4,11 @@
 // generate pgm's using map.py with .shp files from https://daten.gdz.bkg.bund.de/produkte/vg/vg2500/aktuell/vg2500_12-31.gk3.shape.zip (unpack into tools/)
 
 #include "models/mpm/potentials/map_reader.h"
+#include "memilio/io/io.h"
+#include "memilio/io/json_serializer.h"
 #include "memilio/utils/logging.h"
+
+#include <numeric>
 
 using namespace mio::mpm;
 
@@ -100,6 +104,7 @@ void apply_stencil(Eigen::Ref<Eigen::MatrixXd> image, Eigen::Ref<const Eigen::Ma
         for (Eigen::Index j = 0; j < image.cols(); j++) {
             if (std::abs(image(i, j) - color) <= color_tolerance) {
                 canvas.block(i, j, rows, cols) =
+                    // take entry-wise max of current canvas block and the weighted stencil
                     canvas.block(i, j, rows, cols).array().max((image(i, j) * stencil).array());
             }
         }
@@ -144,11 +149,38 @@ void extend_bitmap(Eigen::Ref<Eigen::MatrixXi> bitmap, Eigen::Index width)
 //     {0.8, 0.4}, // BaWü
 // };
 
+template <class Matrix>
+bool write_pgm(std::ofstream& ofile, const std::string& filename, Matrix data)
+{
+    assert(!ofile.is_open());
+    ofile.open(filename);
+    if (!ofile.is_open()) {
+        mio::log(mio::LogLevel::critical, "Could not open file {}", filename);
+        return false;
+    }
+    write_pgm(ofile, data);
+    ofile.close();
+    return true;
+}
+
+#define TRY_WRITE_PGM(ofile, filename, data)                                                                           \
+    if (!write_pgm(ofile, filename, data))                                                                             \
+        return 1;
+
+#define TRY_WRITE_JSON(filename, data)                                                                                 \
+    {                                                                                                                  \
+        auto r = mio::write_json(filename, data);                                                                      \
+        if (!r) {                                                                                                      \
+            mio::log(mio::LogLevel::critical, r.error().formatted_message());                                          \
+            return 1;                                                                                                  \
+        }                                                                                                              \
+    }
+
 int main()
 {
     const std::string file_prefix                = "../../../";
     const std::string potential_filename         = file_prefix + "potential_dpi=300.pgm";
-    const std::string output_potential           = file_prefix + "potentially_germany.pgm";
+    const std::string output_potential           = file_prefix + "potentially_germany";
     const std::string output_metaregions         = file_prefix + "metagermany.pgm";
     const std::string output_boundary_ids        = file_prefix + "boundary_ids.pgm";
     const std::string output_boundary_simplyfied = file_prefix + "boundary_simplyfied.pgm";
@@ -183,7 +215,7 @@ int main()
     }
     mio::log_info(" -> found {}", region - 1);
 
-    mio::log_info("set stencil");
+    mio::log_info("set stencils");
     // clang-format off
     // generated using https://stackoverflow.com/questions/28342968/how-to-plot-a-2d-gaussian-with-different-sigma/55737551#55737551
     // with: N = 9, Sigma = [[1,0],[0,1]]
@@ -199,10 +231,26 @@ int main()
         8.870833551280334073e-02, 1.819281669245390864e-01, 2.731928597373864953e-01, 3.120522650710688128e-01, 2.731928597373864953e-01, 1.819281669245390864e-01, 8.870833551280334073e-02
     };
     // clang-format on
-    Eigen::Matrix<double, 7, 7> stencil;
-    for (int i = 0; i < 7; i++)
-        for (int j = 0; j < 7; j++)
-            stencil(i, j) = gauss_data[i + 7 * j];
+    const int stencil_n        = 3;
+    constexpr int stencil_size = 2 * stencil_n + 1; // == sqrt(gauss_data.size())
+    Eigen::Matrix<double, stencil_size, stencil_size> boundary_stencil;
+    for (int i = 0; i < stencil_size; i++)
+        for (int j = 0; j < stencil_size; j++)
+            boundary_stencil(i, j) = gauss_data[i + stencil_size * j];
+
+    Eigen::Matrix<double, stencil_size, stencil_size> deriv_stencil; // == T_{·,·,1}
+    for (int i = 0; i < stencil_size; i++) {
+        for (int j = 0; j < stencil_size; j++) {
+            const int k = i - stencil_n;
+            const int l = j - stencil_n;
+            if (k == 0 && l == 0)
+                deriv_stencil(i, j) = 0;
+            else
+                deriv_stencil(i, j) = gauss_data[i + j * stencil_size] * k / (k * k + l * l);
+        }
+    }
+    // scale weights so that their sum is 1, omitting the weight at k=l=0
+    deriv_stencil /= std::accumulate(gauss_data.begin(), gauss_data.end(), -1.0);
 
     Eigen::Matrix<double, 1, 5> stencil_ext;
     stencil_ext(0, 0) = 0.5;
@@ -238,48 +286,68 @@ int main()
             assert(num_bits_set(ids) < 4);
         }
     }
-    extend_bitmap(boundaries, stencil.cols() / 2);
-    extend_bitmap(boundaries_simplified, stencil.cols() / 2);
+    extend_bitmap(boundaries, boundary_stencil.cols() / 2);
+    extend_bitmap(boundaries_simplified, boundary_stencil.cols() / 2);
 
-    mio::log_info("apply stencil");
-    apply_stencil(image, stencil, 1.0);
+    mio::log_info("apply boundary stencil");
+    apply_stencil(image, boundary_stencil, 1.0);
 
-    mio::log_info("expand border");
-    Eigen::MatrixXd exterior = find_connected_image_region(image, 0, 0, 0.75).cast<ScalarType>();
-    apply_stencil(exterior, stencil_ext.transpose() * stencil_ext, 1.0);
-    image = image.array().max(4 * exterior.array()).matrix();
-    // image = 4 * exterior;
+    mio::log_info("calculate discrete gradient, extend to image border");
+    Eigen::Matrix<Eigen::Vector2d, Eigen::Dynamic, Eigen::Dynamic> gradient(image.rows(), image.cols());
+    const ScalarType slope = (deriv_stencil * image.maxCoeff())
+                                 .array()
+                                 .max((-deriv_stencil * image.minCoeff()).array())
+                                 .sum(); // upper bound for gradient slope
+    const Eigen::Vector2d centre = {image.rows() / 2.0, image.cols() / 2.0}; // centre of the image
+    for (Eigen::Index i = 0; i < image.rows(); i++) {
+        for (Eigen::Index j = 0; j < image.cols(); j++) {
+            if (is_outside(i, j)) {
+                auto direction = (centre - Eigen::Vector2d{i, j}).normalized();
+                gradient(i, j) = -slope * direction;
+            }
+            else { // inside
+                const auto block = image.block(i - stencil_n, j - stencil_n, stencil_size, stencil_size).array();
+                gradient(i, j)   = {(block * deriv_stencil.array()).sum(),
+                                    (block * deriv_stencil.transpose().array()).sum()};
+            }
+        }
+    }
+
+    // mio::log_info("expand border");
+    // // switched to gradient, this code is only temporarily kept for reference
+    // const ScalarType slope_x     = image_dx.array().abs().maxCoeff();
+    // const ScalarType slope_y     = image_dy.array().abs().maxCoeff();
+    // const Eigen::Vector2d centre = {image.rows() / 2.0, image.cols() / 2.0};
+    // for (Eigen::Index i = 0; i < image.rows(); i++) {
+    //     for (Eigen::Index j = 0; j < image.cols(); j++) {
+    //         if (is_outside(i, j)) {
+    //             auto direction = (centre - Eigen::Vector2d{i, j}).normalized();
+    //             image_dx(i, j) = -slope_x * direction.x();
+    //             image_dy(i, j) = -slope_y * direction.y();
+    //         }
+    //     }
+    // }
+
+    // only needed for testing. TODO: remove these two
+    Eigen::MatrixXd image_dx(image.rows(), image.cols()), image_dy(image.rows(), image.cols());
+    for (Eigen::Index i = 0; i < image.rows(); i++) {
+        for (Eigen::Index j = 0; j < image.cols(); j++) {
+            image_dx(i, j) = gradient(i, j).x();
+            image_dy(i, j) = gradient(i, j).y();
+        }
+    }
 
     mio::log_info("write files");
-    std::ofstream ofile(output_potential);
-    if (!ofile.is_open()) {
-        mio::log(mio::LogLevel::critical, "Could not open file {}", output_potential);
-        return 1;
-    }
-    write_pgm(ofile, image);
-    ofile.close();
-    ofile.open(output_metaregions);
-    if (!ofile.is_open()) {
-        mio::log(mio::LogLevel::critical, "Could not open file {}", output_metaregions);
-        return 1;
-    }
-    write_pgm(ofile, metaregions);
-    ofile.close();
-    ofile.open(output_boundary_ids);
-    if (!ofile.is_open()) {
-        mio::log(mio::LogLevel::critical, "Could not open file {}", output_boundary_ids);
-
-        return 1;
-    }
-    write_pgm(ofile, boundaries);
-    ofile.close();
-    ofile.open(output_boundary_simplyfied);
-    if (!ofile.is_open()) {
-        mio::log(mio::LogLevel::critical, "Could not open file {}", output_boundary_simplyfied);
-        return 1;
-    }
-    write_pgm(ofile, boundaries_simplified);
-    ofile.close();
+    std::ofstream ofile;
+    TRY_WRITE_JSON(output_potential + "_grad.json", gradient);
+    TRY_WRITE_PGM(ofile, output_potential + "_dx.pgm", image_dx.array() - image_dx.minCoeff());
+    TRY_WRITE_PGM(ofile, output_potential + "_dy.pgm", image_dy.array() - image_dy.minCoeff());
+    TRY_WRITE_PGM(ofile, output_potential + ".pgm", image);
+    TRY_WRITE_PGM(ofile, output_metaregions, metaregions);
+    TRY_WRITE_PGM(ofile, output_boundary_ids, boundaries);
+    TRY_WRITE_PGM(ofile, output_boundary_simplyfied, boundaries_simplified);
+    TRY_WRITE_PGM(ofile, file_prefix + "deriv_stencil.pgm",
+                  (deriv_stencil.array() - deriv_stencil.minCoeff()).matrix());
 
     mio::log_info("success");
 }
