@@ -1,3 +1,4 @@
+#include "hybrid_paper/weighted_gradient.h"
 #include "mpm/abm.h"
 #include "hybrid_paper/infection_state.h"
 #include "mpm/model.h"
@@ -75,29 +76,15 @@ void calculate_transition_rates(ABM<Potential>& abm, size_t num_runs, double tma
 } // namespace mio
 int main()
 {
-    Eigen::MatrixXd potential;
     Eigen::MatrixXi metaregions;
 
-    WeightedPotential wp("../../potentially_germany.pgm", "../../boundary_ids.pgm");
+    WeightedGradient wg("../../potentially_germany_grad.json", "../../boundary_ids.pgm");
 
     const std::vector<double> weights{6.22485, 9.99625,   9.99997, 0.0000887, 4.78272, 0.000177, 7.80954,
-                                      7.84763, 0.0000798, 9.99982, 9.99987,   3.77446, 10, 2.92137};
+                                      7.84763, 0.0000798, 9.99982, 9.99987,   3.77446, 10,       2.92137};
     const std::vector<double> sigmas{0.00114814, 0.0000000504, 15, 15, 14.9999, 0.000246785, 14.4189, 14.9999};
-    wp.apply_weights(weights);
+    wg.apply_weights(weights);
 
-    // std::cerr << "Setup: Read potential.\n" << std::flush;
-    // {
-    //     const auto fname = "../../potentially_germany.pgm";
-    //     std::ifstream ifile(fname);
-    //     if (!ifile.is_open()) {
-    //         mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
-    //         return 1;
-    //     }
-    //     else {
-    //         potential = 8 * mio::mpm::read_pgm(ifile);
-    //         ifile.close();
-    //     }
-    // }
     std::cerr << "Setup: Read metaregions.\n" << std::flush;
     {
         const auto fname = "../../metagermany.pgm";
@@ -112,7 +99,7 @@ int main()
         }
     }
 
-    std::vector<mio::mpm::ABM<PotentialGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
+    std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
     for (Eigen::Index i = 0; i < metaregions.rows(); i += 2) {
         for (Eigen::Index j = 0; j < metaregions.cols(); j += 2) {
             if (metaregions(i, j) != 0) {
@@ -121,7 +108,8 @@ int main()
         }
     }
 
-    mio::mpm::ABM<PotentialGermany<mio::mpm::paper::InfectionState>> model(agents, {}, wp.potential, metaregions, {mio::mpm::paper::InfectionState::D}, sigmas);
+    mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>> model(agents, {}, wg.gradient, metaregions,
+                                                                          {mio::mpm::paper::InfectionState::D}, sigmas);
 
     calculate_transition_rates(model, 3, 10, 8);
 

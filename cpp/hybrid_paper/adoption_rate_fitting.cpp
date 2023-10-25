@@ -1,5 +1,4 @@
 #include "models/mpm/pdmm.h"
-#include "hybrid_paper/weighted_potential.h"
 #include "hybrid_paper/initialization.h"
 #include "mpm/region.h"
 #include "memilio/data/analyze_result.h"
@@ -16,11 +15,12 @@
 #define PRINTABLE_TIME(_time) (std::chrono::duration_cast<std::chrono::duration<double>>(_time)).count()
 #define PRECISION 17
 
-#define restart_timer(timer, description) {\
-    TIME_TYPE new_time = TIME_NOW;\
-    std::cout << "\r" << description << " :: " << PRINTABLE_TIME(new_time - timer) << std::endl << std::flush;\
-    timer = TIME_NOW;\
-} 
+#define restart_timer(timer, description)                                                                              \
+    {                                                                                                                  \
+        TIME_TYPE new_time = TIME_NOW;                                                                                 \
+        std::cout << "\r" << description << " :: " << PRINTABLE_TIME(new_time - timer) << std::endl << std::flush;     \
+        timer = TIME_NOW;                                                                                              \
+    }
 
 struct FittingFunctionSetup {
     using Model = mio::mpm::PDMModel<8, mio::mpm::paper::InfectionState>;
@@ -117,7 +117,8 @@ double single_run_infection_state_error(FittingFunctionSetup& ffs, double t_Expo
 double average_run_infection_state_error(FittingFunctionSetup& ffs, double t_Exposed, double t_Carrier,
                                          double t_Infected, double mu_C_R, double transmission_prob, double mu_I_D,
                                          int num_runs)
-{   TIME_TYPE run = TIME_NOW;
+{
+    TIME_TYPE run = TIME_NOW;
     std::vector<double> errors(num_runs);
     for (int run = 0; run < num_runs; ++run) {
         errors[run] =
@@ -169,7 +170,8 @@ int main()
         }
     }
 
-    std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =  mio::read_confirmed_cases_data("../../data/Germany/cases_all_county_age_ma7.json").value();
+    std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =
+        mio::read_confirmed_cases_data("../../data/Germany/cases_all_county_age_ma7.json").value();
 
     FittingFunctionSetup ffs(regions, populations, mio::Date(2020, 12, 12), 100, transition_rates, confirmed_cases);
     int num_runs = 1;
@@ -178,7 +180,7 @@ int main()
             double mu_I_D) {
             // calculate the transition rate error
             return average_run_infection_state_error(ffs, t_Exposed, t_Carrier, t_Infected, mu_C_R, transmission_prob,
-                                                     mu_I_D, num_runs);
+                                                      mu_I_D, num_runs);
         },
         {1, 1, 1, 0.001, 0.001, 0.001}, // lower bounds
         {21, 21, 21, 1, 1, 1}, // upper bounds

@@ -4,11 +4,11 @@
 #define TIME_NOW std::chrono::high_resolution_clock::now()
 #define PRINTABLE_TIME(_time) (std::chrono::duration_cast<std::chrono::duration<double>>(_time)).count()
 
-mio::IOResult<std::vector<mio::mpm::ABM<PotentialGermany<mio::mpm::paper::InfectionState>>::Agent>>
+mio::IOResult<std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent>>
 create_agents(std::vector<std::vector<double>>& pop_dists, std::vector<double>& populations, double persons_per_agent,
               Eigen::MatrixXi& metaregions, bool save_initialization)
 {
-    std::vector<mio::mpm::ABM<PotentialGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
+    std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
     for (size_t region = size_t(0); region < pop_dists.size(); ++region) {
         int num_agents = populations[region] / persons_per_agent;
         std::transform(pop_dists[region].begin(), pop_dists[region].end(), pop_dists[region].begin(),
@@ -53,17 +53,19 @@ int main()
     //number inhabitants per region
     std::vector<double> populations = {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
     //county ids
-    std::vector<int> regions        = {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175};
-    double t_Exposed                = 4.2;
-    double t_Carrier                = 4.2;
-    double t_Infected               = 7.5;
-    double mu_C_R                   = 0.23;
+    std::vector<int> regions = {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175};
+    double t_Exposed         = 4.2;
+    double t_Carrier         = 4.2;
+    double t_Infected        = 7.5;
+    double mu_C_R            = 0.23;
 
-    std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =  mio::read_confirmed_cases_data("../../data/Germany/cases_all_county_age_ma7.json").value();
+    std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =
+        mio::read_confirmed_cases_data("../../data/Germany/cases_all_county_age_ma7.json").value();
 
     //vector with entry for every region. Entries are vector with population for every infection state according to initialization
     std::vector<std::vector<double>> pop_dists =
-        set_confirmed_case_data(confirmed_cases, regions, populations, mio::Date(2020, 12, 12), t_Exposed, t_Carrier, t_Infected, mu_C_R)
+        set_confirmed_case_data(confirmed_cases, regions, populations, mio::Date(2020, 12, 12), t_Exposed, t_Carrier,
+                                t_Infected, mu_C_R)
             .value();
 
     //read map with metaregions

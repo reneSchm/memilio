@@ -302,8 +302,8 @@ int main()
     for (Eigen::Index i = 0; i < image.rows(); i++) {
         for (Eigen::Index j = 0; j < image.cols(); j++) {
             if (is_outside(i, j)) {
-                auto direction = (centre - Eigen::Vector2d{i, j}).normalized();
-                gradient(i, j) = -slope * direction;
+                auto direction = (Eigen::Vector2d{i, j} - centre).normalized();
+                gradient(i, j) = slope * direction;
             }
             else { // inside
                 const auto block = image.block(i - stencil_n, j - stencil_n, stencil_size, stencil_size).array();
@@ -312,21 +312,6 @@ int main()
             }
         }
     }
-
-    // mio::log_info("expand border");
-    // // switched to gradient, this code is only temporarily kept for reference
-    // const ScalarType slope_x     = image_dx.array().abs().maxCoeff();
-    // const ScalarType slope_y     = image_dy.array().abs().maxCoeff();
-    // const Eigen::Vector2d centre = {image.rows() / 2.0, image.cols() / 2.0};
-    // for (Eigen::Index i = 0; i < image.rows(); i++) {
-    //     for (Eigen::Index j = 0; j < image.cols(); j++) {
-    //         if (is_outside(i, j)) {
-    //             auto direction = (centre - Eigen::Vector2d{i, j}).normalized();
-    //             image_dx(i, j) = -slope_x * direction.x();
-    //             image_dy(i, j) = -slope_y * direction.y();
-    //         }
-    //     }
-    // }
 
     // only needed for testing. TODO: remove these two
     Eigen::MatrixXd image_dx(image.rows(), image.cols()), image_dy(image.rows(), image.cols());
