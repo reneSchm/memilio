@@ -8,12 +8,13 @@ from shapely.geometry.polygon import Polygon
 # download and extract the data into the tools path below. Download link:
 # https://daten.gdz.bkg.bund.de/produkte/vg/vg2500/aktuell/vg2500_12-31.gk3.shape.zip
 map_data = geopandas.read_file(os.path.join(
-    os.getcwd(), '../memilio/tools/vg2500_12-31.gk3.shape/vg2500/VG2500_KRS.shp'))
-    # os.getcwd(), '../memilio/tools/vg2500_12-31.gk3.shape/vg2500/VG2500_LAN.shp'))
+    os.getcwd(), 'tools/vg2500_12-31.gk3.shape/vg2500/VG2500_LAN.shp'))
+    # '../memilio/tools/vg2500_12-31.gk3.shape/vg2500/VG2500_KRS.shp'))
 geometries = map_data.geometry
 
 # remove ocean areas
-geometries = geometries.loc[[238, 228, 233, 242, 229, 231, 232, 223]]
+geometries = geometries.loc[:15]
+#geometries = geometries.loc[[238, 228, 233, 242, 229, 231, 232, 223]]
 # 238             München
 # 228              Dachau
 # 233    Fürstenfeldbruck
@@ -24,10 +25,10 @@ geometries = geometries.loc[[238, 228, 233, 242, 229, 231, 232, 223]]
 # 223             München
 
 # remove islands from germany etc (i.e. keep only state boundaries)
-# for i in range(geometries.shape[0]):
-#     row = geometries.loc[i]
-#     if type(row) is not Polygon:
-#         geometries.loc[i] = list(row.geoms)[-1]
+for i in range(geometries.shape[0]):
+    row = geometries.loc[i]
+    if type(row) is not Polygon:
+        geometries.loc[i] = list(row.geoms)[-1]
     # else:
     #     geometries.loc[i] = geometries.loc[i]
     # plt.plot(*polygon.exterior.coords.xy, label=map_data["GEN"].iloc[i])

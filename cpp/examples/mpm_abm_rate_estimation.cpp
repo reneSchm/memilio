@@ -343,6 +343,10 @@ void get_agent_movement(size_t n_agents, Eigen::MatrixXd potential, Eigen::Matri
     const double tmax = 100;
 
     auto sim = mio::Simulation<mio::mpm::ABM<PotentialGermany<InfectionState>>>(model, t, 0.05);
+    for (auto& agent : agents) {
+        std::cout << agent.position[0] << " " << agent.position[1] << " ";
+    }
+    std::cout << "\n";
     std::vector<std::vector<Position>> result;
     //get start positions
     std::vector<Position> positions;
@@ -351,9 +355,14 @@ void get_agent_movement(size_t n_agents, Eigen::MatrixXd potential, Eigen::Matri
     }
     result.push_back(positions);
     while (t < tmax) {
+        for (auto& agent : sim.get_model().populations) {
+            std::cout << agent.position[0] << " " << agent.position[1] << " ";
+        }
+        std::cout << "\n";
         positions.clear();
         for (auto& agent : sim.get_model().populations) {
             sim.get_model().move(t, dt, agent);
+
             positions.push_back(agent.position);
         }
         result.push_back(positions);
@@ -361,17 +370,17 @@ void get_agent_movement(size_t n_agents, Eigen::MatrixXd potential, Eigen::Matri
     }
 
     //write result to file
-    FILE* outfile = fopen("~/results/positions.txt", "w");
-    for (size_t time = 0; time < result.size(); ++time) {
-        fprintf(outfile, "\n%s", "t");
-        auto res_t = result[time];
-        for (size_t a = 0; a < res_t.size(); ++a) {
-            std::string p = "(" + std::to_string(res_t[a][0]) + "," + std::to_string(res_t[a][1]) + ")";
-            fprintf(outfile, " %s", p.c_str());
-        }
-        //fprintf(outfile, "\n%s");
-    }
-    fclose(outfile);
+    // FILE* outfile = fopen("~/results/positions.txt", "w");
+    // for (size_t time = 0; time < result.size(); ++time) {
+    //     fprintf(outfile, "\n%s", "t");
+    //     auto res_t = result[time];
+    //     for (size_t a = 0; a < res_t.size(); ++a) {
+    //         std::string p = "(" + std::to_string(res_t[a][0]) + "," + std::to_string(res_t[a][1]) + ")";
+    //         fprintf(outfile, " %s", p.c_str());
+    //     }
+    //     //fprintf(outfile, "\n%s");
+    // }
+    // fclose(outfile);
 }
 
 void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<InfectionState>>& adoption_rates,
@@ -412,21 +421,32 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
     fclose(outfile1);
 }
 
+void run_multiple_simulations(std::string init_file,
+                              std::vector<mio::mpm::AdoptionRate<InfectionState>>& adoption_rates,
+                              Eigen::MatrixXd& potential, Eigen::MatrixXi& metaregions, double tmax, double delta_t,
+                              int num_runs)
+{
+    std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents;
+    read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(init_file, agents);
+
+    std::vector<mio::TimeSeries<double>> ensemble_results(
+        num_runs, mio::TimeSeries<double>::zero(tmax + 1, static_cast<size_t>(InfectionState::Count)));
+}
+
 int main()
 {
     //mio::thread_local_rng().seed({114381446, 2427727386, 806223567, 832414962, 4121923627, 1581162203});
     using namespace mio::mpm;
-    using Status    = ABM<PotentialGermany<InfectionState>>::Status;
-    using Position  = mio::mpm::ABM<PotentialGermany<InfectionState>>::Position;
-    size_t n_agents = 16 * 100;
+    using Status   = ABM<PotentialGermany<InfectionState>>::Status;
+    using Position = mio::mpm::ABM<PotentialGermany<InfectionState>>::Position;
+    //size_t n_agents = 16 * 100;
 
     Eigen::MatrixXd potential;
     Eigen::MatrixXi metaregions;
 
     std::cerr << "Setup: Read potential.\n" << std::flush;
     {
-        const auto fname =
-            "C:/Users/bick_ju/Documents/repos/hybrid/example-hybrid/data/potential/potentially_germany.pgm";
+        const auto fname = "../../potentially_germany.pgm";
         std::ifstream ifile(fname);
         if (!ifile.is_open()) {
             mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
@@ -439,7 +459,7 @@ int main()
     }
     std::cerr << "Setup: Read metaregions.\n" << std::flush;
     {
-        const auto fname = "C:/Users/bick_ju/Documents/repos/hybrid/example-hybrid/data/potential/metagermany.pgm";
+        const auto fname = "../../metagermany.pgm";
         std::ifstream ifile(fname);
         if (!ifile.is_open()) {
             mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
@@ -463,7 +483,7 @@ int main()
     // std::cerr << "Finished\n" << std::flush;
     //get_agent_movement(10, potential, metaregions);
 
-    //std::vector<ABM<PotentialGermany<InfectionState>>::Agent> agents;
+    std::vector<ABM<PotentialGermany<InfectionState>>::Agent> agents;
 
     // //std::vector<double> pop_dist{0.9, 0.05, 0.05, 0.0, 0.0};
     // //create_start_initialization<Status, ABM<PotentialGermany>::Agent>(agents, pop_dist, potential, metaregions);
@@ -478,16 +498,16 @@ int main()
         adoption_rates.push_back({Status::I, Status::R, Region(i), 0.12});
     }
 
-    run_simulation("~/input/initialization10000.json", adoption_rates, potential, metaregions, 100.0, 0.05);
+    //run_simulation("~/input/initialization10000.json", adoption_rates, potential, metaregions, 100.0, 0.05);
     //std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents;
-    //read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(
-    //    "C:/Users/bick_ju/Documents/results/agent_init/initialization10000.json", agents);
+    read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(
+        "/home/bick_ju/Documents/agent_init/initialization10000.json", agents);
 
     //create model
     //mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
 
-    // ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
-    //calculate_rates_for_mpm(model, adoption_rates, 10, 100);
+    ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
+    calculate_rates_for_mpm(model, adoption_rates, 10, 100);
     // std::cerr << "Starting simulation.\n" << std::flush;
 
     // auto result = mio::simulate(0, 100, 0.05, model);

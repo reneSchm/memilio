@@ -55,14 +55,14 @@ public:
     PotentialGermany(const std::vector<Agent>& agents, const typename mio::mpm::AdoptionRates<Status>::Type& rates,
                      Eigen::Ref<const Eigen::MatrixXd> potential, Eigen::Ref<const Eigen::MatrixXi> metaregions,
                      std::vector<InfectionState> non_moving_states = {},
-                     const std::vector<double>& sigma              = std::vector<double>(8, 1440.0 / 200.0),
+                     const std::vector<double>& sigma              = std::vector<double>(16, 1440.0 / 200.0),
                      const double contact_radius_in_km             = 1000000)
         : potential(potential)
         , metaregions(metaregions)
         , populations(agents)
         , sigma(sigma)
         , non_moving_states(non_moving_states)
-        , contact_radius(get_contact_radius_factor() * contact_radius_in_km)
+        , contact_radius(1.0)//(get_contact_radius_factor() * contact_radius_in_km)
         , accumulated_contact_rates{0.}
         , contact_rates_count{0}
         , m_number_transitions(static_cast<size_t>(Status::Count),
@@ -260,8 +260,8 @@ private:
     bool is_contact(const Agent& agent, const Agent& contact) const
     {
         return (&agent != &contact) && // test if agent and contact are different objects
-               (agent.land == contact.land) && // test if they are in the same metaregion
-               (agent.position - contact.position).norm() < contact_radius; // test if contact is in the contact radius
+            (agent.land == contact.land); //&& // test if they are in the same metaregion
+            //    (agent.position - contact.position).norm() < contact_radius; // test if contact is in the contact radius
     }
 
     bool is_in_domain(const Position& p) const

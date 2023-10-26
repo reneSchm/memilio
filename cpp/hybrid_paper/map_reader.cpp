@@ -5,11 +5,13 @@
 
 #include "models/mpm/potentials/map_reader.h"
 #include "memilio/utils/logging.h"
+#include "boost/filesystem.hpp"
 
 using namespace mio::mpm;
 
 typedef Eigen::Vector2d Position;
 typedef double ScalarType;
+namespace fs = boost::filesystem;
 
 // Add neighbouring (matrix) indices to queue
 // void enqueue_neighbours_if(const std::pair<ScalarType, ScalarType>& index, const std::pair<ScalarType, ScalarType>& max,
@@ -146,7 +148,7 @@ void extend_bitmap(Eigen::Ref<Eigen::MatrixXi> bitmap, Eigen::Index width)
 
 int main()
 {
-    const std::string file_prefix                = "../../../";
+    const std::string file_prefix                = "../../";
     const std::string potential_filename         = file_prefix + "potential_dpi=300.pgm";
     const std::string output_potential           = file_prefix + "potentially_germany.pgm";
     const std::string output_metaregions         = file_prefix + "metagermany.pgm";
@@ -165,8 +167,8 @@ int main()
     file.close();
     image = (1 - image.array()).matrix(); // invert colors
 
-    mio::log_info("manually fix an isolated pixel in the corner Fuerstenfeldbruck/LH Muenchen/Muenchen");
-    image(508, 574) = 1;
+    //mio::log_info("manually fix an isolated pixel in the corner Fuerstenfeldbruck/LH Muenchen/Muenchen");
+    //image(508, 574) = 1;
 
     mio::log_info("map metaregions");
     size_t region              = 1;
@@ -176,7 +178,9 @@ int main()
     for (Eigen::Index i = 0; i < image.rows(); i++) {
         for (Eigen::Index j = 0; j < image.cols(); j++) {
             if (!is_outside(i, j) && image(i, j) == 0 && metaregions(i, j) == 0) {
-                metaregions += region * find_connected_image_region(image, i, j);
+                auto mask = find_connected_image_region(image, i, j);
+                if(mask.array().sum()<500) continue;
+                metaregions += region * mask;
                 region++;
             }
         }
