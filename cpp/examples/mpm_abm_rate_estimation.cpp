@@ -421,6 +421,17 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
     fclose(outfile1);
 }
 
+mio::TimeSeries<double> add_time_series(mio::TimeSeries<double>& t1, mio::TimeSeries<double>& t2)
+{
+    assert(t1.get_num_time_points() == t2.get_num_time_points());
+    mio::TimeSeries<double> added_time_series(t1.get_num_elements());
+    auto num_points = static_cast<size_t>(t1.get_num_time_points());
+    for (size_t t = 0; t < num_points; ++t) {
+        added_time_series.add_time_point(t1.get_time(t), t1.get_value(t) + t2.get_value(t));
+    }
+    return added_time_series;
+}
+
 void run_multiple_simulations(std::string init_file,
                               std::vector<mio::mpm::AdoptionRate<InfectionState>>& adoption_rates,
                               Eigen::MatrixXd& potential, Eigen::MatrixXi& metaregions, double tmax, double delta_t,
@@ -429,8 +440,38 @@ void run_multiple_simulations(std::string init_file,
     std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents;
     read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(init_file, agents);
 
+    int num_agents = agents.size();
+
     std::vector<mio::TimeSeries<double>> ensemble_results(
-        num_runs, mio::TimeSeries<double>::zero(tmax + 1, static_cast<size_t>(InfectionState::Count)));
+        num_runs, mio::TimeSeries<double>::zero(tmax + 1, 16 * static_cast<size_t>(InfectionState::Count)));
+    for (int run = 0; run < num_runs; ++run) {
+        std::cerr << "run number: " << run << "\n" << std::flush;
+        std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents_run = agents;
+        mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
+        auto run_result       = mio::simulate(0, tmax, delta_t, model);
+        ensemble_results[run] = mio::interpolate_simulation_result(run_result);
+    }
+    // add all results
+    mio::TimeSeries<double> mean_time_series = std::accumulate(
+        ensemble_results.begin(), ensemble_results.end(),
+        mio::TimeSeries<double>::zero(tmax + 1, 16 * static_cast<size_t>(InfectionState::Count)), add_time_series);
+
+    //calculate average
+    for (size_t t = 0; t < static_cast<size_t>(mean_time_series.get_num_time_points()); ++t) {
+        mean_time_series.get_value(t) *= 1.0 / num_runs;
+    }
+
+    std::vector<std::string> comps(16 * int(InfectionState::Count));
+    for (int i = 0; i < 16; ++i) {
+        std::vector<std::string> c = {"S", "E", "C", "I", "R", "D"};
+        std::copy(c.begin(), c.end(), comps.begin() + i * int(InfectionState::Count));
+    }
+
+    //save output
+    auto outpath   = "outputABM" + std::to_string(num_agents) + ".txt";
+    FILE* outfile1 = fopen(outpath.c_str(), "w");
+    mio::mpm::print_to_file(outfile1, mean_time_series, comps);
+    fclose(outfile1);
 }
 
 int main()
@@ -483,7 +524,7 @@ int main()
     // std::cerr << "Finished\n" << std::flush;
     //get_agent_movement(10, potential, metaregions);
 
-    std::vector<ABM<PotentialGermany<InfectionState>>::Agent> agents;
+    //std::vector<ABM<PotentialGermany<InfectionState>>::Agent> agents;
 
     // //std::vector<double> pop_dist{0.9, 0.05, 0.05, 0.0, 0.0};
     // //create_start_initialization<Status, ABM<PotentialGermany>::Agent>(agents, pop_dist, potential, metaregions);
@@ -498,16 +539,17 @@ int main()
         adoption_rates.push_back({Status::I, Status::R, Region(i), 0.12});
     }
 
-    //run_simulation("~/input/initialization10000.json", adoption_rates, potential, metaregions, 100.0, 0.05);
+    run_multiple_simulations("initialization10000.json", adoption_rates, potential,
+                             metaregions, 100.0, 0.05, 2);
     //std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents;
-    read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(
-        "/home/bick_ju/Documents/agent_init/initialization10000.json", agents);
+    // read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(
+    //     "/home/bick_ju/Documents/agent_init/initialization10000.json", agents);
 
     //create model
     //mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
 
-    ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
-    calculate_rates_for_mpm(model, adoption_rates, 10, 100);
+    // ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
+    // calculate_rates_for_mpm(model, adoption_rates, 10, 100);
     // std::cerr << "Starting simulation.\n" << std::flush;
 
     // auto result = mio::simulate(0, 100, 0.05, model);
