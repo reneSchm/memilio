@@ -447,7 +447,7 @@ void run_multiple_simulations(std::string init_file,
     for (int run = 0; run < num_runs; ++run) {
         std::cerr << "run number: " << run << "\n" << std::flush;
         std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents_run = agents;
-        mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
+        mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions, {InfectionState::D});
         auto run_result       = mio::simulate(0, tmax, delta_t, model);
         ensemble_results[run] = mio::interpolate_simulation_result(run_result);
     }

@@ -228,6 +228,154 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
     fclose(outfile4);
 }
 
+mio::TimeSeries<double> add_time_series(mio::TimeSeries<double>& t1, mio::TimeSeries<double>& t2)
+{
+    assert(t1.get_num_time_points() == t2.get_num_time_points());
+    mio::TimeSeries<double> added_time_series(t1.get_num_elements());
+    auto num_points = static_cast<size_t>(t1.get_num_time_points());
+    for (size_t t = 0; t < num_points; ++t) {
+        added_time_series.add_time_point(t1.get_time(t), t1.get_value(t) + t2.get_value(t));
+    }
+    return added_time_series;
+}
+
+mio::TimeSeries<double> simulate_hybrid(mio::mpm::ABM<PotentialGermany<InfectionState>>& abm, mio::mpm::PDMModel<16, InfectionState>& pdmm, double delta, double tmax)
+{
+    int focus_region       = 8;
+    auto simABM  = mio::Simulation<mio::mpm::ABM<PotentialGermany<InfectionState>>>(abm, 0.0, delta);
+    auto simPDMM = mio::Simulation<mio::mpm::PDMModel<16, InfectionState>>(pdmm, 0.0, delta);
+
+    double delta_exchange_time = 0.1;
+
+    for (double t = 0.0; t < tmax; t = std::min(t + delta_exchange_time, tmax)) {
+        simABM.advance(t);
+        simPDMM.advance(t);
+        { //move agents from abm to pdmm
+            const auto pop     = simPDMM.get_model().populations;
+            auto simPDMM_state = simPDMM.get_result().get_last_value();
+            auto& agents       = simABM.get_model().populations;
+            auto itr           = agents.begin();
+            while (itr != agents.end()) {
+                if (itr->land != 8) {
+                    //simPDMM.get_result().get_last_value()[m_model->populations.get_flat_index({rate.from, rate.status})] -= 1;
+                    simPDMM_state[pop.get_flat_index({mio::mpm::Region(itr->land), itr->status})] += 1;
+                    itr = agents.erase(itr);
+                }
+                else {
+                    itr++;
+                }
+            }
+        }
+        { //move agents from pdmm to abm
+            const auto pop     = simPDMM.get_model().populations;
+            auto simPDMM_state = simPDMM.get_result().get_last_value();
+            for (int i = 0; i < (int)InfectionState::Count; i++) {
+                for (auto& agents = simPDMM_state[pop.get_flat_index({mio::mpm::Region(8), (InfectionState)i})];
+                     agents > 0; agents -= 1) {
+                    simABM.get_model().populations.push_back({{420, 765}, (InfectionState)i, focus_region});
+                }
+            }
+        }
+    }
+    auto resultABM = mio::interpolate_simulation_result(simABM.get_result());
+    auto resultPDMM = mio::interpolate_simulation_result(simPDMM.get_result());
+    return add_time_series(resultABM, resultPDMM);
+}
+
+void run_multiple_simulations(std::string init_file,
+                              std::vector<mio::mpm::AdoptionRate<InfectionState>>& adoption_rates,
+                              std::vector<mio::mpm::TransitionRate<InfectionState>>& transition_rates,
+                              Eigen::MatrixXd& potential, Eigen::MatrixXi& metaregions, double tmax, double delta_t,
+                              int num_runs)
+{
+    const unsigned regions = 16;
+    int focus_region       = 8;
+
+    std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents;
+    read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(init_file, agents);
+
+    int num_agents = agents.size();
+
+    //extract agents for focus region
+    std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents_focus_region;
+    std::copy_if(agents.begin(), agents.end(), std::back_inserter(agents_focus_region),
+                 [focus_region](mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent a) {
+                     return a.land == focus_region;
+                 });
+    agents.erase(std::remove_if(agents.begin(), agents.end(),
+                                [focus_region](mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent a) {
+                                    return a.land == focus_region;
+                                }),
+                 agents.end());
+    //extract adoption rates for focus region
+    std::vector<mio::mpm::AdoptionRate<InfectionState>> adoption_rates_focus_region;
+    std::copy_if(adoption_rates.begin(), adoption_rates.end(), std::back_inserter(adoption_rates_focus_region),
+                 [focus_region](mio::mpm::AdoptionRate<InfectionState> rate) {
+                     return rate.region == mio::mpm::Region(focus_region);
+                 });
+    adoption_rates.erase(std::remove_if(adoption_rates.begin(), adoption_rates.end(),
+                                        [focus_region](mio::mpm::AdoptionRate<InfectionState> rate) {
+                                            return rate.region == mio::mpm::Region(focus_region);
+                                        }),
+                         adoption_rates.end());
+
+    //PDMM populations
+    std::vector<std::vector<ScalarType>> populations;
+    for (int i = 0; i < regions; ++i) {
+        std::vector<ScalarType> pop(static_cast<size_t>(InfectionState::Count));
+        if (i != 8) {
+            for (size_t s = 0; s < pop.size(); ++s) {
+                pop[s] = std::count_if(agents.begin(), agents.end(),
+                                       [i, s](mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent a) {
+                                           return (a.land == i && a.status == InfectionState(s));
+                                       });
+            }
+        }
+        populations.push_back(pop);
+    }
+
+    std::vector<mio::TimeSeries<double>> ensemble_results(
+        num_runs, mio::TimeSeries<double>::zero(tmax + 1, 16 * static_cast<size_t>(InfectionState::Count)));
+    for (int run = 0; run < num_runs; ++run) {
+        std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents_focus_region_run =
+            agents_focus_region;
+        mio::mpm::ABM<PotentialGermany<InfectionState>> abm(agents_focus_region_run, adoption_rates_focus_region,
+                                                            potential, metaregions);
+
+        mio::mpm::PDMModel<regions, InfectionState> pdmm;
+        pdmm.parameters.get<mio::mpm::AdoptionRates<InfectionState>>()   = adoption_rates;
+        pdmm.parameters.get<mio::mpm::TransitionRates<InfectionState>>() = transition_rates;
+        for (size_t k = 0; k < regions; k++) {
+            for (int i = 0; i < static_cast<size_t>(InfectionState::Count); i++) {
+                pdmm.populations[{static_cast<mio::mpm::Region>(k), static_cast<InfectionState>(i)}] = populations[k][i];
+            }
+        }
+        ensemble_results[run] = simulate_hybrid(abm, pdmm, delta_t, tmax);
+    }
+
+    // add all results
+    mio::TimeSeries<double> mean_time_series = std::accumulate(
+        ensemble_results.begin(), ensemble_results.end(),
+        mio::TimeSeries<double>::zero(tmax + 1, 16 * static_cast<size_t>(InfectionState::Count)), add_time_series);
+
+    //calculate average
+    for (size_t t = 0; t < static_cast<size_t>(mean_time_series.get_num_time_points()); ++t) {
+        mean_time_series.get_value(t) *= 1.0 / num_runs;
+    }
+
+    std::vector<std::string> comps(16 * int(InfectionState::Count));
+    for (int i = 0; i < 16; ++i) {
+        std::vector<std::string> c = {"S", "E", "C", "I", "R", "D"};
+        std::copy(c.begin(), c.end(), comps.begin() + i * int(InfectionState::Count));
+    }
+
+    //save output
+    auto outpath   = "outputHybrid" + std::to_string(num_agents) + ".txt";
+    FILE* outfile1 = fopen(outpath.c_str(), "w");
+    mio::mpm::print_to_file(outfile1, mean_time_series, comps);
+    fclose(outfile1);
+}
+
 int main(int argc, char** argv)
 {
     mio::set_log_level(mio::LogLevel::warn);
@@ -315,7 +463,7 @@ int main(int argc, char** argv)
         }
     }
 
-    run_simulation("/initialization10000.json", adoption_rates, transition_rates, potential, metaregions, 100.0, 0.05);
+    run_multiple_simulations("initialization10000.json", adoption_rates, transition_rates, potential, metaregions, 100.0, 0.05, 10);
 
     return 0;
 }
