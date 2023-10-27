@@ -549,7 +549,7 @@ int main()
 
     //std::vector<double> pop_dist{0.9, 0.05, 0.05, 0.0, 0.0};
     //create_start_initialization<Status, ABM<PotentialGermany>::Agent>(agents, pop_dist, potential, metaregions);
-    set adoption rates for every federal state
+    //set adoption rates for every federal state
     std::vector<AdoptionRate<Status>> adoption_rates;
     for (int i = 0; i < 16; i++) {
         adoption_rates.push_back({Status::S, Status::E, Region(i), 0.3, {Status::C, Status::I}, {1, 1}});
@@ -566,7 +566,7 @@ int main()
     read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(
         "initialization10000.json", agents);
 
-    create model
+    //create model
     mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
 
     ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
