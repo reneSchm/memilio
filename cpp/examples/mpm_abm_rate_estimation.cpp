@@ -569,7 +569,7 @@ int main()
     //create model
     mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
 
-    ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
+    //ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
     calculate_rates_for_mpm(model, adoption_rates, 10, 100);
     // std::cerr << "Starting simulation.\n" << std::flush;
 
