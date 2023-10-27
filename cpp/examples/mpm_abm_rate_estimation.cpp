@@ -109,25 +109,44 @@ mio::IOResult<void> create_initialization_for_Germany(std::vector<std::vector<do
 {
     std::vector<Agent> agents;
     auto data = mio::read_json(filename).value();
-    std::vector<std::string> state_mapping{"Schleswig-Holstein",
-                                           "Mecklenburg-Vorpommern",
-                                           "Hamburg",
-                                           "Bremen",
-                                           "Niedersachsen",
-                                           "Brandenburg",
-                                           "Berlin",
-                                           "Sachsen-Anhalt",
-                                           "Nordrhein-Westfalen",
-                                           "Sachsen",
-                                           "Thueringen",
-                                           "Hessen",
+    std::vector<std::string> state_mapping{"Nordrhein-Westfalen",
                                            "Rheinland-Pfalz",
                                            "Saarland",
+                                           "Niedersachsen",
+                                           "Baden-Wuerttemberg",
+                                           "Hessen",
+                                           "Bremen",
+                                           "Schleswig-Holstein",
                                            "Bayern",
-                                           "Baden-Wuerttemberg"};
-    std::vector<Position> centers{{645, 1203}, {912, 1128}, {669, 1095}, {561, 1023}, {645, 1005}, {996, 1002},
-                                  {999, 945},  {837, 825},  {420, 765},  {1005, 708}, {771, 684},  {561, 591},
-                                  {411, 525},  {366, 441},  {879, 368},  {576, 287}};
+                                           "Hamburg",
+                                           "Thueringen",
+                                           "Mecklenburg-Vorpommern",
+                                           "Sachsen-Anhalt",
+                                           "Brandenburg",
+                                           "Sachsen",
+                                           "Berlin"};
+    std::vector<Position> centers{{420, 765},  {411, 525},  {366, 441},  {645, 1005}, {576, 287}, {561, 591},
+                                  {561, 1023}, {645, 1203}, {879, 368},  {669, 1095}, {561, 591}, {912, 1128},
+                                  {837, 825},  {996, 1002}, {1005, 708}, {999, 945}};
+    // std::vector<std::string> sta"Bayern"te_mapping{"Schleswig-Holstein",
+    //                                        "Mecklenburg-Vorpommern",
+    //                                        "Hamburg",
+    //                                        "Bremen",
+    //                                        "Niedersachsen",
+    //                                        "Brandenburg",
+    //                                        "Berlin",
+    //                                        "Sachsen-Anhalt",
+    //                                        "Nordrhein-Westfalen",
+    //                                        "Sachsen",
+    //                                        "Thueringen",
+    //                                        "Hessen",
+    //                                        "Rheinland-Pfalz",
+    //                                        "Saarland",
+    //                                        "Bayern",
+    //                                        "Baden-Wuerttemberg"};
+    // std::vector<Position> centers{{645, 1203}, {912, 1128}, {669, 1095}, {561, 1023}, {645, 1005}, {996, 1002},
+    //                               {999, 945},  {837, 825},  {420, 765},  {1005, 708}, {771, 684},  {561, 591},
+    //                               {411, 525},  {366, 441},  {879, 368},  {576, 287}};
     for (size_t state = 0; state < pop_dists.size(); ++state) {
         double population = 0;
         //find population
@@ -447,7 +466,8 @@ void run_multiple_simulations(std::string init_file,
     for (int run = 0; run < num_runs; ++run) {
         std::cerr << "run number: " << run << "\n" << std::flush;
         std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents_run = agents;
-        mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions, {InfectionState::D});
+        mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions,
+                                                              {InfectionState::D});
         auto run_result       = mio::simulate(0, tmax, delta_t, model);
         ensemble_results[run] = mio::interpolate_simulation_result(run_result);
     }
@@ -487,7 +507,7 @@ int main()
 
     std::cerr << "Setup: Read potential.\n" << std::flush;
     {
-        const auto fname = "../../potentially_germany.pgm";
+        const auto fname = "potentially_germany.pgm";
         std::ifstream ifile(fname);
         if (!ifile.is_open()) {
             mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
@@ -500,7 +520,7 @@ int main()
     }
     std::cerr << "Setup: Read metaregions.\n" << std::flush;
     {
-        const auto fname = "../../metagermany.pgm";
+        const auto fname = "metagermany.pgm";
         std::ifstream ifile(fname);
         if (!ifile.is_open()) {
             mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
@@ -511,24 +531,25 @@ int main()
             ifile.close();
         }
     }
-
     // std::vector<std::vector<double>> pop_dists{
-    //     {1.0, 0.0, 0.0, 0.0, 0.0},    {1.0, 0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0},
-    //     {1.0, 0.0, 0.0, 0.0, 0.0},    {1.0, 0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0},
-    //     {0.9, 0.04, 0.05, 0.01, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0},
-    //     {1.0, 0.0, 0.0, 0.0, 0.0},    {1.0, 0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0}};
+    //     {0.9, 0.04, 0.05, 0.01, 0.0, 0.0},   {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},      {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    //     {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    //     {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},      {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},      {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    //     {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},      {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},      {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    //     {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},      {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},      {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    //     {1.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
 
     // create_initialization_for_Germany<ABM<PotentialGermany<InfectionState>>::Agent, Position>(
-    //     pop_dists, "C:/Users/bick_ju/Documents/results/population_data_states.json", 8000, potential, metaregions);
+    //     pop_dists, "/home/bick_ju/Documents/agent_init/population_data_states.json", 10000, potential, metaregions);
 
     // std::cerr << "Finished\n" << std::flush;
     //get_agent_movement(10, potential, metaregions);
 
     //std::vector<ABM<PotentialGermany<InfectionState>>::Agent> agents;
 
-    // //std::vector<double> pop_dist{0.9, 0.05, 0.05, 0.0, 0.0};
-    // //create_start_initialization<Status, ABM<PotentialGermany>::Agent>(agents, pop_dist, potential, metaregions);
-    //set adoption rates for every federal state
+    //std::vector<double> pop_dist{0.9, 0.05, 0.05, 0.0, 0.0};
+    //create_start_initialization<Status, ABM<PotentialGermany>::Agent>(agents, pop_dist, potential, metaregions);
+    set adoption rates for every federal state
     std::vector<AdoptionRate<Status>> adoption_rates;
     for (int i = 0; i < 16; i++) {
         adoption_rates.push_back({Status::S, Status::E, Region(i), 0.3, {Status::C, Status::I}, {1, 1}});
@@ -541,15 +562,15 @@ int main()
 
     run_multiple_simulations("initialization10000.json", adoption_rates, potential,
                              metaregions, 100.0, 0.05, 2);
-    //std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents;
-    // read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(
-    //     "/home/bick_ju/Documents/agent_init/initialization10000.json", agents);
+    std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents;
+    read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(
+        "initialization10000.json", agents);
 
-    //create model
-    //mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
+    create model
+    mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
 
-    // ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
-    // calculate_rates_for_mpm(model, adoption_rates, 10, 100);
+    ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
+    calculate_rates_for_mpm(model, adoption_rates, 10, 100);
     // std::cerr << "Starting simulation.\n" << std::flush;
 
     // auto result = mio::simulate(0, 100, 0.05, model);
