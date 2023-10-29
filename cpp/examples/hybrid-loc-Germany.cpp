@@ -96,7 +96,7 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
                     Eigen::MatrixXi& metaregions, double tmax, double delta_t)
 {
     const unsigned regions = 16;
-    int focus_region       = 8;
+    int focus_region       = 0;
 
     //read agents
     std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents;
@@ -241,7 +241,7 @@ mio::TimeSeries<double> add_time_series(mio::TimeSeries<double>& t1, mio::TimeSe
 
 mio::TimeSeries<double> simulate_hybrid(mio::mpm::ABM<PotentialGermany<InfectionState>>& abm, mio::mpm::PDMModel<16, InfectionState>& pdmm, double delta, double tmax)
 {
-    int focus_region       = 8;
+    int focus_region       = 0;
     auto simABM  = mio::Simulation<mio::mpm::ABM<PotentialGermany<InfectionState>>>(abm, 0.0, delta);
     auto simPDMM = mio::Simulation<mio::mpm::PDMModel<16, InfectionState>>(pdmm, 0.0, delta);
 
@@ -289,7 +289,7 @@ void run_multiple_simulations(std::string init_file,
                               int num_runs)
 {
     const unsigned regions = 16;
-    int focus_region       = 8;
+    int focus_region       = 0;
 
     std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents;
     read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(init_file, agents);
@@ -427,7 +427,7 @@ int main(int argc, char** argv)
     std::vector<TransitionRate<Status>> transition_rates;
     std::vector<Status> transitioning_states{Status::S, Status::E, Status::C, Status::I, Status::R};
     std::map<std::tuple<Region, Region>, double> factors{
-        {{Region(0), Region(1)}, 0.0116313},     {{Region(0), Region(2)}, 0.0494058},
+        {{Region(0), Region(1)}, 0.0116673},     {{Region(0), Region(3)}, 0.0148121},
         {{Region(0), Region(4)}, 0.0262153},     {{Region(1), Region(0)}, 0.00938663},
         {{Region(1), Region(4)}, 0.00487336},    {{Region(1), Region(5)}, 0.0328892},
         {{Region(2), Region(0)}, 0.0621894},     {{Region(2), Region(4)}, 0.0516505},
