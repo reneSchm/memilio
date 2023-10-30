@@ -285,9 +285,12 @@ void calculate_rates_for_mpm(mio::mpm::ABM<PotentialGermany<InfectionState>>& ab
 
     for (size_t run = 0; run < n_runs; run++) {
         std::cerr << "run number: " << run << "\n" << std::flush;
+        TIME_TYPE advance_pre = TIME_NOW;
         mio::Simulation<mio::mpm::ABM<PotentialGermany<InfectionState>>> sim(abm, 0, 0.05);
         sim.advance(tmax);
-
+        TIME_TYPE advance_post = TIME_NOW;
+        fprintf(stdout, "# Time for sim: %.*g\n", PRECISION,
+            PRINTABLE_TIME(advance_post - advance_pre));
         //add calculated transition rates
         for (auto& adop_rate : estimated_adoption_rates[run]) {
             if (adop_rate.influences.size() == 0) {
@@ -465,11 +468,27 @@ void run_multiple_simulations(std::string init_file,
         num_runs, mio::TimeSeries<double>::zero(tmax + 1, 16 * static_cast<size_t>(InfectionState::Count)));
     for (int run = 0; run < num_runs; ++run) {
         std::cerr << "run number: " << run << "\n" << std::flush;
+        TIME_TYPE copying_pre = TIME_NOW;
         std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents_run = agents;
+        TIME_TYPE copying_post = TIME_NOW;
+        fprintf(stdout, "# Time for copying for %.14f agents : %.*g\n", float(agents_run.size()), PRECISION,
+            PRINTABLE_TIME(copying_post - copying_pre));
+        TIME_TYPE init_pre = TIME_NOW;
         mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions,
                                                               {InfectionState::D});
+        TIME_TYPE init_post = TIME_NOW;
+        fprintf(stdout, "# Time for init: %.*g\n", PRECISION,
+            PRINTABLE_TIME(init_post - init_pre));
+        TIME_TYPE pre_sim = TIME_NOW;
         auto run_result       = mio::simulate(0, tmax, delta_t, model);
+        TIME_TYPE post_sim = TIME_NOW;
+        fprintf(stdout, "# Time for %.14f agents: %.*g\n", float(num_agents), PRECISION,
+            PRINTABLE_TIME(post_sim - pre_sim));
+        TIME_TYPE pre_interpolate = TIME_NOW;
         ensemble_results[run] = mio::interpolate_simulation_result(run_result);
+        TIME_TYPE post_interpolate = TIME_NOW;
+        fprintf(stdout, "# Time for %.14f agents: %.*g\n", float(num_agents), PRECISION,
+            PRINTABLE_TIME(post_interpolate - pre_interpolate));
     }
     // add all results
     mio::TimeSeries<double> mean_time_series = std::accumulate(
@@ -561,16 +580,16 @@ int main()
     }
 
     run_multiple_simulations("initialization10000.json", adoption_rates, potential,
-                             metaregions, 100.0, 0.05, 2);
-    std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents;
-    read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(
-        "initialization10000.json", agents);
+                             metaregions, 100.0, 0.05, 10);
+    // std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents;
+    // read_initialization<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent>(
+    //     "initialization10000.json", agents);
 
     //create model
-    mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
+    //mio::mpm::ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
 
     //ABM<PotentialGermany<InfectionState>> model(agents, adoption_rates, potential, metaregions);
-    calculate_rates_for_mpm(model, adoption_rates, 10, 100);
+    //calculate_rates_for_mpm(model, adoption_rates, 10, 100);
     // std::cerr << "Starting simulation.\n" << std::flush;
 
     // auto result = mio::simulate(0, 100, 0.05, model);
