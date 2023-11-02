@@ -234,16 +234,17 @@ mio::TimeSeries<double> add_time_series(mio::TimeSeries<double>& t1, mio::TimeSe
     mio::TimeSeries<double> added_time_series(t1.get_num_elements());
     auto num_points = static_cast<size_t>(t1.get_num_time_points());
     for (size_t t = 0; t < num_points; ++t) {
-        added_time_series.add_time_point(t1.get_time(t), t1.get_value(t) + t2.get_value(t));
+        added_time_series.add_time_point(t2.get_time(t), t1.get_value(t) + t2.get_value(t));
     }
     return added_time_series;
 }
 
-mio::TimeSeries<double> simulate_hybrid(mio::mpm::ABM<PotentialGermany<InfectionState>>& abm, mio::mpm::PDMModel<16, InfectionState>& pdmm, double delta, double tmax)
+mio::TimeSeries<double> simulate_hybrid(mio::mpm::ABM<PotentialGermany<InfectionState>>& abm,
+                                        mio::mpm::PDMModel<16, InfectionState>& pdmm, double delta, double tmax)
 {
-    int focus_region       = 0;
-    auto simABM  = mio::Simulation<mio::mpm::ABM<PotentialGermany<InfectionState>>>(abm, 0.0, delta);
-    auto simPDMM = mio::Simulation<mio::mpm::PDMModel<16, InfectionState>>(pdmm, 0.0, delta);
+    int focus_region = 0;
+    auto simABM      = mio::Simulation<mio::mpm::ABM<PotentialGermany<InfectionState>>>(abm, 0.0, delta);
+    auto simPDMM     = mio::Simulation<mio::mpm::PDMModel<16, InfectionState>>(pdmm, 0.0, delta);
 
     double delta_exchange_time = 0.1;
 
@@ -256,7 +257,7 @@ mio::TimeSeries<double> simulate_hybrid(mio::mpm::ABM<PotentialGermany<Infection
             auto& agents       = simABM.get_model().populations;
             auto itr           = agents.begin();
             while (itr != agents.end()) {
-                if (itr->land != 8) {
+                if (itr->land != focus_region) {
                     //simPDMM.get_result().get_last_value()[m_model->populations.get_flat_index({rate.from, rate.status})] -= 1;
                     simPDMM_state[pop.get_flat_index({mio::mpm::Region(itr->land), itr->status})] += 1;
                     itr = agents.erase(itr);
@@ -270,14 +271,15 @@ mio::TimeSeries<double> simulate_hybrid(mio::mpm::ABM<PotentialGermany<Infection
             const auto pop     = simPDMM.get_model().populations;
             auto simPDMM_state = simPDMM.get_result().get_last_value();
             for (int i = 0; i < (int)InfectionState::Count; i++) {
-                for (auto& agents = simPDMM_state[pop.get_flat_index({mio::mpm::Region(8), (InfectionState)i})];
+                for (auto& agents =
+                         simPDMM_state[pop.get_flat_index({mio::mpm::Region(focus_region), (InfectionState)i})];
                      agents > 0; agents -= 1) {
                     simABM.get_model().populations.push_back({{420, 765}, (InfectionState)i, focus_region});
                 }
             }
         }
     }
-    auto resultABM = mio::interpolate_simulation_result(simABM.get_result());
+    auto resultABM  = mio::interpolate_simulation_result(simABM.get_result());
     auto resultPDMM = mio::interpolate_simulation_result(simPDMM.get_result());
     return add_time_series(resultABM, resultPDMM);
 }
@@ -323,7 +325,7 @@ void run_multiple_simulations(std::string init_file,
     std::vector<std::vector<ScalarType>> populations;
     for (int i = 0; i < regions; ++i) {
         std::vector<ScalarType> pop(static_cast<size_t>(InfectionState::Count));
-        if (i != 8) {
+        if (i != focus_region) {
             for (size_t s = 0; s < pop.size(); ++s) {
                 pop[s] = std::count_if(agents.begin(), agents.end(),
                                        [i, s](mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent a) {
@@ -335,8 +337,9 @@ void run_multiple_simulations(std::string init_file,
     }
 
     std::vector<mio::TimeSeries<double>> ensemble_results(
-        num_runs, mio::TimeSeries<double>::zero(tmax + 1, 16 * static_cast<size_t>(InfectionState::Count)));
+        num_runs, mio::TimeSeries<double>::zero(tmax, 16 * static_cast<size_t>(InfectionState::Count)));
     for (int run = 0; run < num_runs; ++run) {
+        std::cerr << "run number: " << run << "\n" << std::flush;
         std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents_focus_region_run =
             agents_focus_region;
         mio::mpm::ABM<PotentialGermany<InfectionState>> abm(agents_focus_region_run, adoption_rates_focus_region,
@@ -347,7 +350,8 @@ void run_multiple_simulations(std::string init_file,
         pdmm.parameters.get<mio::mpm::TransitionRates<InfectionState>>() = transition_rates;
         for (size_t k = 0; k < regions; k++) {
             for (int i = 0; i < static_cast<size_t>(InfectionState::Count); i++) {
-                pdmm.populations[{static_cast<mio::mpm::Region>(k), static_cast<InfectionState>(i)}] = populations[k][i];
+                pdmm.populations[{static_cast<mio::mpm::Region>(k), static_cast<InfectionState>(i)}] =
+                    populations[k][i];
             }
         }
         ensemble_results[run] = simulate_hybrid(abm, pdmm, delta_t, tmax);
@@ -356,7 +360,7 @@ void run_multiple_simulations(std::string init_file,
     // add all results
     mio::TimeSeries<double> mean_time_series = std::accumulate(
         ensemble_results.begin(), ensemble_results.end(),
-        mio::TimeSeries<double>::zero(tmax + 1, 16 * static_cast<size_t>(InfectionState::Count)), add_time_series);
+        mio::TimeSeries<double>::zero(tmax, 16 * static_cast<size_t>(InfectionState::Count)), add_time_series);
 
     //calculate average
     for (size_t t = 0; t < static_cast<size_t>(mean_time_series.get_num_time_points()); ++t) {
@@ -387,7 +391,7 @@ int main(int argc, char** argv)
 
     std::cerr << "Setup: Read potential.\n" << std::flush;
     {
-        const auto fname = "/potentially_germany.pgm";
+        const auto fname = "../../potentially_germany.pgm";
         std::ifstream ifile(fname);
         if (!ifile.is_open()) {
             mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
@@ -400,7 +404,7 @@ int main(int argc, char** argv)
     }
     std::cerr << "Setup: Read metaregions.\n" << std::flush;
     {
-        const auto fname = "/metagermany.pgm";
+        const auto fname = "../../metagermany.pgm";
         std::ifstream ifile(fname);
         if (!ifile.is_open()) {
             mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
@@ -416,7 +420,7 @@ int main(int argc, char** argv)
     //set adoption rates for every federal state
     std::vector<AdoptionRate<Status>> adoption_rates;
     for (int i = 0; i < 16; i++) {
-        adoption_rates.push_back({Status::S, Status::E, Region(i), 0.299352, {Status::C, Status::I}, {1, 1}});
+        adoption_rates.push_back({Status::S, Status::E, Region(i), 0.299361, {Status::C, Status::I}, {1, 1}});
         adoption_rates.push_back({Status::E, Status::C, Region(i), 0.33});
         adoption_rates.push_back({Status::C, Status::I, Region(i), 0.36});
         adoption_rates.push_back({Status::C, Status::R, Region(i), 0.09});
@@ -427,35 +431,34 @@ int main(int argc, char** argv)
     std::vector<TransitionRate<Status>> transition_rates;
     std::vector<Status> transitioning_states{Status::S, Status::E, Status::C, Status::I, Status::R};
     std::map<std::tuple<Region, Region>, double> factors{
-        {{Region(0), Region(1)}, 0.0116673},     {{Region(0), Region(3)}, 0.0148121},
-        {{Region(0), Region(4)}, 0.0262153},     {{Region(1), Region(0)}, 0.00938663},
-        {{Region(1), Region(4)}, 0.00487336},    {{Region(1), Region(5)}, 0.0328892},
-        {{Region(2), Region(0)}, 0.0621894},     {{Region(2), Region(4)}, 0.0516505},
-        {{Region(3), Region(4)}, 0.0437042},     {{Region(4), Region(0)}, 0.0254591},
-        {{Region(4), Region(1)}, 0.00610971},    {{Region(4), Region(2)}, 0.0448326},
-        {{Region(4), Region(3)}, 0.0361901},     {{Region(4), Region(5)}, 0.000624175},
-        {{Region(4), Region(7)}, 0.0131797},     {{Region(4), Region(8)}, 0.0132997},
-        {{Region(4), Region(10)}, 0.0021486},    {{Region(4), Region(11)}, 0.000984276},
-        {{Region(5), Region(1)}, 0.0359261},     {{Region(5), Region(4)}, 0.000480134},
-        {{Region(5), Region(6)}, 0.153343},      {{Region(5), Region(7)}, 0.0222662},
-        {{Region(5), Region(9)}, 0.0154723},     {{Region(6), Region(5)}, 0.194719},
-        {{Region(7), Region(4)}, 0.0131677},     {{Region(7), Region(5)}, 0.0206938},
-        {{Region(7), Region(9)}, 0.0127716},     {{Region(7), Region(10)}, 0.0218821},
-        {{Region(8), Region(4)}, 0.0},           {{Region(8), Region(11)}, 0.0},
-        {{Region(8), Region(12)}, 0.0},          {{Region(9), Region(5)}, 0.0},
-        {{Region(9), Region(7)}, 0.0126395},     {{Region(9), Region(10)}, 0.0157604},
-        {{Region(9), Region(14)}, 0.000504141},  {{Region(10), Region(4)}, 0.00289281},
-        {{Region(10), Region(7)}, 0.0223142},    {{Region(10), Region(9)}, 0.014332},
-        {{Region(10), Region(11)}, 0.010575},    {{Region(10), Region(14)}, 0.0127956},
-        {{Region(11), Region(4)}, 0.0000984276}, {{Region(11), Region(8)}, 0.0102029},
-        {{Region(11), Region(10)}, 0.00972272},  {{Region(11), Region(12)}, 0.0475093},
-        {{Region(11), Region(14)}, 0.0483255},   {{Region(11), Region(15)}, 0.0064458},
-        {{Region(12), Region(8)}, 0.0122674},    {{Region(12), Region(11)}, 0.0433201},
-        {{Region(12), Region(13)}, 0.0362502},   {{Region(12), Region(15)}, 0.00447725},
-        {{Region(13), Region(12)}, 0.0403793},   {{Region(14), Region(9)}, 0.000372104},
-        {{Region(14), Region(10)}, 0.010851},    {{Region(14), Region(11)}, 0.0403553},
-        {{Region(14), Region(15)}, 0.0218821},   {{Region(15), Region(11)}, 0.00590565},
-        {{Region(15), Region(12)}, 0.00650582},  {{Region(15), Region(14)}, 0.0246309}};
+        {{Region(1), Region(0)}, 0.0351578},      {{Region(3), Region(0)}, 0.0275957}, //0.0116673, 0.0148121 //0.0317849, 0.0246429
+        {{Region(5), Region(0)}, 0.0269355},      {{Region(1), Region(2)}, 0.0370424},
+        {{Region(1), Region(4)}, 0.00474133},     {{Region(1), Region(5)}, 0.0553955},
+        {{Region(2), Region(1)}, 0.0402113},      {{Region(3), Region(5)}, 0.000408114},
+        {{Region(3), Region(6)}, 0.0273196},      {{Region(3), Region(7)}, 0.0211979},
+        {{Region(3), Region(9)}, 0.0338375},      {{Region(3), Region(10)}, 0.000612171},
+        {{Region(3), Region(11)}, 0.00548554},    {{Region(3), Region(12)}, 0.0109831},
+        {{Region(3), Region(13)}, 0.000888249},   {{Region(4), Region(1)}, 0.00601368},
+        {{Region(4), Region(5)}, 0.00691394},     {{Region(4), Region(8)}, 0.021306},
+        {{Region(5), Region(1)}, 0.0617573},      {{Region(5), Region(3)}, 0.000456128},
+        {{Region(5), Region(4)}, 0.00768215},     {{Region(5), Region(8)}, 0.0553595},
+        {{Region(5), Region(10)}, 0.00516145},    {{Region(6), Region(3)}, 0.0348458},
+        {{Region(7), Region(3)}, 0.0226984},      {{Region(7), Region(9)}, 0.039407},
+        {{Region(7), Region(11)}, 0.010575},     {{Region(8), Region(4)}, 0.0186652},
+        {{Region(8), Region(5)}, 0.0433321},      {{Region(8), Region(10)}, 0.00170448},
+        {{Region(8), Region(14)}, 0.00014404},    {{Region(9), Region(3)}, 0.0400672},
+        {{Region(9), Region(7)}, 0.0528988},      {{Region(10), Region(3)}, 0.000732205},
+        {{Region(10), Region(5)}, 0.00400912},     {{Region(10), Region(8)}, 0.00138039},
+        {{Region(10), Region(12)}, 0.00829432},    {{Region(10), Region(14)}, 0.00948266},
+        {{Region(11), Region(3)}, 0.00436922},    {{Region(11), Region(7)}, 0.00788621},
+        {{Region(11), Region(13)}, 0.0254471},    {{Region(12), Region(3)}, 0.010575},
+        {{Region(12), Region(10)}, 0.0104669},     {{Region(12), Region(13)}, 0.0157844},
+        {{Region(12), Region(14)}, 0.00984276}, {{Region(13), Region(3)}, 0.000756212},
+        {{Region(13), Region(11)}, 0.0282559},     {{Region(13), Region(12)}, 0.017801},
+        {{Region(13), Region(14)}, 0.0117273},    {{Region(13), Region(15)}, 0.0105065},
+        {{Region(14), Region(8)}, 0.000240067},   {{Region(14), Region(10)}, 0.0114512},
+        {{Region(14), Region(12)}, 0.0102509},    {{Region(14), Region(13)}, 0.0156164},
+        {{Region(15), Region(13)}, 0.0146225}};
     ScalarType kappa = 0.01;
     for (auto& rate : factors) {
         for (auto state : transitioning_states) {
@@ -463,7 +466,8 @@ int main(int argc, char** argv)
         }
     }
 
-    run_multiple_simulations("initialization10000.json", adoption_rates, transition_rates, potential, metaregions, 100.0, 0.05, 10);
+    run_multiple_simulations("../../initialization10000.json", adoption_rates, transition_rates, potential, metaregions,
+                             100.0, 0.05, 10);
 
     return 0;
 }

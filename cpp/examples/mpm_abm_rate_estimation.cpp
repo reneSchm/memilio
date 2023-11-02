@@ -449,7 +449,7 @@ mio::TimeSeries<double> add_time_series(mio::TimeSeries<double>& t1, mio::TimeSe
     mio::TimeSeries<double> added_time_series(t1.get_num_elements());
     auto num_points = static_cast<size_t>(t1.get_num_time_points());
     for (size_t t = 0; t < num_points; ++t) {
-        added_time_series.add_time_point(t1.get_time(t), t1.get_value(t) + t2.get_value(t));
+        added_time_series.add_time_point(t2.get_time(t), t1.get_value(t) + t2.get_value(t));
     }
     return added_time_series;
 }
@@ -465,7 +465,7 @@ void run_multiple_simulations(std::string init_file,
     int num_agents = agents.size();
 
     std::vector<mio::TimeSeries<double>> ensemble_results(
-        num_runs, mio::TimeSeries<double>::zero(tmax + 1, 16 * static_cast<size_t>(InfectionState::Count)));
+        num_runs, mio::TimeSeries<double>::zero(tmax, 16 * static_cast<size_t>(InfectionState::Count)));
     for (int run = 0; run < num_runs; ++run) {
         std::cerr << "run number: " << run << "\n" << std::flush;
         TIME_TYPE copying_pre = TIME_NOW;
@@ -493,7 +493,7 @@ void run_multiple_simulations(std::string init_file,
     // add all results
     mio::TimeSeries<double> mean_time_series = std::accumulate(
         ensemble_results.begin(), ensemble_results.end(),
-        mio::TimeSeries<double>::zero(tmax + 1, 16 * static_cast<size_t>(InfectionState::Count)), add_time_series);
+        mio::TimeSeries<double>::zero(tmax, 16 * static_cast<size_t>(InfectionState::Count)), add_time_series);
 
     //calculate average
     for (size_t t = 0; t < static_cast<size_t>(mean_time_series.get_num_time_points()); ++t) {
