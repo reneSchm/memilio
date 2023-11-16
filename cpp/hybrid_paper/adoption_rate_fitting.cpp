@@ -173,7 +173,7 @@ int main()
     std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =
         mio::read_confirmed_cases_data("../../data/Germany/cases_all_county_age_ma7.json").value();
 
-    FittingFunctionSetup ffs(regions, populations, mio::Date(2020, 12, 12), 100, transition_rates, confirmed_cases);
+    FittingFunctionSetup ffs(regions, populations, mio::Date(2021, 3, 1), 100, transition_rates, confirmed_cases);
     int num_runs = 1;
     auto result  = dlib::find_min_global(
         [&](double t_Exposed, double t_Carrier, double t_Infected, double mu_C_R, double transmission_prob,
