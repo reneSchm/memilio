@@ -178,7 +178,7 @@ bool write_pgm(std::ofstream& ofile, const std::string& filename, Matrix data)
 
 int main()
 {
-    const std::string file_prefix                = "../../../";
+    const std::string file_prefix                = "../../";
     const std::string potential_filename         = file_prefix + "potential_dpi=300.pgm";
     const std::string output_potential           = file_prefix + "potentially_germany";
     const std::string output_metaregions         = file_prefix + "metagermany.pgm";
@@ -286,18 +286,23 @@ int main()
             assert(num_bits_set(ids) < 4);
         }
     }
+    // extend both bitmaps to cover the extended potential, see section "apply boundary stencil",
+    // then crop them to stay inside the potential domain
     extend_bitmap(boundaries, boundary_stencil.cols() / 2);
+    boundaries = boundaries.array() - (boundaries.array() * is_outside.array());
+
     extend_bitmap(boundaries_simplified, boundary_stencil.cols() / 2);
+    boundaries_simplified = boundaries_simplified.array() - (boundaries_simplified.array() * is_outside.array());
 
     mio::log_info("apply boundary stencil");
     apply_stencil(image, boundary_stencil, 1.0);
 
     mio::log_info("calculate discrete gradient, extend to image border");
     Eigen::Matrix<Eigen::Vector2d, Eigen::Dynamic, Eigen::Dynamic> gradient(image.rows(), image.cols());
-    const ScalarType slope = (deriv_stencil * image.maxCoeff())
-                                 .array()
-                                 .max((-deriv_stencil * image.minCoeff()).array())
-                                 .sum(); // upper bound for gradient slope
+    const ScalarType slope = 1000 * (deriv_stencil * image.maxCoeff())
+                                        .array()
+                                        .max((-deriv_stencil * image.minCoeff()).array())
+                                        .sum(); // upper bound for gradient slope
     const Eigen::Vector2d centre = {image.rows() / 2.0, image.cols() / 2.0}; // centre of the image
     for (Eigen::Index i = 0; i < image.rows(); i++) {
         for (Eigen::Index j = 0; j < image.cols(); j++) {
