@@ -330,8 +330,8 @@ private:
     // precomputet discrete gradient
     Position grad_U(const Position p)
     {
-        const size_t x = std::round(p[0]), y = std::round(p[1]); // round each coordinate to the nearest integer
-        return potential_gradient(x, y);
+        // round each coordinate to the nearest integer
+        return potential_gradient(p.x(), p.y());
     }
 
     Eigen::Ref<const GradientMatrix> potential_gradient;
