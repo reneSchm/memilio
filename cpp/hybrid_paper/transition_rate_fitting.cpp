@@ -21,6 +21,13 @@
 // #include <sys/wait.h>
 // #include <unistd.h>
 
+#define restart_timer(timer, description)                                                                              \
+    {                                                                                                                  \
+        TIME_TYPE new_time = TIME_NOW;                                                                                 \
+        std::cout << "\r" << description << " :: " << PRINTABLE_TIME(new_time - timer) << std::endl << std::flush;     \
+        timer = new_time;                                                                                              \
+    }
+
 // the minimum needed "Infection States", since we do not consider adoption processes here
 enum class States
 {
@@ -133,7 +140,7 @@ double single_run_mobility_error(const FittingFunctionSetup& ffs, const std::vec
     Model model(ffs.agents, {}, ffs.gradient, ffs.metaregions, {}, sigma);
 
     // run simulation
-    mio::Simulation<Model> sim(model, 0, 0.05);
+    mio::Simulation<Model> sim(model, 0, 0.1);
     sim.advance(ffs.t_max);
     auto result = sim.get_result();
 
@@ -142,6 +149,8 @@ double single_run_mobility_error(const FittingFunctionSetup& ffs, const std::vec
 
     // calculate and return error
     double l_2 = 0;
+    const double error_weight =
+        0.00001; // keeps norm-equivalence to l2, but lets pop_change have a stronger influence on total error
     // double l_inf = 0;
     for (auto& key : ffs.border_pairs) {
         auto from      = key.first;
@@ -153,17 +162,16 @@ double single_run_mobility_error(const FittingFunctionSetup& ffs, const std::vec
         const auto err = std::abs(val - ref);
         l_2 += err * err;
         // l_inf = std::max(l_inf, err);
-        // std::cout << from << "->" << to << ":  value=";
-        // set_ostream_format(std::cout) << val << "  error=";
-        // set_ostream_format(std::cout) << err << "  rel_error=";
-        // set_ostream_format(std::cout) << ((ref > 0) ? err / ref : 0) << "\n";
     }
-    TIME_TYPE post_run = TIME_NOW;
-    fprintf(stdout, "# Time for one run: %.*g\n", PRECISION, PRINTABLE_TIME(post_run - pre_run));
-    // std::cout << "l2 err=" << std::sqrt(l_2) << "\n";
-    // std::cout << "linf err=" << l_inf << "\n";
+    // also consider population change (goal : keep metapopulation sizes constant)
+    auto pop_change = (sim.get_result().get_value(0) - sim.get_result().get_last_value()).norm();
+    l_2 += error_weight * pop_change * pop_change;
     return std::sqrt(l_2);
 }
+
+double max_error  = 0;
+double acc_error  = 0;
+size_t num_errors = 0;
 
 double average_run_mobility_error(const FittingFunctionSetup& ffs, const std::vector<double>& sigma, int num_runs)
 {
@@ -172,28 +180,30 @@ double average_run_mobility_error(const FittingFunctionSetup& ffs, const std::ve
     for (int run = 0; run < num_runs; ++run) {
         errors[run] = single_run_mobility_error(ffs, sigma);
     }
-    return std::accumulate(errors.begin(), errors.end(), 0.0) / errors.size();
+    double avg = std::accumulate(errors.begin(), errors.end(), 0.0) / errors.size();
+    max_error  = std::max(max_error, avg);
+    acc_error += avg;
+    num_errors++;
+    return avg;
 }
 
 int main()
 {
     int num_runs = (omp_get_max_threads() > 1) ? omp_get_max_threads() : 3;
     std::cout << "num_runs = " << num_runs << "\n";
+    std::cerr << "num_runs = " << num_runs << "\n";
 
     std::cout << "Current path is " << fs::current_path() << '\n';
-    TIME_TYPE pre_potential = TIME_NOW;
-    WeightedGradient wg("../../potentially_germany_grad.json", "../../boundary_ids.pgm");
-    TIME_TYPE post_potential = TIME_NOW;
-    fprintf(stdout, "# Time for creating weighted potential: %.*g\n", PRECISION,
-            PRINTABLE_TIME(post_potential - pre_potential));
-    TIME_TYPE pre_fitting_function_setup = TIME_NOW;
-    FittingFunctionSetup ffs(wg, "../../metagermany.pgm", "../../data/mobility/", 2);
-    TIME_TYPE post_fitting_function_setup = TIME_NOW;
-    fprintf(stdout, "# Time for fitting function setup: %.*g\n", PRECISION,
-            PRINTABLE_TIME(post_fitting_function_setup - pre_fitting_function_setup));
 
-    TIME_TYPE pre_min_function = TIME_NOW;
-    auto result                = dlib::find_min_global(
+    TIME_TYPE timer = TIME_NOW;
+
+    WeightedGradient wg("../../potentially_germany_grad.json", "../../boundary_ids.pgm");
+    restart_timer(timer, "# Time for creating weighted potential");
+
+    FittingFunctionSetup ffs(wg, "../../metagermany.pgm", "../../data/mobility/", 100);
+    restart_timer(timer, "# Time for fitting function setup");
+
+    auto result = dlib::find_min_global(
         [&](auto&& w1, auto&& w2, auto&& w3, auto&& w4, auto&& w5, auto&& w6, auto&& w7, auto&& w8, auto&& w9,
             auto&& w10, auto&& w11, auto&& w12, auto&& w13, auto&& w14, auto&& sigma1, auto&& sigma2, auto&& sigma3,
             auto&& sigma4, auto&& sigma5, auto&& sigma6, auto&& sigma7, auto&& sigma8) {
@@ -201,14 +211,15 @@ int main()
             wg.apply_weights({w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14});
             // calculate the transition rate error
             return average_run_mobility_error(ffs, {sigma1, sigma2, sigma3, sigma4, sigma5, sigma6, sigma7, sigma8},
-                                                             num_runs);
+                                              num_runs);
         },
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // lower bounds
-        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 15, 15, 15, 15, 15, 15, 15, 15}, // upper bounds
-        std::chrono::hours(24) // run this long
+        {1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
+         1000, 1000, 1000, 20,   20,   20,   20,   20,   20,   20,   20}, // upper bounds
+        std::chrono::hours(18) // run this long
     );
-    TIME_TYPE post_min_function = TIME_NOW;
-    fprintf(stdout, "# Time for minimizing: %.*g\n", PRECISION, PRINTABLE_TIME(post_min_function - pre_min_function));
+
+    restart_timer(timer, "# Time for minimizing");
 
     std::cout << "Minimizer borders:\n";
     for (size_t border = 0; border < 14; ++border) {
@@ -219,6 +230,8 @@ int main()
         std::cout << result.x(s) << "\n";
     }
     std::cout << "Minimum error:\n" << result.y << "\n";
+    std::cout << "Average error:\n" << acc_error / num_errors << "\n";
+    std::cout << "Maximum error:\n" << max_error << "\n";
 
     return 0;
 }
