@@ -14,14 +14,14 @@ geometries = map_data.geometry
 
 # remove ocean areas
 geometries = geometries.loc[[238, 228, 233, 242, 229, 231, 232, 223]]
-# 238             München
+# 238            Muenchen
 # 228              Dachau
-# 233    Fürstenfeldbruck
+# 233   Fuerstenfeldbruck
 # 242           Starnberg
 # 229           Ebersberg
 # 231              Erding
 # 232            Freising
-# 223             München
+# 223            Muenchen
 
 # remove islands from germany etc (i.e. keep only state boundaries)
 # for i in range(geometries.shape[0]):
