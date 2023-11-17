@@ -149,8 +149,7 @@ double single_run_mobility_error(const FittingFunctionSetup& ffs, const std::vec
 
     // calculate and return error
     double l_2 = 0;
-    const double error_weight =
-        0.00001; // keeps norm-equivalence to l2, but lets pop_change have a stronger influence on total error
+    const double error_weight = 0.001; // keeps norm-equivalence to l2, but lets pop_change have a weaker influence on total error
     // double l_inf = 0;
     for (auto& key : ffs.border_pairs) {
         auto from      = key.first;
@@ -164,7 +163,7 @@ double single_run_mobility_error(const FittingFunctionSetup& ffs, const std::vec
         // l_inf = std::max(l_inf, err);
     }
     // also consider population change (goal : keep metapopulation sizes constant)
-    auto pop_change = (sim.get_result().get_value(0) - sim.get_result().get_last_value()).norm();
+    auto pop_change = ((sim.get_result().get_value(0) - sim.get_result().get_last_value())/m.populations.size()).norm();
     l_2 += error_weight * pop_change * pop_change;
     return std::sqrt(l_2);
 }
