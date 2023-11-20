@@ -84,4 +84,14 @@ set_confirmed_case_data(std::vector<mio::ConfirmedCasesDataEntry>& confirmed_cas
     return mio::success(pop_dist_per_region);
 }
 
+template <class Agent>
+void read_initialization(std::string filename, std::vector<Agent>& agents)
+{
+    auto result = mio::read_json(filename).value();
+    for (int i = 0; i < result.size(); ++i) {
+        auto a = mio::deserialize_json(result[std::to_string(i)], mio::Tag<Agent>{}).value();
+        agents.push_back(Agent{a.position, a.status, a.land});
+    }
+}
+
 #endif // INITIALIZATION_H_

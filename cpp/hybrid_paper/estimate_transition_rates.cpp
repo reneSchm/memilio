@@ -1,10 +1,10 @@
 #include "hybrid_paper/weighted_gradient.h"
 #include "mpm/abm.h"
-#include "hybrid_paper/infection_state.h"
 #include "mpm/model.h"
 #include "models/mpm/potentials/map_reader.h"
 #include "mpm/potentials/potential_germany.h"
 #include "hybrid_paper/weighted_potential.h"
+#include "hybrid_paper/initialization.h"
 namespace mio
 {
 namespace mpm
@@ -99,19 +99,22 @@ int main()
         }
     }
 
+    // std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
+    // for (Eigen::Index i = 0; i < metaregions.rows(); i += 2) {
+    //     for (Eigen::Index j = 0; j < metaregions.cols(); j += 2) {
+    //         if (metaregions(i, j) != 0) {
+    //             agents.push_back({{i, j}, mio::mpm::paper::InfectionState::S, metaregions(i, j) - 1});
+    //         }
+    //     }
+    // }
+
     std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
-    for (Eigen::Index i = 0; i < metaregions.rows(); i += 2) {
-        for (Eigen::Index j = 0; j < metaregions.cols(); j += 2) {
-            if (metaregions(i, j) != 0) {
-                agents.push_back({{i, j}, mio::mpm::paper::InfectionState::S, metaregions(i, j) - 1});
-            }
-        }
-    }
+    read_initialization("initSusceptible28133.json", agents);
 
     mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>> model(agents, {}, wg.gradient, metaregions,
                                                                           {mio::mpm::paper::InfectionState::D}, sigmas);
 
-    calculate_transition_rates(model, 3, 10, 8);
+    calculate_transition_rates(model, 10, 100, metaregions.maxCoeff());
 
     return 0;
 }
