@@ -142,14 +142,14 @@ double single_run_mobility_error(const FittingFunctionSetup& ffs, const std::vec
     // run simulation
     mio::Simulation<Model> sim(model, 0, 0.1);
     sim.advance(ffs.t_max);
-    auto result = sim.get_result();
 
     // shorthand for model
     auto& m = sim.get_model();
 
     // calculate and return error
     double l_2 = 0;
-    const double error_weight = 0.001; // keeps norm-equivalence to l2, but lets pop_change have a weaker influence on total error
+    const double error_weight =
+        1; // keeps norm-equivalence to l2, but lets pop_change have a weaker influence on total error
     // double l_inf = 0;
     for (auto& key : ffs.border_pairs) {
         auto from      = key.first;
@@ -162,9 +162,14 @@ double single_run_mobility_error(const FittingFunctionSetup& ffs, const std::vec
         l_2 += err * err;
         // l_inf = std::max(l_inf, err);
     }
+#ifdef USE_POPULATION_CHANGE_ERROR // see memilio/config.h
     // also consider population change (goal : keep metapopulation sizes constant)
-    auto pop_change = ((sim.get_result().get_value(0) - sim.get_result().get_last_value())/m.populations.size()).norm();
-    l_2 += error_weight * pop_change * pop_change;
+    auto pop_t0   = sim.get_result().get_value(0);
+    auto pop_tmax = sim.get_result().get_last_value();
+    auto pop_change =
+        ((pop_t0 - pop_tmax).array() / pop_t0.array()).square().sum(); // .square().sum() is same as .norm()^2
+    l_2 += error_weight * pop_change;
+#endif
     return std::sqrt(l_2);
 }
 
@@ -175,7 +180,7 @@ size_t num_errors = 0;
 double average_run_mobility_error(const FittingFunctionSetup& ffs, const std::vector<double>& sigma, int num_runs)
 {
     std::vector<double> errors(num_runs);
-#pragma omp parallel for
+#pragma omp parallel for num_threads(num_runs)
     for (int run = 0; run < num_runs; ++run) {
         errors[run] = single_run_mobility_error(ffs, sigma);
     }
@@ -190,16 +195,17 @@ int main()
 {
     int num_runs = (omp_get_max_threads() > 1) ? omp_get_max_threads() : 3;
     std::cout << "num_runs = " << num_runs << "\n";
-    std::cerr << "num_runs = " << num_runs << "\n";
 
     std::cout << "Current path is " << fs::current_path() << '\n';
 
     TIME_TYPE timer = TIME_NOW;
 
-    WeightedGradient wg("../../potentially_germany_grad.json", "../../boundary_ids.pgm");
+    std::string path = "../../";
+
+    WeightedGradient wg(path + "potentially_germany_grad.json", path + "boundary_ids.pgm");
     restart_timer(timer, "# Time for creating weighted potential");
 
-    FittingFunctionSetup ffs(wg, "../../metagermany.pgm", "../../data/mobility/", 100);
+    FittingFunctionSetup ffs(wg, path + "metagermany.pgm", path + "data/mobility/", 10);
     restart_timer(timer, "# Time for fitting function setup");
 
     auto result = dlib::find_min_global(
@@ -208,14 +214,24 @@ int main()
             auto&& sigma4, auto&& sigma5, auto&& sigma6, auto&& sigma7, auto&& sigma8) {
             // let dlib set the weights for the potential
             wg.apply_weights({w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14});
-            // calculate the transition rate error
-            return average_run_mobility_error(ffs, {sigma1, sigma2, sigma3, sigma4, sigma5, sigma6, sigma7, sigma8},
-                                              num_runs);
+// calculate the transition rate error
+#pragma omp single
+            std::cerr << "W: " << w1 << ", " << w2 << ", " << w3 << ", " << w4 << ", " << w5 << ", " << w6 << ", " << w7
+                      << ", " << w8 << ", " << w9 << ", " << w10 << ", " << w11 << ", " << w12 << ", " << w13 << ", "
+                      << w14 << "\n";
+            std::cerr << "S: " << sigma1 << ", " << sigma2 << ", " << sigma3 << ", " << sigma4 << ", " << sigma5 << ", "
+                      << sigma6 << ", " << sigma7 << ", " << sigma8 << "\n";
+
+            auto err = average_run_mobility_error(ffs, {sigma1, sigma2, sigma3, sigma4, sigma5, sigma6, sigma7, sigma8},
+                                                  num_runs);
+
+            std::cerr << "E: " << err << "\n\n";
+            return err;
         },
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // lower bounds
         {1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
          1000, 1000, 1000, 20,   20,   20,   20,   20,   20,   20,   20}, // upper bounds
-        std::chrono::hours(18) // run this long
+        std::chrono::hours(48) // run this long
     );
 
     restart_timer(timer, "# Time for minimizing");
@@ -228,6 +244,7 @@ int main()
     for (size_t s = 14; s < result.x.size(); ++s) {
         std::cout << result.x(s) << "\n";
     }
+    std::cout << "Minimizer evaluations:\n" << num_errors << "\n";
     std::cout << "Minimum error:\n" << result.y << "\n";
     std::cout << "Average error:\n" << acc_error / num_errors << "\n";
     std::cout << "Maximum error:\n" << max_error << "\n";

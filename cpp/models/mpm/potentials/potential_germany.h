@@ -161,12 +161,9 @@ public:
 
     Eigen::VectorXd time_point() const
     {
-        // for (auto agent : populations) {
-        //     std::cout << agent.position[0] << " " << agent.position[1] << " ";
-        // }
-        // std::cout << "\n";
-        Eigen::Matrix<double, 16 * static_cast<size_t>(Status::Count), 1> val;
-        val.setZero();
+        // metaregions has values from 0 - #regions, where 0 is no particular region (e.g. borders, outside)
+        Eigen::VectorXd val = Eigen::VectorXd::Zero(metaregions.maxCoeff() * static_cast<size_t>(Status::Count));
+
         for (auto& agent : populations) {
             val[(agent.land * static_cast<size_t>(Status::Count) + static_cast<size_t>(agent.status))]++;
         }
@@ -308,13 +305,17 @@ public:
             Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
                           mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
 
-            auto land_old    = agent.land;
-            auto noise       = (this->sigma[land_old] * std::sqrt(dt)) * p;
+            auto land_old = agent.land;
+            auto noise    = (this->sigma[land_old] * std::sqrt(dt)) * p;
+
+#ifdef USE_MICROSTEPPING // defined in config.h
             int num_substeps = std::max<int>(noise.norm(), 1);
             for (int substep = 0; substep < num_substeps; ++substep) {
                 agent.position -= (dt * grad_U(agent.position) - noise) / num_substeps;
             }
-
+#else
+            agent.position -= dt * grad_U(agent.position) - noise;
+#endif
             const auto land = this->metaregions(agent.position[0], agent.position[1]);
             if (land > 0) {
                 agent.land = land - 1; // shift land so we can use it as index
