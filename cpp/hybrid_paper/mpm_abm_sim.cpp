@@ -1,9 +1,9 @@
 #include "memilio/data/analyze_result.h"
 #include "hybrid_paper/weighted_gradient.h"
 #include "mpm/abm.h"
-#include "hybrid_paper/infection_state.h"
 #include "memilio/io/json_serializer.h"
 #include "mpm/potentials/potential_germany.h"
+#include "hybrid_paper/initialization.h"
 
 namespace mio
 {
@@ -41,16 +41,6 @@ void get_agent_movement(size_t n_agents, Eigen::MatrixXi& metaregions, Eigen::Ma
         }
         std::cout << "\n";
         t += dt;
-    }
-}
-
-template <class Agent>
-void read_initialization(std::string filename, std::vector<Agent>& agents)
-{
-    auto result = mio::read_json(filename).value();
-    for (int i = 0; i < result.size(); ++i) {
-        auto a = mio::deserialize_json(result[std::to_string(i)], mio::Tag<Agent>{}).value();
-        agents.push_back(Agent{a.position, a.status, a.land});
     }
 }
 
