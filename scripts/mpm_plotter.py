@@ -49,10 +49,11 @@ def plot_populations(time, metapopulations, labels, name):
         plt.plot(time, ys[-1], c='black')
         
         plt.legend()
-        plt.savefig(name+str(fig_ctr)+".png")        
+        plt.savefig(name+str(fig_ctr - 1)+".png")        
         fig_ctr += 1
 
 table, labels = read_from_terminal("output.txt")
 time = table[:,0]
-subtables = [table[:, 1:4],table[:, 4:7]]
+# subtables = [table[:, 1:4],table[:, 4:7]]
+subtables = [table[:, 1 + i * 6: 2+i*6] for i in range(8)]
 plot_populations(time, subtables, labels, "mpm")

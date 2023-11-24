@@ -29,7 +29,7 @@
 
 using ScalarType = double;
 
-// #define USE_MICROSTEPPING
+#define USE_MICROSTEPPING
 #define USE_POPULATION_CHANGE_ERROR
 
 #endif

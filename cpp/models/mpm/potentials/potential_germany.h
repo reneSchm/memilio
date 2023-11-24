@@ -176,6 +176,11 @@ public:
                                                                     static_cast<size_t>(tr.to));
     }
 
+    const std::vector<Eigen::MatrixXd>& number_transitions() const
+    {
+        return m_number_transitions;
+    }
+
     std::vector<Agent> populations;
     double accumulated_contact_rates;
     size_t contact_rates_count;
@@ -305,8 +310,8 @@ public:
             Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
                           mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
 
-            auto land_old = agent.land;
-            auto noise    = (this->sigma[land_old] * std::sqrt(dt)) * p;
+            const int land_old = agent.land;
+            auto noise         = (this->sigma[land_old] * std::sqrt(dt)) * p;
 
 #ifdef USE_MICROSTEPPING // defined in config.h
             int num_substeps = std::max<int>(noise.norm(), 1);
@@ -316,9 +321,10 @@ public:
 #else
             agent.position -= dt * grad_U(agent.position) - noise;
 #endif
-            const auto land = this->metaregions(agent.position[0], agent.position[1]);
-            if (land > 0) {
-                agent.land = land - 1; // shift land so we can use it as index
+            const int land =
+                this->metaregions(agent.position[0], agent.position[1]) - 1; // shift land so we can use it as index
+            if (land >= 0) {
+                agent.land = land;
             }
             const bool makes_transition = (land_old != agent.land);
             if (makes_transition) {

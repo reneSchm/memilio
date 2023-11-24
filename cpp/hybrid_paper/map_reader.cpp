@@ -306,14 +306,18 @@ int main()
     const Eigen::Vector2d centre = {image.rows() / 2.0, image.cols() / 2.0}; // centre of the image
     for (Eigen::Index i = 0; i < image.rows(); i++) {
         for (Eigen::Index j = 0; j < image.cols(); j++) {
+            auto direction = (Eigen::Vector2d{i, j} - centre).normalized();
             if (is_outside(i, j)) {
-                auto direction = (Eigen::Vector2d{i, j} - centre).normalized();
+
                 gradient(i, j) = slope * direction;
             }
             else { // inside
                 const auto block = image.block(i - stencil_n, j - stencil_n, stencil_size, stencil_size).array();
                 gradient(i, j)   = {(block * deriv_stencil.array()).sum(),
                                     (block * deriv_stencil.transpose().array()).sum()};
+                if (gradient(i, j) == Eigen::Vector2d{0, 0}) {
+                    gradient(i, j) = 5 * direction;
+                }
             }
         }
     }
