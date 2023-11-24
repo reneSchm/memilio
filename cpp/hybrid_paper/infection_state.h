@@ -1,3 +1,5 @@
+#ifndef MIO_MPM_INFECTIONSTATE_H_
+#define MIO_MPM_INFECTIONSTATE_H_
 
 namespace mio
 {
@@ -25,3 +27,4 @@ enum class InfectionState
 } // namespace mpm
 } // namespace mio
 
+#endif // MIO_MPM_INFECTIONSTATE_H_
