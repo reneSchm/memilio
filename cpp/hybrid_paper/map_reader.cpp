@@ -252,12 +252,12 @@ int main()
     // scale weights so that their sum is 1, omitting the weight at k=l=0
     deriv_stencil /= std::accumulate(gauss_data.begin(), gauss_data.end(), -1.0);
 
-    Eigen::Matrix<double, 1, 5> stencil_ext;
-    stencil_ext(0, 0) = 0.5;
-    stencil_ext(0, 1) = 0.75;
-    stencil_ext(0, 2) = 1.0;
-    stencil_ext(0, 3) = 0.75;
-    stencil_ext(0, 4) = 0.5;
+    // Eigen::Matrix<double, 1, 5> stencil_ext;
+    // stencil_ext(0, 0) = 0.5;
+    // stencil_ext(0, 1) = 0.75;
+    // stencil_ext(0, 2) = 1.0;
+    // stencil_ext(0, 3) = 0.75;
+    // stencil_ext(0, 4) = 0.5;
 
     mio::log_info("identify boundary segments");
     Eigen::MatrixXi boundaries            = Eigen::MatrixXi::Zero(image.rows(), image.cols());
@@ -299,10 +299,11 @@ int main()
 
     mio::log_info("calculate discrete gradient, extend to image border");
     Eigen::Matrix<Eigen::Vector2d, Eigen::Dynamic, Eigen::Dynamic> gradient(image.rows(), image.cols());
-    const ScalarType slope = 1000 * (deriv_stencil * image.maxCoeff())
-                                        .array()
-                                        .max((-deriv_stencil * image.minCoeff()).array())
-                                        .sum(); // upper bound for gradient slope
+    //slope for the outside should hold min(|gradx|, |grady|) > sqrt(dt)*max(sigma)*4/dt which equals 620
+    const ScalarType slope = 620; //1000 * (deriv_stencil * image.maxCoeff())
+        //       .array()
+        //       .max((-deriv_stencil * image.minCoeff()).array())
+        //       .sum(); // upper bound for gradient slope
     const Eigen::Vector2d centre = {image.rows() / 2.0, image.cols() / 2.0}; // centre of the image
     for (Eigen::Index i = 0; i < image.rows(); i++) {
         for (Eigen::Index j = 0; j < image.cols(); j++) {
@@ -315,9 +316,6 @@ int main()
                 const auto block = image.block(i - stencil_n, j - stencil_n, stencil_size, stencil_size).array();
                 gradient(i, j)   = {(block * deriv_stencil.array()).sum(),
                                     (block * deriv_stencil.transpose().array()).sum()};
-                if (gradient(i, j) == Eigen::Vector2d{0, 0}) {
-                    gradient(i, j) = 5 * direction;
-                }
             }
         }
     }

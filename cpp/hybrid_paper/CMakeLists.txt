@@ -21,3 +21,6 @@ target_link_libraries(mpm_abm_sim memilio mpm)
 
 add_executable(test test.cpp)
 target_link_libraries(test memilio mpm)
+
+add_executable(transition_rate_fitting_random_search transition_rate_fitting_random_search.cpp)
+target_link_libraries(transition_rate_fitting_random_search memilio mpm)

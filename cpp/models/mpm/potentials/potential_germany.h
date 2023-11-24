@@ -312,15 +312,17 @@ public:
 
             const int land_old = agent.land;
             auto noise         = (this->sigma[land_old] * std::sqrt(dt)) * p;
+            auto new_pos       = agent.position;
 
 #ifdef USE_MICROSTEPPING // defined in config.h
             int num_substeps = std::max<int>(noise.norm(), 1);
             for (int substep = 0; substep < num_substeps; ++substep) {
-                agent.position -= (dt * grad_U(agent.position) - noise) / num_substeps;
+                new_pos -= (dt * grad_U(agent.position) - noise) / num_substeps;
             }
 #else
-            agent.position -= dt * grad_U(agent.position) - noise;
+            new_pos -= dt * grad_U(agent.position) - noise;
 #endif
+            agent.position = new_pos;
             const int land =
                 this->metaregions(agent.position[0], agent.position[1]) - 1; // shift land so we can use it as index
             if (land >= 0) {
