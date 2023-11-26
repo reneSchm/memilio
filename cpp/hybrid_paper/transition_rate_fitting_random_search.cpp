@@ -141,7 +141,7 @@ int main()
     WeightedGradient wg(path + "potentially_germany_grad.json", path + "boundary_ids.pgm");
     restart_timer(timer, "# Time for creating weighted potential");
 
-    std::string agent_file = "/group_KP/HPC/Gruppen/PSS/Modelle/Hybrid Models/Papers, Theses, "
+    std::string agent_file = "/group/HPC/Gruppen/PSS/Modelle/Hybrid Models/Papers, Theses, "
                              "Posters/2023_Paper_Spatio-temporal_hybrid/initializations/initSusceptible9375.json";
 
     FittingFunctionSetup ffs(wg, path + "metagermany.pgm", path + "data/mobility/", 100, agent_file);
@@ -168,13 +168,13 @@ int main()
         double current_award = 0;
         //draw weights and sigmas
         for (size_t i = 0; i < weights.size(); ++i) {
-            weights[i] = dist_weights(0, max_w);
+            weights[i] = dist_weights(0.0, max_w);
         }
         for (size_t i = 0; i < sigmas.size(); ++i) {
-            sigmas[i] = dist_sigmas(0, max_sigma);
+            sigmas[i] = dist_sigmas(0.0, max_sigma);
         }
 
-        slope = dist_slope(0, 10);
+        slope = dist_slope(0.0, 10.0);
 
         for (Eigen::Index i = 0; i < wg.gradient.rows(); i++) {
             for (Eigen::Index j = 0; j < wg.gradient.cols(); j++) {
@@ -241,11 +241,11 @@ int main()
             std::cout << "Award: " << current_award << "\n";
             std::cout << " -w [";
             for (int i = 0; i < weights.size(); i++)
-                std::cout << weights[i] << ((i == weights.size() - 1) ? ", " : "");
+                std::cout << weights[i] << ((i != weights.size() - 1) ? ", " : "");
             std::cout << "] -s [";
             for (int i = 0; i < sigmas.size(); i++)
-                std::cout << sigmas[i] << ((i == sigmas.size() - 1) ? ", " : "");
-            std::cout << "] -sl " << slope << "\n";
+                std::cout << sigmas[i] << ((i != sigmas.size() - 1) ? ", " : "");
+            std::cout << "] -sl " << slope << "\n" << std::flush;
         }
     }
 
@@ -253,11 +253,11 @@ int main()
     std::cout << "Condition fullfilled!\n";
     std::cout << " -w [";
     for (int i = 0; i < weights.size(); i++)
-        std::cout << weights[i] << ((i == weights.size() - 1) ? ", " : "");
+        std::cout << weights[i] << ((i != weights.size() - 1) ? ", " : "");
     std::cout << "] -s [";
     for (int i = 0; i < sigmas.size(); i++)
-        std::cout << sigmas[i] << ((i == sigmas.size() - 1) ? ", " : "");
-    std::cout << "] -sl " << slope << "\n";
+        std::cout << sigmas[i] << ((i != sigmas.size() - 1) ? ", " : "");
+    std::cout << "] -sl " << slope << "\n" << std::flush;
 
     return 0;
 }
