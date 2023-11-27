@@ -1,6 +1,7 @@
 #include "memilio/compartments/simulation.h"
 #include "memilio/io/cli.h"
 #include "memilio/io/mobility_io.h"
+#include "memilio/utils/random_number_generator.h"
 #include "mpm/region.h"
 #include "mpm/utility.h"
 #include "weighted_gradient.h"
@@ -37,6 +38,10 @@ struct Weights {
     {
         return "w";
     }
+    static Type get_default()
+    {
+        return std::vector<double>(14, 1);
+    }
 };
 struct Sigmas {
     using Type = std::vector<double>;
@@ -47,6 +52,25 @@ struct Sigmas {
     const static std::string alias()
     {
         return "s";
+    }
+    static Type get_default()
+    {
+        return std::vector<double>(8, 10);
+    }
+};
+struct Slope {
+    using Type = double;
+    const static std::string name()
+    {
+        return "Slope";
+    }
+    const static std::string alias()
+    {
+        return "sl";
+    }
+    static Type get_default()
+    {
+        return 5;
     }
 };
 
@@ -85,13 +109,22 @@ int main(int argc, char** argv)
 {
     using Model = mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>;
 
-    auto cli_result = mio::command_line_interface<Weights, Sigmas>(argv[0], argc, argv);
+    auto cli_result = mio::command_line_interface<Weights, Sigmas, Slope>(argv[0], argc, argv);
     if (!cli_result) {
         std::cerr << cli_result.error().formatted_message() << "\n";
         return cli_result.error().code().value();
     }
     auto weights = cli_result.value().get<Weights>();
     auto sigmas  = cli_result.value().get<Sigmas>();
+    double slope = cli_result.value().get<Slope>();
+
+    std::cout << " -w [";
+    for (int i = 0; i < weights.size(); i++)
+        std::cout << weights[i] << ((i != weights.size() - 1) ? ", " : "");
+    std::cout << "] -s [";
+    for (int i = 0; i < sigmas.size(); i++)
+        std::cout << sigmas[i] << ((i != sigmas.size() - 1) ? ", " : "");
+    std::cout << "] -sl " << slope << "\n";
 
     WeightedGradient wg("../../../potentially_germany_grad.json", "../../../boundary_ids.pgm");
 
@@ -101,6 +134,16 @@ int main(int argc, char** argv)
     read_initialization(agent_file, agents);
 
     wg.apply_weights(weights);
+
+    const Eigen::Vector2d centre = {wg.gradient.rows() / 2.0, wg.gradient.cols() / 2.0}; // centre of the wg.gradient
+    for (Eigen::Index i = 0; i < wg.gradient.rows(); i++) {
+        for (Eigen::Index j = 0; j < wg.gradient.cols(); j++) {
+            if (wg.base_gradient(i, j) == Eigen::Vector2d{0, 0}) {
+                auto direction    = (Eigen::Vector2d{i, j} - centre).normalized();
+                wg.gradient(i, j) = slope * direction;
+            }
+        }
+    }
 
     auto metaregions_pgm_file = "../../../metagermany.pgm";
     auto metaregions          = [&metaregions_pgm_file]() {
