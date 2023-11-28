@@ -101,7 +101,33 @@ public:
         }
     }
 
-    std::set<std::pair<int, int>> get_keys()
+    void apply_weights(const std::vector<ScalarType> weights, GradientMatrix& gradient_matrix) const
+    {
+        assert(base_gradient.cols() == gradient_matrix.cols());
+        assert(base_gradient.rows() == gradient_matrix.rows());
+        assert(weights.size() == num_weights);
+        auto key_copy        = missing_keys;
+        auto weight_map_copy = weight_map;
+        // assign weights to map values
+        {
+            size_t i = 0;
+            for (auto& weight : weight_map_copy) {
+                weight.second = weights[i];
+                i++;
+            }
+        }
+        // recompute gradient
+        for (Eigen::Index i = 0; i < gradient.rows(); i++) {
+            for (Eigen::Index j = 0; j < gradient.cols(); j++) {
+                if (boundary_ids(i, j) > 0) { // skip non-boundary entries
+                    gradient_matrix(i, j) =
+                        base_gradient(i, j) * get_weight(weight_map_copy, boundary_ids(i, j), key_copy);
+                }
+            }
+        }
+    }
+
+    const std::set<std::pair<int, int>>& get_keys() const
     {
         return missing_keys;
     }
