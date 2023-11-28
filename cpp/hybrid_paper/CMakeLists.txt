@@ -1,8 +1,8 @@
 add_subdirectory(dlib-19.24 dlib_build)
 
-find_package(OpenMP REQUIRED)
+# find_package(OpenMP REQUIRED)
 add_executable(transition_rate_fitting transition_rate_fitting.cpp)
-target_link_libraries(transition_rate_fitting dlib::dlib OpenMP::OpenMP_CXX memilio mpm)
+target_link_libraries(transition_rate_fitting dlib::dlib memilio mpm)
 
 add_executable(estimate_transition_rates estimate_transition_rates.cpp)
 target_link_libraries(estimate_transition_rates memilio mpm)
