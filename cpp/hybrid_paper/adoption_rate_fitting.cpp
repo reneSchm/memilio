@@ -44,10 +44,13 @@ struct FittingFunctionSetup {
         , transition_rates(transition_rates)
         , confirmed_cases(confirmed_cases)
     {
+        std::sort(confirmed_cases.begin(), confirmed_cases.end(), [](auto&& a, auto&& b) {
+            return std::make_tuple(get_region_id(a), a.date) < std::make_tuple(get_region_id(b), b.date);
+        });
     }
 };
 
-double single_run_infection_state_error(FittingFunctionSetup& ffs, double t_Exposed, double t_Carrier,
+double single_run_infection_state_error(const FittingFunctionSetup& ffs, double t_Exposed, double t_Carrier,
                                         double t_Infected, double mu_C_R, double transmission_prob, double mu_I_D)
 {
     using Model  = FittingFunctionSetup::Model;
@@ -106,7 +109,7 @@ double single_run_infection_state_error(FittingFunctionSetup& ffs, double t_Expo
             l_2[t] += error * error;
         }
         //average over all regions
-        l_2[t] = std::sqrt(l_2[t] / extrapolated_rki.size());
+        l_2[t] = std::sqrt(l_2[t]);
         //l_2[t] /= extrapolated_rki.size();
         date = mio::offset_date_by_days(date, 1);
     }
@@ -114,7 +117,7 @@ double single_run_infection_state_error(FittingFunctionSetup& ffs, double t_Expo
     return std::accumulate(l_2.begin(), l_2.end(), 0.0) / l_2.size();
 }
 
-double average_run_infection_state_error(FittingFunctionSetup& ffs, double t_Exposed, double t_Carrier,
+double average_run_infection_state_error(const FittingFunctionSetup& ffs, double t_Exposed, double t_Carrier,
                                          double t_Infected, double mu_C_R, double transmission_prob, double mu_I_D,
                                          int num_runs)
 {
@@ -131,36 +134,46 @@ double average_run_infection_state_error(FittingFunctionSetup& ffs, double t_Exp
 int main()
 {
     mio::set_log_level(mio::LogLevel::warn);
+    dlib::mutex print_mutex;
     using state  = mio::mpm::paper::InfectionState;
     using Region = mio::mpm::Region;
     //number inhabitants per region
     std::vector<double> populations = {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
     //county ids
     std::vector<int> regions = {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175};
-    //3 kommastelen verschieben
-    double kappa = 0.001;
-    //transition rates according to parameter estimation
-    std::map<std::tuple<Region, Region>, double> factors{{{Region(0), Region(4)}, 0.00324262 * kappa},
-                                                         {{Region(1), Region(0)}, 0.0000453513 * kappa},
-                                                         {{Region(2), Region(0)}, 0.00119682 * kappa},
-                                                         {{Region(2), Region(4)}, 0.00661358 * kappa},
-                                                         {{Region(3), Region(0)}, 0.0003551 * kappa},
-                                                         {{Region(3), Region(1)}, 0.0277554 * kappa},
-                                                         {{Region(3), Region(4)}, 0.0202192},
-                                                         {{Region(4), Region(0)}, 0.0772854 * kappa},
-                                                         {{Region(4), Region(1)}, 0.171165 * kappa},
-                                                         {{Region(4), Region(2)}, 0.00562129 * kappa},
-                                                         {{Region(4), Region(3)}, 0.0201224},
-                                                         {{Region(4), Region(5)}, 0.000231291 * kappa},
-                                                         {{Region(4), Region(6)}, 0.00019365 * kappa},
-                                                         {{Region(4), Region(7)}, 0.00101667},
-                                                         {{Region(5), Region(1)}, 0.0000453513 * kappa},
-                                                         {{Region(5), Region(4)}, 0.0000453513 * kappa},
-                                                         {{Region(6), Region(4)}, 0.000192289 * kappa},
-                                                         {{Region(6), Region(5)}, 0.000784123 * kappa},
-                                                         {{Region(6), Region(7)}, 0.00134482},
-                                                         {{Region(7), Region(4)}, 0.00101442},
-                                                         {{Region(7), Region(6)}, 0.00138364}};
+    // //transition rates set
+    // std::map<std::tuple<Region, Region>, double> factors{
+    //     {{Region(0), Region(1)}, 0.00209172},   {{Region(0), Region(2)}, 0.00129385},
+    //     {{Region(0), Region(3)}, 0.0012854},   {{Region(0), Region(4)}, 0.000395732},
+    //     {{Region(1), Region(0)}, 0.00287683}, {{Region(1), Region(3)}, 0.00263464},
+    //     {{Region(1), Region(4)}, 0.00607675},   {{Region(1), Region(5)}, 0.0070069},
+    //     {{Region(2), Region(0)}, 0.00119680425},    {{Region(2), Region(4)}, 0.0048997325},
+    //     {{Region(3), Region(0)}, 0.0011328},    {{Region(3), Region(1)}, 0.00217669},
+    //     {{Region(3), Region(4)}, 0.027938},   {{Region(4), Region(0)}, 0.000409244},
+    //     {{Region(4), Region(1)}, 0.00420978},  {{Region(4), Region(2)}, 0.00597156},
+    //     {{Region(4), Region(3)}, 0.0221714},   {{Region(4), Region(5)}, 0.00575182},
+    //     {{Region(4), Region(6)}, 0.00278756}, {{Region(4), Region(7)}, 0.00762489},
+    //     {{Region(5), Region(1)}, 0.00644629},  {{Region(5), Region(4)}, 0.00657493},
+    //     {{Region(5), Region(6)}, 0.00894635},   {{Region(6), Region(4)}, 0.0044032},
+    //     {{Region(6), Region(5)}, 0.008672},   {{Region(6), Region(7)}, 0.00909973},
+    //     {{Region(7), Region(4)}, 0.0069012},   {{Region(7), Region(6)}, 0.0085614}};
+
+    //transition rates mean
+    std::map<std::tuple<Region, Region>, double> factors{
+        {{Region(0), Region(1)}, 0.002422041},  {{Region(0), Region(2)}, 0.00117333},
+        {{Region(0), Region(3)}, 0.00148433},   {{Region(0), Region(4)}, 0.0003370663},
+        {{Region(1), Region(0)}, 0.00250643},   {{Region(1), Region(3)}, 0.0022944},
+        {{Region(1), Region(4)}, 0.005607941},  {{Region(1), Region(5)}, 0.00694992},
+        {{Region(2), Region(0)}, 0.0011735741}, {{Region(2), Region(4)}, 0.0050138},
+        {{Region(3), Region(0)}, 0.0012575},    {{Region(3), Region(1)}, 0.00215727},
+        {{Region(3), Region(4)}, 0.025111},     {{Region(4), Region(0)}, 0.000380326},
+        {{Region(4), Region(1)}, 0.00568214},   {{Region(4), Region(2)}, 0.0048346},
+        {{Region(4), Region(3)}, 0.02539532},   {{Region(4), Region(5)}, 0.00837037},
+        {{Region(4), Region(6)}, 0.00374033},   {{Region(4), Region(7)}, 0.0071363},
+        {{Region(5), Region(1)}, 0.007078041},  {{Region(5), Region(4)}, 0.0082882},
+        {{Region(5), Region(6)}, 0.009044981},  {{Region(6), Region(4)}, 0.00370109},
+        {{Region(6), Region(5)}, 0.0090819},    {{Region(6), Region(7)}, 0.0085312},
+        {{Region(7), Region(4)}, 0.00736248},   {{Region(7), Region(6)}, 0.0084352}};
     std::vector<state> transitioning_states{state::S, state::E, state::C, state::I, state::R};
     //No adapted transition behaviour when infected
     std::vector<mio::mpm::TransitionRate<state>> transition_rates;
@@ -169,22 +182,33 @@ int main()
             transition_rates.push_back({s, std::get<0>(rate.first), std::get<1>(rate.first), rate.second});
         }
     }
-
     std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =
         mio::read_confirmed_cases_data("../../data/Germany/cases_all_county_age_ma7.json").value();
+    const double tmax = 100;
 
-    FittingFunctionSetup ffs(regions, populations, mio::Date(2021, 3, 1), 100, transition_rates, confirmed_cases);
-    int num_runs = 1;
-    auto result  = dlib::find_min_global(
+    const FittingFunctionSetup ffs(regions, populations, mio::Date(2021, 3, 1), tmax, transition_rates,
+                                   confirmed_cases);
+
+    std::cout << "Total threads:           " << dlib::default_thread_pool().num_threads_in_pool() << "\n";
+    const int num_runs = 10;
+    auto result        = dlib::find_min_global(
+        dlib::default_thread_pool(),
         [&](double t_Exposed, double t_Carrier, double t_Infected, double mu_C_R, double transmission_prob,
             double mu_I_D) {
-            // calculate the transition rate error
-            return average_run_infection_state_error(ffs, t_Exposed, t_Carrier, t_Infected, mu_C_R, transmission_prob,
-                                                      mu_I_D, num_runs);
+            // calculate error
+            auto err = average_run_infection_state_error(ffs, t_Exposed, t_Carrier, t_Infected, mu_C_R,
+                                                                transmission_prob, mu_I_D, num_runs);
+
+            dlib::auto_mutex lock_printing_until_end_of_scope(print_mutex);
+            std::cerr << " t_E: " << t_Exposed << ", t_C: " << t_Carrier << ", t_I: " << t_Infected << "\n";
+            std::cerr << " mu_C_R: " << mu_C_R << ", trans_prob: " << transmission_prob << ", mu_I_D: " << mu_I_D
+                      << "\n";
+            std::cerr << "E: " << err << "\n\n";
+            return err;
         },
-        {1, 1, 1, 0.001, 0.001, 0.001}, // lower bounds
+        {1, 1, 1, 0.0001, 0.0001, 0.0001}, // lower bounds
         {21, 21, 21, 1, 1, 1}, // upper bounds
-        std::chrono::seconds(1) // run this long
+        std::chrono::hours(36) // run this long
     );
 
     std::cout << "Minimizer:\n";

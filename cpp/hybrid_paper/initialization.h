@@ -84,10 +84,69 @@ set_confirmed_case_data(std::vector<mio::ConfirmedCasesDataEntry>& confirmed_cas
     return mio::success(pop_dist_per_region);
 }
 
+mio::IOResult<std::vector<std::vector<double>>>
+set_confirmed_case_data(const std::vector<mio::ConfirmedCasesDataEntry>& confirmed_case_data,
+                        const std::vector<int>& regions, const std::vector<double>& populations, mio::Date start_date,
+                        double t_E, double t_C, double t_I, double mu_C_R, double scaling_factor_infected = 1.0)
+{
+    std::vector<double> pop_dist((size_t)mio::mpm::paper::InfectionState::Count);
+    std::vector<std::vector<double>> pop_dist_per_region(regions.size(), pop_dist);
+
+    for (auto region_idx = size_t(0); region_idx < regions.size(); ++region_idx) {
+
+        //get entries for region
+        auto region_entry_range_it = std::equal_range(confirmed_case_data.begin(), confirmed_case_data.end(),
+                                                      regions[region_idx], [](auto&& a, auto&& b) {
+                                                          return get_region_id(a) < get_region_id(b);
+                                                      });
+        auto region_entry_range    = mio::make_range(region_entry_range_it);
+
+        //TODO: seek correct date(e.g. with find_if) instead of iterating over all
+        for (auto&& region_entry : region_entry_range) {
+            auto date_df = region_entry.date;
+            if (date_df == mio::offset_date_by_days(start_date, 0)) {
+                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::I] +=
+                    scaling_factor_infected * region_entry.num_confirmed;
+                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::C] -=
+                    1 / (1 - mu_C_R) * scaling_factor_infected * region_entry.num_confirmed;
+            }
+            if (date_df == mio::offset_date_by_days(start_date, t_C)) {
+                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::C] +=
+                    1 / (1 - mu_C_R) * scaling_factor_infected * region_entry.num_confirmed;
+                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::E] -=
+                    1 / (1 - mu_C_R) * scaling_factor_infected * region_entry.num_confirmed;
+            }
+            if (date_df == mio::offset_date_by_days(start_date, t_E + t_C)) {
+                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::E] +=
+                    1 / (1 - mu_C_R) * scaling_factor_infected * region_entry.num_confirmed;
+            }
+            if (date_df == mio::offset_date_by_days(start_date, -t_I)) {
+                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::I] -=
+                    scaling_factor_infected * region_entry.num_confirmed;
+                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::R] +=
+                    region_entry.num_recovered;
+                pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::D] += region_entry.num_deaths;
+            }
+        }
+        auto comp_sum =
+            std::accumulate(pop_dist_per_region[region_idx].begin(), pop_dist_per_region[region_idx].end(), 0.0);
+        pop_dist_per_region[region_idx][(size_t)mio::mpm::paper::InfectionState::S] =
+            populations[region_idx] - comp_sum;
+    }
+
+    return mio::success(pop_dist_per_region);
+}
+
 template <class Agent>
 void read_initialization(std::string filename, std::vector<Agent>& agents)
 {
     auto result = mio::read_json(filename).value();
+
+    if (!result) {
+        mio::log(mio::LogLevel::critical, "Could not open agent initialization file {}", filename);
+        exit(1);
+    }
+
     for (int i = 0; i < result.size(); ++i) {
         auto a = mio::deserialize_json(result[std::to_string(i)], mio::Tag<Agent>{}).value();
         agents.push_back(Agent{a.position, a.status, a.land});
