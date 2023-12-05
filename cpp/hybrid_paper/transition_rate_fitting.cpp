@@ -1,24 +1,18 @@
-#include "dlib/threads/async.h"
-#include "dlib/threads/auto_mutex_extension.h"
-#include "dlib/threads/parallel_for_extension.h"
-#include "dlib/threads/thread_pool_extension.h"
-#include "dlib/threads/thread_specific_data_extension.h"
-#include "dlib/threads/threads_kernel_2.h"
-#include "memilio/data/analyze_result.h"
+#include "hybrid_paper/initialization.h"
+#include "hybrid_paper/weighted_gradient.h"
 #include "models/mpm/potentials/potential_germany.h"
 #include "models/mpm/potentials/map_reader.h"
 #include "models/mpm/abm.h"
+#include "memilio/data/analyze_result.h"
 #include "memilio/io/mobility_io.h"
-#include "hybrid_paper/weighted_gradient.h"
 
+#include <dlib/threads.h>
 #include <dlib/global_optimization.h>
 #include <omp.h>
 
 #include <set>
-
 #include <filesystem>
 #include <iostream>
-#include <unistd.h>
 #include <vector>
 
 #define TIME_TYPE std::chrono::high_resolution_clock::time_point
@@ -90,7 +84,8 @@ struct FittingFunctionSetup {
     // uses a weighted potential, loads metaregions and commuter data, prepares agents and reference values.
     // needed for the model setup and error calculation in single_run_mobility_error
     explicit FittingFunctionSetup(const WeightedGradient& wg, const std::string& metaregions_pgm_file,
-                                  const std::string& mobility_data_directory, const double t_max)
+                                  const std::string& mobility_data_directory, const std::string& agent_init_file,
+                                  const double t_max)
         : metaregions([&metaregions_pgm_file]() {
             std::ifstream ifile(metaregions_pgm_file);
             if (!ifile.is_open()) { // write error and abort
@@ -118,26 +113,28 @@ struct FittingFunctionSetup {
         , agents() // filled below
         , border_pairs(wg.get_keys())
     {
+        read_initialization(agent_init_file, agents);
         // set one agent per every four pixels
         // the concentration of agents does not appear to have a strong influence on the error of single_run_mobility_error below
         //std::vector<double> subpopulations(reference_populations.begin(), reference_populations.end());
         // while (std::accumulate(subpopulations.begin(), subpopulations.end(), 0.0) > 0) {
-        for (Eigen::Index i = 0; i < metaregions.rows(); i += 2) {
-            for (Eigen::Index j = 0; j < metaregions.cols(); j += 2) {
-                // auto& pop = subpopulations[metaregions(i, j) - 1];
-                if (metaregions(i, j) != 0) {
-                    // if (metaregions(i, j) != 0 && pop > 0) {
-                    agents.push_back({{i, j}, Model::Status::Default, metaregions(i, j) - 1});
-                    // --pop;
-                }
-            }
-        }
+        // for (Eigen::Index i = 0; i < metaregions.rows(); i += 2) {
+        //     for (Eigen::Index j = 0; j < metaregions.cols(); j += 2) {
+        //         // auto& pop = subpopulations[metaregions(i, j) - 1];
+        //         if (metaregions(i, j) != 0) {
+        //             // if (metaregions(i, j) != 0 && pop > 0) {
+        //             agents.push_back({{i, j}, Model::Status::Default, metaregions(i, j) - 1});
+        //             // --pop;
+        //         }
+        //     }
+        // }
         // }
     }
 };
 
 // creates a model, runs it, and calculates the l2 error for transition rates
-double single_run_mobility_error(const FittingFunctionSetup& ffs, const WeightedGradient::GradientMatrix& gradient,
+double single_run_mobility_error(const FittingFunctionSetup& ffs,
+                                 Eigen::Ref<const WeightedGradient::GradientMatrix> gradient,
                                  const std::vector<double>& sigma)
 {
     TIME_TYPE pre_run = TIME_NOW;
@@ -191,20 +188,28 @@ double average_run_mobility_error(const FittingFunctionSetup& ffs, const Weighte
     return std::accumulate(errors.begin(), errors.end(), 0.0) / errors.size();
 }
 
+Eigen::Ref<WeightedGradient::GradientMatrix> thread_specific_gradient(Eigen::Index rows, Eigen::Index cols)
+{
+    static thread_local WeightedGradient::GradientMatrix grad =
+        WeightedGradient::GradientMatrix::Constant(rows, cols, WeightedGradient::GradientMatrix::Scalar::Zero());
+    return grad;
+}
+
 int main()
 {
     // NOTE: Use DLIB_NUM_THREADS to set a maximum number of threads
-    const std::string path        = "../../../";
+    const std::string path        = "";
     const double solver_epsilon   = 0.1;
     const double tmax             = 20;
-    const auto total_fitting_time = std::chrono::hours(48);
+    const auto total_fitting_time = std::chrono::hours(140);
     const double weight_min = 0, weight_max = 1000;
     const double sigma_min = 0, sigma_max = 50;
     const double slope_min = 0, slope_max = 10;
 
-    double max_error  = 0;
-    double acc_error  = 0;
-    size_t num_errors = 0;
+    double max_error       = 0;
+    double acc_error       = 0;
+    size_t num_errors      = 0;
+    auto total_num_threads = dlib::default_thread_pool().num_threads_in_pool();
     dlib::mutex print_mutex; // used to prevent parallel prints from bleeding into each other
     // see also http://dlib.net/api.html#threads or http://dlib.net/threads_ex.cpp.html
 
@@ -220,7 +225,7 @@ int main()
 #endif
     std::cout << "Current path is          " << fs::current_path() << "\n"
               << "ABM tmax:                " << tmax << "\n"
-              << "Total threads:           " << dlib::default_thread_pool().num_threads_in_pool() << "\n"
+              << "Total threads:           " << total_num_threads << "\n"
               << "Total fitting time:      " << PRINTABLE_TIME(total_fitting_time) << "\n"
               << "Solver epsilon:          " << solver_epsilon << "\n"
               << "\n";
@@ -228,11 +233,12 @@ int main()
     TIME_TYPE timer = TIME_NOW;
 
     const WeightedGradient wg(path + "potentially_germany_grad.json", path + "boundary_ids.pgm");
-    std::vector<WeightedGradient::GradientMatrix> thread_specific_gradient(
-        dlib::default_thread_pool().num_threads_in_pool(), wg.base_gradient);
     restart_timer(timer, "# Time for creating weighted potential");
 
-    const FittingFunctionSetup ffs(wg, path + "metagermany.pgm", path + "data/mobility/", tmax);
+    const FittingFunctionSetup ffs(wg, path + "metagermany.pgm", path + "data/mobility/",
+                                   "/group_KP/HPC/Gruppen/PSS/Modelle/Hybrid Models/Papers, Theses, "
+                                   "Posters/2023_Paper_Spatio-temporal_hybrid/initializations/initSusceptible9375.json",
+                                   tmax);
     restart_timer(timer, "# Time for fitting function setup");
 
     const Eigen::Vector2d centre = {wg.gradient.rows() / 2.0, wg.gradient.cols() / 2.0}; // centre of the wg.gradient
@@ -242,8 +248,8 @@ int main()
         [&](auto&& w1, auto&& w2, auto&& w3, auto&& w4, auto&& w5, auto&& w6, auto&& w7, auto&& w8, auto&& w9,
             auto&& w10, auto&& w11, auto&& w12, auto&& w13, auto&& w14, auto&& sigma1, auto&& sigma2, auto&& sigma3,
             auto&& sigma4, auto&& sigma5, auto&& sigma6, auto&& sigma7, auto&& sigma8, auto&& slope) {
+            auto gradient = thread_specific_gradient(wg.gradient.rows(), wg.gradient.cols());
             // set the weights for the potential
-            auto& gradient = thread_specific_gradient[dlib::get_thread_id()];
             wg.apply_weights({w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14}, gradient);
             // set an interior slope
             for (Eigen::Index i = 0; i < gradient.rows(); i++) {

@@ -101,7 +101,7 @@ public:
         }
     }
 
-    void apply_weights(const std::vector<ScalarType> weights, GradientMatrix& gradient_matrix) const
+    void apply_weights(const std::vector<ScalarType> weights, Eigen::Ref<GradientMatrix> gradient_matrix) const
     {
         assert(base_gradient.cols() == gradient_matrix.cols());
         assert(base_gradient.rows() == gradient_matrix.rows());
@@ -122,6 +122,9 @@ public:
                 if (boundary_ids(i, j) > 0) { // skip non-boundary entries
                     gradient_matrix(i, j) =
                         base_gradient(i, j) * get_weight(weight_map_copy, boundary_ids(i, j), key_copy);
+                }
+                else {
+                    gradient_matrix(i, j) = base_gradient(i, j);
                 }
             }
         }
