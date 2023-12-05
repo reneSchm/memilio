@@ -1,10 +1,24 @@
 #include "hybrid_paper/weighted_gradient.h"
+#include "memilio/io/cli.h"
 #include "mpm/abm.h"
 #include "mpm/model.h"
 #include "models/mpm/potentials/map_reader.h"
 #include "mpm/potentials/potential_germany.h"
 #include "hybrid_paper/weighted_potential.h"
 #include "hybrid_paper/initialization.h"
+
+struct Tmax {
+    using Type = double;
+    const static std::string name()
+    {
+        return "Tmax";
+    }
+    const static std::string alias()
+    {
+        return "tmax";
+    }
+};
+
 namespace mio
 {
 namespace mpm
@@ -74,16 +88,34 @@ void calculate_transition_rates(ABM<Potential>& abm, size_t num_runs, double tma
 } // namespace paper
 } // namespace mpm
 } // namespace mio
-int main()
+int main(int argc, char** argv)
 {
+    auto cli_result = mio::command_line_interface<Tmax>(argv[0], argc, argv);
+    if (!cli_result) {
+        std::cerr << cli_result.error().formatted_message() << "\n";
+        return cli_result.error().code().value();
+    }
+    auto tmax = cli_result.value().get<Tmax>();
+
     Eigen::MatrixXi metaregions;
 
     WeightedGradient wg("../../potentially_germany_grad.json", "../../boundary_ids.pgm");
 
-    const std::vector<double> weights{6.22485, 9.99625,   9.99997, 0.0000887, 4.78272, 0.000177, 7.80954,
-                                      7.84763, 0.0000798, 9.99982, 9.99987,   3.77446, 10,       2.92137};
-    const std::vector<double> sigmas{0.00114814, 0.0000000504, 15, 15, 14.9999, 0.000246785, 14.4189, 14.9999};
+    const std::vector<double> weights{1000, 800,  850.076, 717.145, 1000, 50,      611.022,
+                                      160,  1000, 500,     100,     1200, 725.818, 590.303};
+    const std::vector<double> sigmas{15, 29, 15, 15, 28, 35, 43, 30};
+    const double slope = 2.0;
     wg.apply_weights(weights);
+
+    const Eigen::Vector2d centre = {wg.gradient.rows() / 2.0, wg.gradient.cols() / 2.0}; // centre of the wg.gradient
+    for (Eigen::Index i = 0; i < wg.gradient.rows(); i++) {
+        for (Eigen::Index j = 0; j < wg.gradient.cols(); j++) {
+            if (wg.base_gradient(i, j) == Eigen::Vector2d{0, 0}) {
+                auto direction    = (Eigen::Vector2d{i, j} - centre).normalized();
+                wg.gradient(i, j) = slope * direction;
+            }
+        }
+    }
 
     std::cerr << "Setup: Read metaregions.\n" << std::flush;
     {
@@ -108,13 +140,16 @@ int main()
     //     }
     // }
 
+    std::string init_file = "/group/HPC/Gruppen/PSS/Modelle/Hybrid Models/Papers, Theses, "
+                            "Posters/2023_Paper_Spatio-temporal_hybrid/initializations/initSusceptible9375.json";
+
     std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
-    read_initialization("initSusceptible28133.json", agents);
+    read_initialization(init_file, agents);
 
     mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>> model(agents, {}, wg.gradient, metaregions,
                                                                           {mio::mpm::paper::InfectionState::D}, sigmas);
 
-    calculate_transition_rates(model, 10, 100, metaregions.maxCoeff());
+    calculate_transition_rates(model, 10, tmax, metaregions.maxCoeff());
 
     return 0;
 }
