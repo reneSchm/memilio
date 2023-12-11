@@ -186,12 +186,11 @@ int main(int argc, char** argv)
                     sim.get_model().number_transitions({Model::Status::S, mio::mpm::Region(j), mio::mpm::Region(i)});
 
                 std::cout << i << "->" << j << " : "
-                          << (reference_commuters(county_ids[i], county_ids[j]) * tmax / (2 * ref_pop) > 0.5 ? "#"
-                                                                                                             : " ")
+                          << (reference_commuters(county_ids[i], county_ids[j]) * tmax / ref_pop > 0.5 ? "#" : " ")
                           << colorize(sim.get_model().number_transitions(
                                           {Model::Status::S, mio::mpm::Region(i), mio::mpm::Region(j)}) /
                                           sim.get_model().populations.size(),
-                                      reference_commuters(county_ids[i], county_ids[j]) * tmax / (2 * ref_pop))
+                                      reference_commuters(county_ids[i], county_ids[j]) * tmax / ref_pop)
                           << "\n";
             }
         }
