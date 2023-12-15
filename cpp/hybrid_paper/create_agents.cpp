@@ -1,4 +1,8 @@
-#include "hybrid_paper/initialization.h"
+#include "initialization.h"
+#include "infection_state.h"
+#include "mpm/abm.h"
+#include "mpm/potentials/potential_germany.h"
+#include "mpm/potentials/map_reader.h"
 
 #define TIME_TYPE std::chrono::high_resolution_clock::time_point
 #define TIME_NOW std::chrono::high_resolution_clock::now()
@@ -61,16 +65,16 @@ create_susceptible_agents(std::vector<double>& populations, double persons_per_a
 {
     std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
     std::vector<std::vector<std::pair<size_t, size_t>>> indices = get_region_indices(metaregions);
-    for(size_t region = size_t(0); region<indices.size(); ++region){
+    for (size_t region = size_t(0); region < indices.size(); ++region) {
         std::vector<std::pair<size_t, size_t>>& region_indices = indices[region];
         int num_agents                                         = populations[region] / persons_per_agent;
-        while(num_agents > 0){
+        while (num_agents > 0) {
             auto position =
                 mio::DiscreteDistribution<int>::get_instance()(std::vector<double>(region_indices.size(), 1));
-                agents.push_back({{region_indices[position].first, region_indices[position].second},
+            agents.push_back({{region_indices[position].first, region_indices[position].second},
                               mio::mpm::paper::InfectionState::S,
                               int(region)});
-                num_agents -= 1;
+            num_agents -= 1;
         }
     }
     if (save_initialization) {
@@ -130,7 +134,7 @@ int main()
     std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
     read_initialization("initSusceptible28133.json", agents);
 
-    for(auto& a : agents){
+    for (auto& a : agents) {
         std::cout << a.position[0] << " " << a.position[1] << " ";
     }
 

@@ -6,6 +6,7 @@
 #include "mpm/potentials/potential_germany.h"
 #include "hybrid_paper/weighted_potential.h"
 #include "hybrid_paper/initialization.h"
+#include "infection_state.h"
 
 struct Tmax {
     using Type = double;

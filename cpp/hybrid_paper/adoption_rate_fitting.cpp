@@ -1,5 +1,6 @@
-#include "models/mpm/pdmm.h"
-#include "hybrid_paper/initialization.h"
+#include "initialization.h"
+#include "infection_state.h"
+#include "mpm/pdmm.h"
 #include "mpm/region.h"
 #include "memilio/data/analyze_result.h"
 #include "memilio/io/epi_data.h"
@@ -192,8 +193,8 @@ int main()
     std::cout << "Total threads:           " << dlib::default_thread_pool().num_threads_in_pool() << "\n";
     const int num_runs = 10;
     auto result        = dlib::find_min_global(
-        dlib::default_thread_pool(),
-        [&](double t_Exposed, double t_Carrier, double t_Infected, double mu_C_R, double transmission_prob,
+               dlib::default_thread_pool(),
+               [&](double t_Exposed, double t_Carrier, double t_Infected, double mu_C_R, double transmission_prob,
             double mu_I_D) {
             // calculate error
             auto err = average_run_infection_state_error(ffs, t_Exposed, t_Carrier, t_Infected, mu_C_R,
@@ -206,10 +207,10 @@ int main()
             std::cerr << "E: " << err << "\n\n";
             return err;
         },
-        {1, 1, 1, 0.0001, 0.0001, 0.0001}, // lower bounds
-        {21, 21, 21, 1, 1, 1}, // upper bounds
-        std::chrono::hours(36) // run this long
-    );
+               {1, 1, 1, 0.0001, 0.0001, 0.0001}, // lower bounds
+               {21, 21, 21, 1, 1, 1}, // upper bounds
+               std::chrono::hours(36) // run this long
+           );
 
     std::cout << "Minimizer:\n";
     for (size_t param = 0; param < result.x.size(); ++param) {

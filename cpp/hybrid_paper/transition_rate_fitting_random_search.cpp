@@ -28,21 +28,6 @@
         timer = new_time;                                                                                              \
     }
 
-// load mobility data between all german counties
-mio::IOResult<Eigen::MatrixXd> get_transition_matrices(std::string data_dir)
-{
-    BOOST_OUTCOME_TRY(matrix_commuter, mio::read_mobility_plain(data_dir + "/commuter_migration_scaled.txt"));
-    BOOST_OUTCOME_TRY(matrix_twitter, mio::read_mobility_plain(data_dir + "/twitter_scaled_1252.txt"));
-    Eigen::MatrixXd travel_to_matrix = matrix_commuter + matrix_twitter;
-    Eigen::MatrixXd transitions_per_day(travel_to_matrix.rows(), travel_to_matrix.cols());
-    for (int from = 0; from < travel_to_matrix.rows(); ++from) {
-        for (int to = 0; to < travel_to_matrix.cols(); ++to) {
-            transitions_per_day(from, to) = travel_to_matrix(from, to) + travel_to_matrix(to, from);
-        }
-    }
-    return mio::success(transitions_per_day);
-}
-
 struct FittingFunctionSetup {
     using Model =
         mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>; //mio::mpm::ABM<GradientGermany<States>>;

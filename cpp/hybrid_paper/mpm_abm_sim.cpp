@@ -1,9 +1,10 @@
-#include "memilio/data/analyze_result.h"
-#include "hybrid_paper/weighted_gradient.h"
+#include "infection_state.h"
+#include "weighted_gradient.h"
+#include "initialization.h"
 #include "mpm/abm.h"
-#include "memilio/io/json_serializer.h"
 #include "mpm/potentials/potential_germany.h"
-#include "hybrid_paper/initialization.h"
+#include "memilio/data/analyze_result.h"
+#include "memilio/io/json_serializer.h"
 
 namespace mio
 {
@@ -45,8 +46,8 @@ void get_agent_movement(size_t n_agents, Eigen::MatrixXi& metaregions, Eigen::Ma
 }
 
 void run_multiple_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<InfectionState>>& adoption_rates,
-                             WeightedGradient& wg, const std::vector<double>& sigma, Eigen::MatrixXi& metaregions, double tmax, double delta_t,
-                             int num_runs)
+                             WeightedGradient& wg, const std::vector<double>& sigma, Eigen::MatrixXi& metaregions,
+                             double tmax, double delta_t, int num_runs)
 {
     using ABM = mio::mpm::ABM<GradientGermany<InfectionState>>;
     std::vector<ABM::Agent> agents;
@@ -58,11 +59,11 @@ void run_multiple_simulation(std::string init_file, std::vector<mio::mpm::Adopti
 
     std::vector<mio::TimeSeries<double>> ensemble_results(
         num_runs, mio::TimeSeries<double>::zero(tmax, num_regions * static_cast<size_t>(InfectionState::Count)));
-    for(int run = 0; run < num_runs; ++run){
+    for (int run = 0; run < num_runs; ++run) {
         std::cerr << "run number: " << run << "\n" << std::flush;
         std::vector<ABM::Agent> agents_run = agents;
         ABM model(agents, adoption_rates, wg.gradient, metaregions, {InfectionState::D}, sigma);
-        auto run_result = mio::simulate(0.0, tmax, delta_t, model);
+        auto run_result       = mio::simulate(0.0, tmax, delta_t, model);
         ensemble_results[run] = mio::interpolate_simulation_result(run_result);
     }
 }

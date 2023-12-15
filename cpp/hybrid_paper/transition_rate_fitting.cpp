@@ -20,8 +20,28 @@
 #define PRINTABLE_TIME(_time) (std::chrono::duration_cast<std::chrono::duration<double>>(_time)).count()
 #define PRECISION 17
 
-// #include <sys/wait.h>
-// #include <unistd.h>
+/**
+ * Parameter fitting
+ * 1. get transitions per day from mobility matrices -> for one federal state i the number of transitions per day it sends to state j 
+ * is the number it send to state j (m(i,j)) at the beginning of the day plus the number that state j had send to state i (m(j,i)) and that returns at the end of the day.
+ * So  m(i, j) + m(j, i)
+ * 
+ * 2. get the transitions from simulation
+ * -> agent in one state should have contact with every other agent in one state
+ *  -> in the abm simulation the transitions will noch necessarily the same every day, so we need to multiply the transitions from the matrices
+ * with the number of simulation days to be able to compare it
+ * -> we should store the number of transitions matrix wise like the commuter matrices are given
+ * 
+ * 3. compare simualtion transitions with matrix transitions
+ * -> what error metric? mean squared error? mean absolute error?
+ * -> do we compare the number of transitions over the whole simulation or do we calculate the error for every day and average over all days
+ * 
+ * 4. parameter adjustment
+ * -> find reasonable default values (intervals) for the transition rates
+ * -> uniformly draw a values for the transition rates and make x (maybe 100?) abm runs with that and average over the number of transitions for every run
+ * -> calculate error with this averaged number
+ * -> repeat for x (100?) drawings and set the parameters to the values with the lowest error
+ */
 
 #define restart_timer(timer, description)                                                                              \
     {                                                                                                                  \
@@ -36,21 +56,6 @@ enum class States
     Default,
     Count
 };
-
-// load mobility data between all german counties
-mio::IOResult<Eigen::MatrixXd> get_transition_matrices(std::string data_dir)
-{
-    BOOST_OUTCOME_TRY(matrix_commuter, mio::read_mobility_plain(data_dir + "/commuter_migration_scaled.txt"));
-    BOOST_OUTCOME_TRY(matrix_twitter, mio::read_mobility_plain(data_dir + "/twitter_scaled_1252.txt"));
-    Eigen::MatrixXd travel_to_matrix = matrix_commuter + matrix_twitter;
-    Eigen::MatrixXd transitions_per_day(travel_to_matrix.rows(), travel_to_matrix.cols());
-    for (int from = 0; from < travel_to_matrix.rows(); ++from) {
-        for (int to = 0; to < travel_to_matrix.cols(); ++to) {
-            transitions_per_day(from, to) = travel_to_matrix(from, to) + travel_to_matrix(to, from);
-        }
-    }
-    return mio::success(transitions_per_day);
-}
 
 struct FittingFunctionSetup {
     using Model  = mio::mpm::ABM<GradientGermany<States>>;
