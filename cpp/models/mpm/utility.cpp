@@ -43,7 +43,7 @@ void mio::mpm::print_to_file(FILE* outfile, const mio::TimeSeries<ScalarType>& r
     //     }
     // }
     //print column labels
-    fprintf(outfile, " %s", "t");
+    fprintf(outfile, "%s", "Time");
     for (size_t k = 0; k < static_cast<size_t>(results.get_num_elements()); k++) {
         if (k < state_names.size()) {
             fprintf(outfile, " %s", state_names[k].data()); // print underlying char*

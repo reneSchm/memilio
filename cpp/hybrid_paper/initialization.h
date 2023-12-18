@@ -6,7 +6,10 @@
 #include "memilio/utils/logging.h"
 
 // load mobility data between all german counties
-mio::IOResult<Eigen::MatrixXd> get_transition_matrices(std::string data_dir);
+mio::IOResult<Eigen::MatrixXd> get_transition_matrix_daily_total(std::string data_dir);
+
+// load mobility data between all german counties
+mio::IOResult<Eigen::MatrixXd> get_transition_matrix(std::string data_dir);
 
 //district, county or state id of a data entry if available, 0 (for whole country) otherwise
 //used to compare data entries to integer ids in STL algorithms

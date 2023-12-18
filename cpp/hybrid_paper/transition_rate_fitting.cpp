@@ -105,7 +105,7 @@ struct FittingFunctionSetup {
         }())
         , reference_commuters([&mobility_data_directory]() {
             // try and load mobility data
-            auto res = get_transition_matrices(mobility_data_directory);
+            auto res = get_transition_matrix_daily_total(mobility_data_directory);
             if (res) { // return the commuter matrix
                 return res.value();
             }

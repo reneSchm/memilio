@@ -4,7 +4,7 @@
 #include "memilio/io/mobility_io.h"
 
 // load mobility data between all german counties
-mio::IOResult<Eigen::MatrixXd> get_transition_matrices(std::string data_dir)
+mio::IOResult<Eigen::MatrixXd> get_transition_matrix_daily_total(std::string data_dir)
 {
     BOOST_OUTCOME_TRY(matrix_commuter, mio::read_mobility_plain(data_dir + "/commuter_migration_scaled_states.txt"));
     BOOST_OUTCOME_TRY(matrix_twitter, mio::read_mobility_plain(data_dir + "/twitter_scaled_1252_states.txt"));
@@ -16,6 +16,15 @@ mio::IOResult<Eigen::MatrixXd> get_transition_matrices(std::string data_dir)
         }
     }
     return mio::success(transitions_per_day);
+}
+
+// load mobility data between all german counties
+mio::IOResult<Eigen::MatrixXd> get_transition_matrix(std::string data_dir)
+{
+    BOOST_OUTCOME_TRY(matrix_commuter, mio::read_mobility_plain(data_dir + "/commuter_migration_scaled_states.txt"));
+    BOOST_OUTCOME_TRY(matrix_twitter, mio::read_mobility_plain(data_dir + "/twitter_scaled_1252_states.txt"));
+    Eigen::MatrixXd transition_matrix = matrix_commuter + matrix_twitter;
+    return mio::success(transition_matrix);
 }
 
 mio::IOResult<std::vector<std::vector<double>>>

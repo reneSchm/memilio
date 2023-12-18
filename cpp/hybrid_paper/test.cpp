@@ -154,7 +154,7 @@ int main(int argc, char** argv)
     auto results = sim.get_result();
 
     const std::vector<int> county_ids   = {233, 228, 242, 238, 223, 232, 231, 229};
-    Eigen::MatrixXd reference_commuters = get_transition_matrices("../../../data/mobility/").value();
+    Eigen::MatrixXd reference_commuters = get_transition_matrix_daily_total("../../../data/mobility/").value();
     auto ref_pops = std::vector<double>{218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
     auto ref_pop  = std::accumulate(ref_pops.begin(), ref_pops.end(), 0.0);
 
