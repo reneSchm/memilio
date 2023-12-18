@@ -284,13 +284,12 @@ protected:
 template <class InfectionState>
 class GradientGermany : public PotentialGermany<InfectionState>
 {
-    using GradientMatrix = Eigen::Matrix<Eigen::Vector2d, Eigen::Dynamic, Eigen::Dynamic>;
-    using Base           = PotentialGermany<InfectionState>;
-
 public:
-    using Agent    = typename Base::Agent;
-    using Position = typename Base::Position;
-    using Status   = typename Base::Status;
+    using Base           = PotentialGermany<InfectionState>;
+    using GradientMatrix = Eigen::Matrix<Eigen::Vector2d, Eigen::Dynamic, Eigen::Dynamic>;
+    using Agent          = typename Base::Agent;
+    using Position       = typename Base::Position;
+    using Status         = typename Base::Status;
 
     GradientGermany(const std::vector<Agent>& agents, const typename mio::mpm::AdoptionRates<Status>::Type& rates,
                     Eigen::Ref<const GradientMatrix> potential_gradient, Eigen::Ref<const Eigen::MatrixXi> metaregions,
@@ -335,7 +334,7 @@ public:
         }
     }
 
-private:
+protected:
     // precomputet discrete gradient
     Position grad_U(const Position p)
     {
