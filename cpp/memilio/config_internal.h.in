@@ -29,4 +29,6 @@
 #cmakedefine MEMILIO_HAS_JSONCPP
 #cmakedefine MEMILIO_ENABLE_MPI
 
+const char* const MEMILIO_BASE_DIR = "${MEMILIO_BASE_DIR}/";
+
 #endif

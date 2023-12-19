@@ -5,6 +5,11 @@
 #include "memilio/io/io.h"
 #include "memilio/utils/logging.h"
 
+namespace mio
+{
+std::string base_dir();
+}
+
 // load mobility data between all german counties
 mio::IOResult<Eigen::MatrixXd> get_transition_matrix_daily_total(std::string data_dir);
 

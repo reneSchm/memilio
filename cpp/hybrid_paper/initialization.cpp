@@ -1,13 +1,19 @@
 #include "initialization.h"
 #include "infection_state.h"
 
+#include "memilio/config.h"
 #include "memilio/io/mobility_io.h"
+
+std::string mio::base_dir()
+{
+    return MEMILIO_BASE_DIR;
+}
 
 // load mobility data between all german counties
 mio::IOResult<Eigen::MatrixXd> get_transition_matrix_daily_total(std::string data_dir)
 {
-    BOOST_OUTCOME_TRY(matrix_commuter, mio::read_mobility_plain(data_dir + "/commuter_migration_scaled_states.txt"));
-    BOOST_OUTCOME_TRY(matrix_twitter, mio::read_mobility_plain(data_dir + "/twitter_scaled_1252_states.txt"));
+    BOOST_OUTCOME_TRY(matrix_commuter, mio::read_mobility_plain(data_dir + "/commuter_migration_scaled.txt"));
+    BOOST_OUTCOME_TRY(matrix_twitter, mio::read_mobility_plain(data_dir + "/twitter_scaled_1252.txt"));
     Eigen::MatrixXd travel_to_matrix = matrix_commuter + matrix_twitter;
     Eigen::MatrixXd transitions_per_day(travel_to_matrix.rows(), travel_to_matrix.cols());
     for (int from = 0; from < travel_to_matrix.rows(); ++from) {
@@ -21,8 +27,8 @@ mio::IOResult<Eigen::MatrixXd> get_transition_matrix_daily_total(std::string dat
 // load mobility data between all german counties
 mio::IOResult<Eigen::MatrixXd> get_transition_matrix(std::string data_dir)
 {
-    BOOST_OUTCOME_TRY(matrix_commuter, mio::read_mobility_plain(data_dir + "/commuter_migration_scaled_states.txt"));
-    BOOST_OUTCOME_TRY(matrix_twitter, mio::read_mobility_plain(data_dir + "/twitter_scaled_1252_states.txt"));
+    BOOST_OUTCOME_TRY(matrix_commuter, mio::read_mobility_plain(data_dir + "/commuter_migration_scaled.txt"));
+    BOOST_OUTCOME_TRY(matrix_twitter, mio::read_mobility_plain(data_dir + "/twitter_scaled_1252.txt"));
     Eigen::MatrixXd transition_matrix = matrix_commuter + matrix_twitter;
     return mio::success(transition_matrix);
 }
