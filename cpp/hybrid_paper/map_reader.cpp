@@ -1,13 +1,14 @@
-// WORK IN PROGRESS - use at your own risk
-// compile command (requires a proir successfull build of memilio):
-// g++ --std=c++14 -Wall --pedantic -Icpp -Icpp/build/_deps/eigen-src -o map_reader map_reader.cpp cpp/models/mpm/potentials/map_reader.cpp
 // generate pgm's using map.py with .shp files from https://daten.gdz.bkg.bund.de/produkte/vg/vg2500/aktuell/vg2500_12-31.gk3.shape.zip (unpack into tools/)
 
 #include "models/mpm/potentials/map_reader.h"
+#include "Eigen/src/Core/Matrix.h"
+#include "hybrid_paper/initialization.h"
 #include "memilio/io/io.h"
 #include "memilio/io/json_serializer.h"
 #include "memilio/utils/logging.h"
 
+#include <cstddef>
+#include <fstream>
 #include <numeric>
 
 using namespace mio::mpm;
@@ -150,10 +151,9 @@ void extend_bitmap(Eigen::Ref<Eigen::MatrixXi> bitmap, Eigen::Index width)
 // };
 
 template <class Matrix>
-bool write_pgm(std::ofstream& ofile, const std::string& filename, Matrix data)
+bool write_pgm(const std::string& filename, Matrix data)
 {
-    assert(!ofile.is_open());
-    ofile.open(filename);
+    std::ofstream ofile(filename);
     if (!ofile.is_open()) {
         mio::log(mio::LogLevel::critical, "Could not open file {}", filename);
         return false;
@@ -163,8 +163,8 @@ bool write_pgm(std::ofstream& ofile, const std::string& filename, Matrix data)
     return true;
 }
 
-#define TRY_WRITE_PGM(ofile, filename, data)                                                                           \
-    if (!write_pgm(ofile, filename, data))                                                                             \
+#define TRY_WRITE_PGM(filename, data)                                                                                  \
+    if (!write_pgm(filename, data))                                                                                    \
         return 1;
 
 #define TRY_WRITE_JSON(filename, data)                                                                                 \
@@ -178,7 +178,7 @@ bool write_pgm(std::ofstream& ofile, const std::string& filename, Matrix data)
 
 int main()
 {
-    const std::string file_prefix                = "../../";
+    const std::string file_prefix                = mio::base_dir();
     const std::string potential_filename         = file_prefix + "potential_dpi=300.pgm";
     const std::string output_potential           = file_prefix + "potentially_germany";
     const std::string output_metaregions         = file_prefix + "metagermany.pgm";
@@ -221,7 +221,9 @@ int main()
     // with: N = 9, Sigma = [[1,0],[0,1]]
     // stored: np.savetxt("tst.txt", (Z - Z.min())/(Z.max() - Z.min()))
     // used only central 7x7 data
-    std::vector<ScalarType> gauss_data = {
+    const int stencil_n        = 4;
+    constexpr int stencil_size = 2 * stencil_n + 1; // == sqrt(gauss_data.size())
+    const std::array<double, stencil_size * stencil_size> gauss_data = {
         8.870833551280334073e-02, 1.819281669245390864e-01, 2.731928597373864953e-01, 3.120522650710688128e-01, 2.731928597373864953e-01, 1.819281669245390864e-01, 8.870833551280334073e-02,
         1.819281669245390864e-01, 3.560857401120277599e-01, 5.265906335159235008e-01, 5.991895604387955654e-01, 5.265906335159235008e-01, 3.560857401120277599e-01, 1.819281669245390864e-01,
         2.731928597373864953e-01, 5.265906335159235008e-01, 7.746737895689834730e-01, 8.803046049522565974e-01, 7.746737895689834730e-01, 5.265906335159235008e-01, 2.731928597373864953e-01,
@@ -231,8 +233,6 @@ int main()
         8.870833551280334073e-02, 1.819281669245390864e-01, 2.731928597373864953e-01, 3.120522650710688128e-01, 2.731928597373864953e-01, 1.819281669245390864e-01, 8.870833551280334073e-02
     };
     // clang-format on
-    const int stencil_n        = 3;
-    constexpr int stencil_size = 2 * stencil_n + 1; // == sqrt(gauss_data.size())
     Eigen::Matrix<double, stencil_size, stencil_size> boundary_stencil;
     for (int i = 0; i < stencil_size; i++)
         for (int j = 0; j < stencil_size; j++)
@@ -269,7 +269,7 @@ int main()
             // skip interior
             if (metaregions(i, j) != 0 or is_outside(i, j))
                 continue;
-            // look for land ids in a 5x5 square
+            // look for land ids in a 2*check_width+1 square
             u_int16_t ids = 0;
             for (int k = -check_width; k <= check_width; k++) {
                 for (int l = -check_width; l <= check_width; l++) {
@@ -286,13 +286,18 @@ int main()
             assert(num_bits_set(ids) < 4);
         }
     }
+
     // extend both bitmaps to cover the extended potential, see section "apply boundary stencil",
     // then crop them to stay inside the potential domain
-    extend_bitmap(boundaries, boundary_stencil.cols() / 2);
+    extend_bitmap(boundaries, 2 * stencil_n);
     boundaries = boundaries.array() - (boundaries.array() * is_outside.array());
 
-    extend_bitmap(boundaries_simplified, boundary_stencil.cols() / 2);
+    extend_bitmap(boundaries_simplified, 2 * stencil_n);
     boundaries_simplified = boundaries_simplified.array() - (boundaries_simplified.array() * is_outside.array());
+
+    if (boundaries.unaryExpr(&num_bits_set<int>).maxCoeff() >= 4) {
+        mio::log_error(" -> After extending boundary ids to match gradient size, at least 4 ids overlap somewhere!");
+    }
 
     mio::log_info("apply boundary stencil");
     apply_stencil(image, boundary_stencil, 1.0);
@@ -329,17 +334,33 @@ int main()
         }
     }
 
+    mio::log_info("sanity check: write boundary/potenial/outside overlap");
+    Eigen::MatrixXi sanity(image.rows(), image.cols());
+    for (Eigen::Index i = 0; i < image.rows(); i++) {
+        for (Eigen::Index j = 0; j < image.cols(); j++) {
+            sanity(i, j) = 0;
+            if (!is_outside(i, j)) {
+                sanity(i, j) += 1;
+            }
+            if (gradient(i, j) == Eigen::Vector2d{0, 0}) {
+                sanity(i, j) += 2;
+            }
+            if (boundaries(i, j) == 0) {
+                sanity(i, j) += 4;
+            }
+        }
+    }
+    TRY_WRITE_PGM(mio::base_dir() + "sanity.pgm", sanity);
+
     mio::log_info("write files");
-    std::ofstream ofile;
     TRY_WRITE_JSON(output_potential + "_grad.json", gradient);
-    TRY_WRITE_PGM(ofile, output_potential + "_dx.pgm", image_dx.array() - image_dx.minCoeff());
-    TRY_WRITE_PGM(ofile, output_potential + "_dy.pgm", image_dy.array() - image_dy.minCoeff());
-    TRY_WRITE_PGM(ofile, output_potential + ".pgm", image);
-    TRY_WRITE_PGM(ofile, output_metaregions, metaregions);
-    TRY_WRITE_PGM(ofile, output_boundary_ids, boundaries);
-    TRY_WRITE_PGM(ofile, output_boundary_simplyfied, boundaries_simplified);
-    TRY_WRITE_PGM(ofile, file_prefix + "deriv_stencil.pgm",
-                  (deriv_stencil.array() - deriv_stencil.minCoeff()).matrix());
+    TRY_WRITE_PGM(output_potential + "_dx.pgm", image_dx.array() - image_dx.minCoeff());
+    TRY_WRITE_PGM(output_potential + "_dy.pgm", image_dy.array() - image_dy.minCoeff());
+    TRY_WRITE_PGM(output_potential + ".pgm", image);
+    TRY_WRITE_PGM(output_metaregions, metaregions);
+    TRY_WRITE_PGM(output_boundary_ids, boundaries);
+    TRY_WRITE_PGM(output_boundary_simplyfied, boundaries_simplified);
+    TRY_WRITE_PGM(file_prefix + "deriv_stencil.pgm", (deriv_stencil.array() - deriv_stencil.minCoeff()).matrix());
 
     mio::log_info("success");
 }
