@@ -52,7 +52,7 @@ void get_agent_movement(size_t n_agents, Eigen::MatrixXi& metaregions, Eigen::Ma
             pos_candidate = {pos_rng(0.0, double(potential.rows())), pos_rng(0.0, double(potential.cols()))};
         }
         a.position = {pos_candidate[0], pos_candidate[1]};
-        a.land     = metaregions(pos_candidate[0], pos_candidate[1]) - 1;
+        a.region   = metaregions(pos_candidate[0], pos_candidate[1]) - 1;
         a.status   = InfectionState::S;
     }
 

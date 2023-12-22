@@ -1,26 +1,102 @@
-#ifndef POTENTIAL_GERMANY_H_
-#define POTENTIAL_GERMANY_H_
+#ifndef COMMUTING_POTENTIAL_H_
+#define COMMUTING_POTENTIAL_H_
 
-#include "mpm/utility.h"
-#include "mpm/abm.h"
+#include "hybrid_paper/metaregion_sampler.h"
+#include "memilio/math/eigen.h"
+#include "memilio/math/floating_point.h"
+#include "mpm/model.h"
 
-#include <vector>
+struct TriangularDistribution {
 
-template <class InfectionState>
-class PotentialGermany
+    TriangularDistribution(double upper_bound, double lower_bound, double mean)
+        : mode(std::max(lower_bound, std::min(3 * mean - upper_bound - lower_bound, upper_bound)))
+        , upper_bound(upper_bound)
+        , lower_bound(lower_bound)
+    {
+    }
+    double mode;
+    double upper_bound;
+    double lower_bound;
+
+    double get_instance()
+    {
+        std::array<double, 3> i{lower_bound, mode, upper_bound};
+        std::array<double, 3> w{0, 2.0 / (upper_bound - lower_bound), 0};
+        double r = std::piecewise_linear_distribution<double>{i.begin(), i.end(), w.begin()}(mio::thread_local_rng());
+        assert(r < upper_bound and r > lower_bound);
+        return r;
+    }
+};
+
+struct StochastiK {
+    using Matrix = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+    StochastiK(Eigen::Ref<Matrix> metaregion_commute_weights, Eigen::Ref<const Eigen::MatrixXi> metaregions,
+               MetaregionSampler&& metaregion_sampler)
+        : metaregion_commute_weights(metaregion_commute_weights)
+        , metaregion_sampler(metaregion_sampler)
+        , metaregions(metaregions)
+    {
+    }
+
+    //K
+    // if(commutes and (t.isapprox(t_depart) or t.isapprox(t_return)))
+    //    x = destination - position
+    //    destination = position
+    //    return x
+    //
+    // else
+    //    return {0,0}
+
+    template <class Agent>
+    Eigen::Vector2d operator()(Agent& a, double t, double dt)
+    {
+        if (a.commutes and (is_in_interval(a.t_depart, t, t + dt) or is_in_interval(a.t_return, t, t + dt))) {
+
+            Eigen::Vector2d direction = a.commuting_destination - a.position;
+            Eigen::Vector2d dest      = a.position + direction;
+
+            assert(metaregions(a.commuting_destination[0], a.commuting_destination[1]) ==
+                   metaregions(dest[0], dest[1]));
+
+            a.commuting_destination = a.position;
+            return direction;
+        }
+        else {
+            return {0, 0};
+        }
+    }
+
+    bool is_in_interval(double value, double begin, double end)
+    {
+        return value >= begin and value < end;
+    }
+
+    Matrix metaregion_commute_weights;
+    MetaregionSampler metaregion_sampler;
+    Eigen::Ref<const Eigen::MatrixXi> metaregions;
+};
+
+template <class KProvider, class InfectionState>
+class CommutingPotential
 {
-
 public:
-    using Status   = InfectionState;
-    using Position = Eigen::Vector2d;
+    using Position       = Eigen::Vector2d;
+    using Status         = InfectionState;
+    using GradientMatrix = Eigen::Matrix<Eigen::Vector2d, Eigen::Dynamic, Eigen::Dynamic>;
 
     struct Agent {
+
         Position position;
         InfectionState status;
         int region;
 
+        bool commutes                  = false;
+        Position commuting_destination = {0, 0};
+        ScalarType t_return            = 0;
+        ScalarType t_depart            = 0;
+
         /**
-         * serialize agents. 
+         * serialize agents.
          * @see mio::serialize
          */
         template <class IOContext>
@@ -52,28 +128,32 @@ public:
         }
     };
 
-    PotentialGermany(const std::vector<Agent>& agents, const typename mio::mpm::AdoptionRates<Status>::Type& rates,
-                     Eigen::Ref<const Eigen::MatrixXd> potential, Eigen::Ref<const Eigen::MatrixXi> metaregions,
-                     std::vector<InfectionState> non_moving_states = {},
-                     const std::vector<double>& sigma              = std::vector<double>(8, 1440.0 / 200.0),
-                     const double contact_radius_in_km             = 1000000)
-        : potential(potential)
-        , metaregions(metaregions)
-        , populations(agents)
-        , sigma(sigma)
-        , non_moving_states(non_moving_states)
-        , contact_radius(get_contact_radius_factor() * contact_radius_in_km)
+    // KProvider has to implement a function "Position operator() (Agent, double)"
+    CommutingPotential(const KProvider& K, const std::vector<Agent>& agents,
+                       const typename mio::mpm::AdoptionRates<Status>::Type& rates,
+                       Eigen::Ref<const GradientMatrix> potential_gradient,
+                       Eigen::Ref<const Eigen::MatrixXi> metaregions,
+                       std::vector<InfectionState> non_moving_states = {},
+                       const std::vector<double>& sigma              = std::vector<double>(8, 1440.0 / 200.0),
+                       const double contact_radius_in_km             = 100)
+        : populations(agents)
         , accumulated_contact_rates{0.}
         , contact_rates_count{0}
+        , m_k{K}
+        , metaregions(metaregions)
+        , sigma(sigma)
+        , contact_radius(get_contact_radius_factor() * contact_radius_in_km)
         , m_number_transitions(static_cast<size_t>(Status::Count),
                                Eigen::MatrixXd::Zero(metaregions.maxCoeff(), metaregions.maxCoeff()))
+        , non_moving_states(non_moving_states)
+        , potential_gradient(potential_gradient)
+
     {
         for (auto& agent : populations) {
             assert(is_in_domain(agent.position));
         }
         for (auto& r : rates) {
             m_adoption_rates.emplace(std::forward_as_tuple(r.region, r.from, r.to), r);
-            //m_adoption_rates[{r.region, r.from, r.to}] = r;
         }
     }
 
@@ -82,7 +162,7 @@ public:
         agent.status = new_status;
     }
 
-    double get_total_agents_in_state(int region)
+    double get_total_agents_in_region(int region)
     {
         double num_agents = 0;
         for (auto& agent : populations) {
@@ -95,7 +175,6 @@ public:
     {
         double rate = 0;
         // get the correct adoption rate
-        // auto well    = (agent.position[0] < 0) ? 0 : 1;
         auto map_itr = m_adoption_rates.find({agent.region, agent.status, new_status});
         if (map_itr != m_adoption_rates.end()) {
             const auto& adoption_rate = map_itr->second;
@@ -122,7 +201,7 @@ public:
                 // rate = factor * "concentration of contacts with status new_status"
                 if (num_contacts > 0) {
                     rate = adoption_rate.factor * (influences / num_contacts);
-                    accumulated_contact_rates += (num_contacts / get_total_agents_in_state(agent.region));
+                    accumulated_contact_rates += (num_contacts / get_total_agents_in_region(agent.region));
                     contact_rates_count += 1;
                 }
             }
@@ -133,30 +212,54 @@ public:
 
     void move(const double t, const double dt, Agent& agent)
     {
+
         if (std::find(non_moving_states.begin(), non_moving_states.end(), agent.status) == non_moving_states.end()) {
+            //commuting parameters are drawn at the beginning of every new day
+            if (mio::floating_point_equal(t, std::round(t), 1e-10)) {
+                draw_commuting_parameters(agent, t, dt);
+            }
             Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
                           mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
 
-            auto region_old  = agent.region;
-            auto pnew        = agent.position;
-            auto noise       = (sigma[region_old] * std::sqrt(dt)) * p;
-            int num_substeps = std::max<int>(noise.norm(), 1);
-            for (int substep = 0; substep < num_substeps; ++substep) {
-                pnew -= (dt * grad_U(pnew) - noise) / num_substeps;
+            const int region_old = agent.region;
+            auto noise           = (sigma[region_old] * std::sqrt(dt)) * p;
+            auto new_pos         = agent.position;
+
+            const auto K = m_k(agent, t, dt);
+            // TODO: discuss different cases i.e. should we skip gradient when K applies
+            if (K != Position{0, 0}) {
+                new_pos += K;
             }
-            if (potential(pnew[0], pnew[1]) < 8) {
-                agent.position = pnew;
+            else {
+                //use microstepping
+                int num_substeps = std::max<int>(noise.norm(), 1);
+                for (int substep = 0; substep < num_substeps; ++substep) {
+                    new_pos -= (dt * grad_U(agent.position) - noise) / num_substeps;
+                }
+                //if agents are outside they keep their position
+                if (metaregions(new_pos[0], new_pos[1]) == 0) {
+                    new_pos = agent.position;
+                }
+                //if agent crosses the border the influence of the noise term is neglected
+                else if (metaregions(new_pos[0], new_pos[1]) - 1 != agent.region) {
+                    new_pos -= noise;
+                }
             }
 
-            const auto region = metaregions(agent.position[0], agent.position[1]);
-            if (region > 0) {
-                agent.region = region - 1; // shift region so we can use it as index
+            const int region = metaregions(new_pos[0], new_pos[1]) - 1; // shift land so we can use it as index
+            if (region >= 0) {
+                agent.region = region;
             }
             const bool makes_transition = (region_old != agent.region);
+
+            assert((K != Position{0, 0}) == makes_transition);
+
             if (makes_transition) {
                 m_number_transitions[static_cast<size_t>(agent.status)](region_old, agent.region)++;
             }
+            agent.position = new_pos;
         }
+        //else{  agent has a non-moving status   }
     }
 
     Eigen::VectorXd time_point() const
@@ -184,8 +287,9 @@ public:
     std::vector<Agent> populations;
     double accumulated_contact_rates;
     size_t contact_rates_count;
+    KProvider m_k;
 
-protected:
+private:
     double get_contact_radius_factor(std::vector<double> areas = std::vector<double>{435, 579, 488, 310.7, 667.3, 800,
                                                                                      870.4, 549.3})
     {
@@ -215,49 +319,6 @@ protected:
         }
         return std::accumulate(factors.begin(), factors.end(), 0.0) / metaregions.maxCoeff();
     }
-    // static Position grad_U(const Position x)
-    // {
-    //     // U is a double well potential
-    //     // U(x0,x1) = (x0^2 - 1)^2 + 2*x1^2
-    //     return {4 * x[0] * (x[0] * x[0] - 1), 4 * x[1]};
-    // }
-
-    // discrete germany (bilinear)
-    // Position grad_U(const Position p)
-    // {
-    //     Position x_shift = {1, 0}, y_shift = {0, 1};
-    //     const ScalarType dUdx =
-    //         (interpolate_bilinear(potential, p + x_shift) - interpolate_bilinear(potential, p - x_shift)) / 2;
-    //     const ScalarType dUdy =
-    //         (interpolate_bilinear(potential, p + y_shift) - interpolate_bilinear(potential, p - y_shift)) / 2;
-    //     return {dUdx, dUdy};
-    // }
-
-    // discrete germany (nearest neighbour)
-    Position grad_U(const Position p)
-    {
-        size_t x = std::round(p[0]), y = std::round(p[1]); // round each coordinate to the nearest integer
-        if (x <= 0 || x >= potential.cols() - 1) {
-            std::cout << "x is out of bounds " << std::endl;
-        }
-        else if (y <= 0 || y >= potential.cols() - 1) {
-            std::cout << "y is out of bounds " << std::endl;
-        }
-        const ScalarType dUdx = (potential(x + 1, y) - potential(x - 1, y)) / 2 * (double)potential.cols() / 50;
-        const ScalarType dUdy = (potential(x, y + 1) - potential(x, y - 1)) / 2 * (double)potential.cols() / 50;
-        return {dUdx, dUdy};
-    }
-
-    static ScalarType interpolate_bilinear(Eigen::Ref<const Eigen::MatrixXd> data, const Position& p)
-    {
-        size_t x = p[0], y = p[1]; // take floor of each coordinate
-        const ScalarType tx = p[0] - x;
-        const ScalarType ty = p[1] - y;
-        // data point distance is always one, since we use integer indices
-        const ScalarType bot = tx * data(x, y) + (1 - tx) * data(x + 1, y);
-        const ScalarType top = tx * data(x, y + 1) + (1 - tx) * data(x + 1, y + 1);
-        return ty * bot + (1 - ty) * top;
-    }
 
     bool is_contact(const Agent& agent, const Agent& contact) const
     {
@@ -268,73 +329,10 @@ protected:
 
     bool is_in_domain(const Position& p) const
     {
-        // restrict domain to [-2, 2]^2 where "escaping" is impossible, i.e. it holds x <= grad_U(x)
+        // restrict domain to [0, num_pixel]^2 where "escaping" is impossible, i.e. it holds x <= grad_U(x)
         return 0 <= p[0] && p[0] <= metaregions.rows() && 0 <= p[1] && p[1] <= metaregions.cols();
     }
 
-    Eigen::Ref<const Eigen::MatrixXd> potential;
-    Eigen::Ref<const Eigen::MatrixXi> metaregions;
-    std::map<std::tuple<mio::mpm::Region, Status, Status>, mio::mpm::AdoptionRate<Status>> m_adoption_rates;
-    const std::vector<double> sigma;
-    const double contact_radius;
-    std::vector<Eigen::MatrixXd> m_number_transitions;
-    std::vector<InfectionState> non_moving_states;
-};
-
-template <class InfectionState>
-class GradientGermany : public PotentialGermany<InfectionState>
-{
-public:
-    using Base           = PotentialGermany<InfectionState>;
-    using GradientMatrix = Eigen::Matrix<Eigen::Vector2d, Eigen::Dynamic, Eigen::Dynamic>;
-    using Agent          = typename Base::Agent;
-    using Position       = typename Base::Position;
-    using Status         = typename Base::Status;
-
-    GradientGermany(const std::vector<Agent>& agents, const typename mio::mpm::AdoptionRates<Status>::Type& rates,
-                    Eigen::Ref<const GradientMatrix> potential_gradient, Eigen::Ref<const Eigen::MatrixXi> metaregions,
-                    std::vector<InfectionState> non_moving_states = {},
-                    const std::vector<double>& sigma              = std::vector<double>(8, 1440.0 / 200.0),
-                    const double contact_radius_in_km             = 1000000)
-        : PotentialGermany<InfectionState>(agents, rates, Eigen::MatrixXd::Zero(0, 0), metaregions, non_moving_states,
-                                           sigma, contact_radius_in_km)
-        , potential_gradient(potential_gradient)
-    {
-    }
-
-    void move(const double t, const double dt, Agent& agent)
-    {
-        if (std::find(this->non_moving_states.begin(), this->non_moving_states.end(), agent.status) ==
-            this->non_moving_states.end()) {
-            Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
-                          mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
-
-            const int region_old = agent.region;
-            auto noise           = (this->sigma[region_old] * std::sqrt(dt)) * p;
-            auto new_pos         = agent.position;
-
-#ifdef USE_MICROSTEPPING // defined in config.h
-            int num_substeps = std::max<int>(noise.norm(), 1);
-            for (int substep = 0; substep < num_substeps; ++substep) {
-                new_pos -= (dt * grad_U(agent.position) - noise) / num_substeps;
-            }
-#else
-            new_pos -= dt * grad_U(agent.position) - noise;
-#endif
-            agent.position = new_pos;
-            const int region =
-                this->metaregions(agent.position[0], agent.position[1]) - 1; // shift region so we can use it as index
-            if (region >= 0) {
-                agent.region = region;
-            }
-            const bool makes_transition = (region_old != agent.region);
-            if (makes_transition) {
-                this->m_number_transitions[static_cast<size_t>(agent.status)](region_old, agent.region)++;
-            }
-        }
-    }
-
-protected:
     // precomputet discrete gradient
     Position grad_U(const Position p)
     {
@@ -342,7 +340,35 @@ protected:
         return potential_gradient(p.x(), p.y());
     }
 
+    void draw_commuting_parameters(Agent& a, const double t, const double dt)
+    {
+        size_t destination_region =
+            mio::DiscreteDistribution<size_t>::get_instance()(m_k.metaregion_commute_weights.row(a.region));
+
+        a.commutes = (destination_region != a.region);
+
+        if (a.commutes) {
+            a.commuting_destination = m_k.metaregion_sampler(destination_region);
+
+            assert(metaregions(a.commuting_destination[0], a.commuting_destination[1]) - 1 == destination_region);
+
+            a.t_return = t + mio::ParameterDistributionNormal(9.0 / 24.0, 23.0 / 24.0, 18.0 / 24.0).get_rand_sample();
+            a.t_depart = TriangularDistribution(a.t_return - dt, t, t + 9.0 / 24.0).get_instance();
+
+            assert(m_k.is_in_interval(a.t_return, t, t + 1));
+            assert(m_k.is_in_interval(a.t_depart, t, t + 1));
+            assert(a.t_return < t + 1);
+            assert(a.t_depart + dt < a.t_return);
+        }
+    }
+
+    Eigen::Ref<const Eigen::MatrixXi> metaregions;
+    std::map<std::tuple<mio::mpm::Region, Status, Status>, mio::mpm::AdoptionRate<Status>> m_adoption_rates;
+    const std::vector<double> sigma;
+    const double contact_radius;
+    std::vector<Eigen::MatrixXd> m_number_transitions;
+    std::vector<InfectionState> non_moving_states;
     Eigen::Ref<const GradientMatrix> potential_gradient;
 };
 
-#endif // POTENTIAL_GERMANY_H_
+#endif // COMMUTING_POTENTIAL_H_

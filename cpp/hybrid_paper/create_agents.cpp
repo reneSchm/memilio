@@ -3,6 +3,7 @@
 #include "mpm/abm.h"
 #include "mpm/potentials/potential_germany.h"
 #include "mpm/potentials/map_reader.h"
+#include "hybrid_paper/metaregion_sampler.h"
 
 #define TIME_TYPE std::chrono::high_resolution_clock::time_point
 #define TIME_NOW std::chrono::high_resolution_clock::now()
@@ -23,7 +24,7 @@ std::vector<std::vector<std::pair<size_t, size_t>>> get_region_indices(Eigen::Ma
 
 mio::IOResult<std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent>>
 create_agents(std::vector<std::vector<double>>& pop_dists, std::vector<double>& populations, double persons_per_agent,
-              Eigen::MatrixXi& metaregions, bool save_initialization)
+              Eigen::MatrixXi& metaregions, MetaregionSampler& metaregion_sampler, bool save_initialization)
 {
     std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
     std::vector<std::vector<std::pair<size_t, size_t>>> indices = get_region_indices(metaregions);
@@ -35,12 +36,10 @@ create_agents(std::vector<std::vector<double>>& pop_dists, std::vector<double>& 
                            return c / persons_per_agent;
                        });
         while (num_agents > 0) {
-            auto status = mio::DiscreteDistribution<int>::get_instance()(pop_dists[region]);
-            auto position =
-                mio::DiscreteDistribution<int>::get_instance()(std::vector<double>(region_indices.size(), 1));
-            agents.push_back({{region_indices[position].first, region_indices[position].second},
-                              static_cast<mio::mpm::paper::InfectionState>(status),
-                              int(region)});
+            auto status              = mio::DiscreteDistribution<int>::get_instance()(pop_dists[region]);
+            Eigen::Vector2d position = metaregion_sampler(region);
+            ;
+            agents.push_back({position, static_cast<mio::mpm::paper::InfectionState>(status), int(region)});
             pop_dists[region][status] = std::max(0., pop_dists[region][status] - 1);
             num_agents -= 1;
         }
@@ -61,7 +60,7 @@ create_agents(std::vector<std::vector<double>>& pop_dists, std::vector<double>& 
 
 mio::IOResult<std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent>>
 create_susceptible_agents(std::vector<double>& populations, double persons_per_agent, Eigen::MatrixXi& metaregions,
-                          bool save_initialization)
+                          MetaregionSampler& metaregion_sampler, bool save_initialization)
 {
     std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
     std::vector<std::vector<std::pair<size_t, size_t>>> indices = get_region_indices(metaregions);
@@ -69,11 +68,9 @@ create_susceptible_agents(std::vector<double>& populations, double persons_per_a
         std::vector<std::pair<size_t, size_t>>& region_indices = indices[region];
         int num_agents                                         = populations[region] / persons_per_agent;
         while (num_agents > 0) {
-            auto position =
-                mio::DiscreteDistribution<int>::get_instance()(std::vector<double>(region_indices.size(), 1));
-            agents.push_back({{region_indices[position].first, region_indices[position].second},
-                              mio::mpm::paper::InfectionState::S,
-                              int(region)});
+            Eigen::Vector2d position = metaregion_sampler(region);
+            //mio::DiscreteDistribution<int>::get_instance()(std::vector<double>(region_indices.size(), 1));
+            agents.push_back({position, mio::mpm::paper::InfectionState::S, int(region)});
             num_agents -= 1;
         }
     }
@@ -95,20 +92,20 @@ int main()
     //number inhabitants per region
     std::vector<double> populations = {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
     //county ids
-    // std::vector<int> regions = {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175};
-    // double t_Exposed         = 4.2;
-    // double t_Carrier         = 4.2;
-    // double t_Infected        = 7.5;
-    // double mu_C_R            = 0.23;
+    std::vector<int> regions = {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175};
+    double t_Exposed         = 4.2;
+    double t_Carrier         = 4.2;
+    double t_Infected        = 7.5;
+    double mu_C_R            = 0.23;
 
-    // std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =
-    //     mio::read_confirmed_cases_data("../../data/Germany/cases_all_county_age_ma7.json").value();
+    std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =
+        mio::read_confirmed_cases_data("../../data/Germany/cases_all_county_age_ma7.json").value();
 
-    // //vector with entry for every region. Entries are vector with population for every infection state according to initialization
-    // std::vector<std::vector<double>> pop_dists =
-    //     set_confirmed_case_data(confirmed_cases, regions, populations, mio::Date(2021, 3, 1), t_Exposed, t_Carrier,
-    //                             t_Infected, mu_C_R)
-    //        .value();
+    //vector with entry for every region. Entries are vector with population for every infection state according to initialization
+    std::vector<std::vector<double>> pop_dists =
+        set_confirmed_case_data(confirmed_cases, regions, populations, mio::Date(2021, 3, 1), t_Exposed, t_Carrier,
+                                t_Infected, mu_C_R)
+            .value();
 
     //read map with metaregions
     Eigen::MatrixXi metaregions;
@@ -126,17 +123,20 @@ int main()
             ifile.close();
         }
     }
+
+    MetaregionSampler metaregion_sampler(metaregions);
+
     //returns vector with agents. The agents' infection state is set according to pop_dists
-    //auto agents = create_agents(pop_dists, populations, 100, metaregions, false).value();
-    //auto agents = create_susceptible_agents(populations, 10, metaregions, true).value();
+    //auto agents = create_agents(pop_dists, populations, 1000, metaregions, true).value();
+    auto agents = create_susceptible_agents(populations, 100000, metaregions, metaregion_sampler, true).value();
 
     //for density plot
-    std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
-    read_initialization("initSusceptible28133.json", agents);
+    // std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
+    // read_initialization("initSusceptible9375.json", agents);
 
-    for (auto& a : agents) {
-        std::cout << a.position[0] << " " << a.position[1] << " ";
-    }
+    // for (auto& a : agents) {
+    //     std::cout << a.position[0] << " " << a.position[1] << " ";
+    // }
 
     return 0;
 }

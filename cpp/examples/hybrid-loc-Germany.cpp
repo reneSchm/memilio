@@ -63,9 +63,9 @@ mio::IOResult<void> create_start_initialization(std::vector<Agent>& agents, std:
             pos_candidate = {pos_rng(0.0, double(potential.rows())), pos_rng(0.0, double(potential.cols()))};
         }
         a.position = {pos_candidate[0], pos_candidate[1]};
-        a.land     = metaregions(pos_candidate[0], pos_candidate[1]) - 1;
+        a.region   = metaregions(pos_candidate[0], pos_candidate[1]) - 1;
         //only infected agents in focus region
-        if (a.land == 8) {
+        if (a.region == 8) {
             a.status = static_cast<Status>(sta_rng(pop_dist));
         }
         else {
@@ -87,7 +87,7 @@ void read_initialization(std::string filename, std::vector<Agent>& agents)
     auto result = mio::read_json(filename).value();
     for (int i = 0; i < result.size(); ++i) {
         auto a = mio::deserialize_json(result[std::to_string(i)], mio::Tag<Agent>{}).value();
-        agents.push_back(Agent{a.position, a.status, a.land});
+        agents.push_back(Agent{a.position, a.status, a.region});
     }
 }
 
@@ -113,11 +113,11 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
     std::vector<mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent> agents_focus_region;
     std::copy_if(agents.begin(), agents.end(), std::back_inserter(agents_focus_region),
                  [focus_region](mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent a) {
-                     return a.land == focus_region;
+                     return a.region == focus_region;
                  });
     agents.erase(std::remove_if(agents.begin(), agents.end(),
                                 [focus_region](mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent a) {
-                                    return a.land == focus_region;
+                                    return a.region == focus_region;
                                 }),
                  agents.end());
     mio::mpm::ABM<PotentialGermany<InfectionState>> abm(agents_focus_region, adoption_rates, potential, metaregions);
@@ -129,7 +129,7 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
             for (size_t s = 0; s < pop.size(); ++s) {
                 pop[s] = std::count_if(agents.begin(), agents.end(),
                                        [i, s](mio::mpm::ABM<PotentialGermany<InfectionState>>::Agent a) {
-                                           return (a.land == i && a.status == InfectionState(s));
+                                           return (a.region == i && a.status == InfectionState(s));
                                        });
             }
         }
@@ -174,9 +174,9 @@ void run_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<In
             auto& agents       = simABM.get_model().populations;
             auto itr           = agents.begin();
             while (itr != agents.end()) {
-                if (itr->land != 8) {
+                if (itr->region != 8) {
                     //simPDMM.get_result().get_last_value()[m_model->populations.get_flat_index({rate.from, rate.status})] -= 1;
-                    simPDMM_state[pop.get_flat_index({mio::mpm::Region(itr->land), itr->status})] += 1;
+                    simPDMM_state[pop.get_flat_index({mio::mpm::Region(itr->region), itr->status})] += 1;
                     itr = agents.erase(itr);
                 }
                 else {

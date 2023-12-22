@@ -94,6 +94,8 @@ public:
         // recompute gradient
         for (Eigen::Index i = 0; i < gradient.rows(); i++) {
             for (Eigen::Index j = 0; j < gradient.cols(); j++) {
+                auto test = boundary_ids(i, j) == 0 and base_gradient(i, j) == Eigen::Vector2d::Zero(2);
+                //assert(test);
                 if (boundary_ids(i, j) > 0) { // skip non-boundary entries
                     gradient(i, j) = base_gradient(i, j) * get_weight(weight_map, boundary_ids(i, j), missing_keys);
                 }

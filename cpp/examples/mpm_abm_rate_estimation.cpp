@@ -83,9 +83,9 @@ mio::IOResult<void> create_start_initialization(std::vector<Agent>& agents, std:
             pos_candidate = {pos_rng(0.0, double(potential.rows())), pos_rng(0.0, double(potential.cols()))};
         }
         a.position = {pos_candidate[0], pos_candidate[1]};
-        a.land     = metaregions(pos_candidate[0], pos_candidate[1]) - 1;
+        a.region   = metaregions(pos_candidate[0], pos_candidate[1]) - 1;
         //only infected agents in focus region
-        if (a.land == 8) {
+        if (a.region == 8) {
             a.status = static_cast<Status>(sta_rng(pop_dist));
         }
         else {
@@ -154,7 +154,7 @@ mio::IOResult<void> create_initialization_for_Germany(std::vector<std::vector<do
     auto sim = mio::Simulation<mio::mpm::ABM<PotentialGermany<InfectionState>>>(model, 0.0, 0.05);
 
     for (auto& agent : sim.get_model().populations) {
-        if (agent.land == 2 || agent.land == 3 || agent.land == 6) {
+        if (agent.region == 2 || agent.region == 3 || agent.region == 6) {
             sim.get_model().move(0.0, 0.1, agent);
         }
         else {
@@ -181,7 +181,7 @@ void read_initialization(std::string filename, std::vector<Agent>& agents)
     auto result = mio::read_json(filename).value();
     for (int i = 0; i < result.size(); ++i) {
         auto a = mio::deserialize_json(result[std::to_string(i)], mio::Tag<Agent>{}).value();
-        agents.push_back(Agent{a.position, a.status, a.land});
+        agents.push_back(Agent{a.position, a.status, a.region});
     }
 }
 
@@ -332,7 +332,7 @@ void get_agent_movement(size_t n_agents, Eigen::MatrixXd potential, Eigen::Matri
             pos_candidate = {pos_rng(0.0, double(potential.rows())), pos_rng(0.0, double(potential.cols()))};
         }
         a.position = {pos_candidate[0], pos_candidate[1]};
-        a.land     = metaregions(pos_candidate[0], pos_candidate[1]) - 1;
+        a.region   = metaregions(pos_candidate[0], pos_candidate[1]) - 1;
         a.status   = InfectionState::S;
     }
     std::vector<mio::mpm::AdoptionRate<InfectionState>> adoption_rates{};
