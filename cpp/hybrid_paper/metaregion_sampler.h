@@ -40,7 +40,7 @@ public:
         bitmap = canvas.block(width, width, bitmap.rows(), bitmap.cols());
     }
 
-    Eigen::Vector2d operator()(size_t metaregion_index)
+    Eigen::Vector2d operator()(size_t metaregion_index) const
     {
         // TODO: discuss implementation: Which positions should be eligible? What distribution do we choose?
         // Suggestion: pick only points from within the circle of maximum radius fitting into a region.
