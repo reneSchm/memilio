@@ -1,6 +1,6 @@
 add_subdirectory(dlib-19.24 dlib_build)
 
-add_library(hybrid_paper initialization.h initialization.cpp)
+add_library(hybrid_paper initialization.h initialization.cpp infection_state.h)
 target_link_libraries(hybrid_paper memilio mpm)
 
 # find_package(OpenMP REQUIRED)

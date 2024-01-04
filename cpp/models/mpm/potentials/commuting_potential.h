@@ -145,6 +145,8 @@ public:
         , contact_radius(get_contact_radius_factor() * contact_radius_in_km)
         , m_number_transitions(static_cast<size_t>(Status::Count),
                                Eigen::MatrixXd::Zero(metaregions.maxCoeff(), metaregions.maxCoeff()))
+        , m_number_commutes(static_cast<size_t>(Status::Count),
+                            Eigen::MatrixXd::Zero(metaregions.maxCoeff(), metaregions.maxCoeff()))
         , non_moving_states(non_moving_states)
         , potential_gradient(potential_gradient)
 
@@ -256,6 +258,9 @@ public:
 
             if (makes_transition) {
                 m_number_transitions[static_cast<size_t>(agent.status)](region_old, agent.region)++;
+                if (m_k.is_in_interval(agent.t_depart, t, t + dt)) {
+                    m_number_commutes[static_cast<size_t>(agent.status)](region_old, agent.region)++;
+                }
             }
             agent.position = new_pos;
         }
@@ -282,6 +287,17 @@ public:
     const std::vector<Eigen::MatrixXd>& number_transitions() const
     {
         return m_number_transitions;
+    }
+
+    double& number_commutes(const mio::mpm::TransitionRate<Status>& tr)
+    {
+        return m_number_commutes[static_cast<size_t>(tr.status)](static_cast<size_t>(tr.from),
+                                                                 static_cast<size_t>(tr.to));
+    }
+
+    const std::vector<Eigen::MatrixXd>& number_commutes() const
+    {
+        return m_number_commutes;
     }
 
     std::vector<Agent> populations;
@@ -351,7 +367,7 @@ private:
             a.commuting_destination = m_k.metaregion_sampler(destination_region);
 
             assert(metaregions(a.commuting_destination[0], a.commuting_destination[1]) - 1 == destination_region);
-
+            //TODO: anschauen, was Normalverteilung mit den Parametern macht
             a.t_return = t + mio::ParameterDistributionNormal(9.0 / 24.0, 23.0 / 24.0, 18.0 / 24.0).get_rand_sample();
             a.t_depart = TriangularDistribution(a.t_return - dt, t, t + 9.0 / 24.0).get_instance();
 
@@ -367,6 +383,7 @@ private:
     const std::vector<double> sigma;
     const double contact_radius;
     std::vector<Eigen::MatrixXd> m_number_transitions;
+    std::vector<Eigen::MatrixXd> m_number_commutes;
     std::vector<InfectionState> non_moving_states;
     Eigen::Ref<const GradientMatrix> potential_gradient;
 };

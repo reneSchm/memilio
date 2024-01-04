@@ -1,4 +1,5 @@
 #include "hybrid_paper/weighted_gradient.h"
+#include "initialization.h"
 #include "memilio/io/cli.h"
 #include "mpm/abm.h"
 #include "mpm/model.h"
@@ -7,6 +8,7 @@
 #include "hybrid_paper/weighted_potential.h"
 #include "hybrid_paper/initialization.h"
 #include "infection_state.h"
+#include <vector>
 
 struct Tmax {
     using Type = double;
@@ -37,18 +39,31 @@ std::vector<TransitionRate<InfectionState>> add_transition_rates(std::vector<Tra
     return v1;
 }
 
-void print_transition_rates(std::vector<TransitionRate<InfectionState>>& transition_rates)
+void print_transition_rates(std::vector<TransitionRate<InfectionState>>& transition_rates, bool print_to_file)
 {
-    std::cout << "\n Transition Rates: \n";
-    std::cout << "status from to factor \n";
-    for (auto& rate : transition_rates) {
-        std::cout << "S"
-                  << "  " << rate.from << "  " << rate.to << "  " << rate.factor << "\n";
+    if (print_to_file) {
+
+        std::string fname = mio::base_dir() + "transition_rates.txt";
+        std::ofstream ofile(fname);
+
+        ofile << "from to factor \n";
+        for (auto& rate : transition_rates) {
+            ofile << rate.from << "  " << rate.to << "  " << rate.factor << "\n";
+        }
+    }
+    else {
+        std::cout << "\n Transition Rates: \n";
+        std::cout << "status from to factor \n";
+        for (auto& rate : transition_rates) {
+            std::cout << "S"
+                      << "  " << rate.from << "  " << rate.to << "  " << rate.factor << "\n";
+        }
     }
 }
 
 template <class Potential>
-void calculate_transition_rates(ABM<Potential>& abm, size_t num_runs, double tmax, size_t num_regions)
+std::vector<TransitionRate<InfectionState>> calculate_transition_rates(ABM<Potential>& abm, size_t num_runs,
+                                                                       double tmax, size_t num_regions)
 {
     std::vector<std::vector<TransitionRate<InfectionState>>> estimated_transition_rates(num_runs);
 
@@ -69,7 +84,7 @@ void calculate_transition_rates(ABM<Potential>& abm, size_t num_runs, double tma
 
         //add calculated transition rates
         for (auto& tr_rate : estimated_transition_rates[run]) {
-            tr_rate.factor = sim.get_model().number_transitions(tr_rate) / (abm.populations.size() * tmax);
+            tr_rate.factor = sim.get_model().number_commutes(tr_rate) / (abm.populations.size() * tmax);
         }
     }
 
@@ -83,44 +98,101 @@ void calculate_transition_rates(ABM<Potential>& abm, size_t num_runs, double tma
             return mio::mpm::TransitionRate<InfectionState>{rate.status, rate.from, rate.to, denominator * rate.factor};
         });
 
-    print_transition_rates(mean_transition_rates);
+    print_transition_rates(mean_transition_rates, true);
+    return mean_transition_rates;
 }
 
 } // namespace paper
 } // namespace mpm
 } // namespace mio
+
+template <class Model>
+void print_movement(std::vector<typename Model::Agent> agents, Model& model, const double tmax, double dt)
+{
+    double t = 0;
+    auto sim = mio::Simulation<Model>(model, t, dt);
+    while (t < tmax) {
+        for (auto& agent : sim.get_model().populations) {
+            std::cout << agent.position[0] << " " << agent.position[1] << " ";
+            sim.get_model().move(t, dt, agent);
+        }
+        std::cout << "\n";
+        t += dt;
+    }
+}
+
+std::string colorize(double a, double b)
+{
+    std::stringstream ss("");
+    if (a / b < 1) {
+        double proc = 1 - a / b;
+        if (proc <= 0.05) {
+            ss << "\033[32m"; // green
+        }
+        else if (proc <= 0.15) {
+            ss << "\033[33m"; // yellow
+        }
+        else {
+            ss << "\033[31m"; // red
+        }
+    }
+    else {
+        double proc = 1 - b / a;
+        if (proc <= 0.05) {
+            ss << "\033[42m"; // green
+        }
+        else if (proc <= 0.15) {
+            ss << "\033[43m"; // yellow
+        }
+        else {
+            ss << "\033[41m"; // red
+        }
+    }
+    ss << a << " / " << b << "\033[0m";
+    return ss.str();
+}
+
 int main(int argc, char** argv)
 {
-    auto cli_result = mio::command_line_interface<Tmax>(argv[0], argc, argv);
-    if (!cli_result) {
-        std::cerr << cli_result.error().formatted_message() << "\n";
-        return cli_result.error().code().value();
-    }
-    auto tmax = cli_result.value().get<Tmax>();
+    using Model  = mio::mpm::ABM<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>>;
+    using Status = mio::mpm::paper::InfectionState;
+    // auto cli_result = mio::command_line_interface<Tmax>(argv[0], argc, argv);
+    // if (!cli_result) {
+    //     std::cerr << cli_result.error().formatted_message() << "\n";
+    //     return cli_result.error().code().value();
+    // }
+    auto tmax = 100; //cli_result.value().get<Tmax>();
 
     Eigen::MatrixXi metaregions;
 
-    WeightedGradient wg("../../potentially_germany_grad.json", "../../boundary_ids.pgm");
+    WeightedGradient wg(mio::base_dir() + "potentially_germany_grad.json", mio::base_dir() + "boundary_ids.pgm");
 
-    const std::vector<double> weights{1000, 800,  850.076, 717.145, 1000, 50,      611.022,
-                                      160,  1000, 500,     100,     1200, 725.818, 590.303};
-    const std::vector<double> sigmas{15, 29, 15, 15, 28, 35, 43, 30};
-    const double slope = 2.0;
-    wg.apply_weights(weights);
+    const std::vector<int> county_ids   = {233, 228, 242, 223, 238, 232, 231, 229};
+    Eigen::MatrixXd reference_commuters = get_transition_matrix_daily_total(mio::base_dir() + "data/mobility/").value();
+    auto ref_pops = std::vector<double>{218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
+    auto ref_pop  = std::accumulate(ref_pops.begin(), ref_pops.end(), 0.0);
 
-    const Eigen::Vector2d centre = {wg.gradient.rows() / 2.0, wg.gradient.cols() / 2.0}; // centre of the wg.gradient
-    for (Eigen::Index i = 0; i < wg.gradient.rows(); i++) {
-        for (Eigen::Index j = 0; j < wg.gradient.cols(); j++) {
-            if (wg.base_gradient(i, j) == Eigen::Vector2d{0, 0}) {
-                auto direction    = (Eigen::Vector2d{i, j} - centre).normalized();
-                wg.gradient(i, j) = slope * direction;
+    int num_regions = county_ids.size();
+    int num_weights = 14;
+
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> commute_weights(num_regions, num_regions);
+    commute_weights.setZero();
+    // for (int i = 0; i < num_regions; i++) {
+    //     commute_weights(i, i) = 1;
+    // }
+    for (int i = 0; i < num_regions; i++) {
+        for (int j = 0; j < num_regions; j++) {
+            if (i != j) {
+                commute_weights(i, j) = reference_commuters(county_ids[i], county_ids[j]);
             }
         }
+        commute_weights(i, i) = ref_pops[i] - commute_weights.row(i).sum();
     }
 
     std::cerr << "Setup: Read metaregions.\n" << std::flush;
+    mio::log_thread_local_rng_seeds(mio::LogLevel::info);
     {
-        const auto fname = "../../metagermany.pgm";
+        const auto fname = mio::base_dir() + "metagermany.pgm";
         std::ifstream ifile(fname);
         if (!ifile.is_open()) {
             mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
@@ -132,25 +204,39 @@ int main(int argc, char** argv)
         }
     }
 
-    // std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
-    // for (Eigen::Index i = 0; i < metaregions.rows(); i += 2) {
-    //     for (Eigen::Index j = 0; j < metaregions.cols(); j += 2) {
-    //         if (metaregions(i, j) != 0) {
-    //             agents.push_back({{i, j}, mio::mpm::paper::InfectionState::S, metaregions(i, j) - 1});
-    //         }
-    //     }
-    // }
+    auto sigmas  = std::vector<double>(num_regions, 10);
+    auto weights = std::vector<double>(14, 500);
+
+    wg.apply_weights(weights);
+
+    StochastiK k_provider(commute_weights, metaregions, {metaregions});
+    std::cerr << k_provider.metaregion_commute_weights << "\n";
 
     std::string init_file = "/group/HPC/Gruppen/PSS/Modelle/Hybrid Models/Papers, Theses, "
                             "Posters/2023_Paper_Spatio-temporal_hybrid/initializations/initSusceptible9375.json";
 
-    std::vector<mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>>::Agent> agents;
+    std::vector<Model::Agent> agents;
+
+    // std::vector<Eigen::Vector2d> positions{{592, 648}, {840, 604},  {896, 700}, {426, 136},  {626, 568},
+    //                                        {312, 688}, {880, 1166}, {682, 776}, {1088, 864}, {950, 406}};
+    // for (auto p : positions) {
+    //     agents.push_back({p, Status::S, int(metaregions(p[0], p[1]) - 1)});
+    // }
+
     read_initialization(init_file, agents);
 
-    mio::mpm::ABM<GradientGermany<mio::mpm::paper::InfectionState>> model(agents, {}, wg.gradient, metaregions,
-                                                                          {mio::mpm::paper::InfectionState::D}, sigmas);
+    Model model(k_provider, agents, {}, wg.gradient, metaregions, {Status::D}, sigmas);
 
-    calculate_transition_rates(model, 10, tmax, metaregions.maxCoeff());
+    //print_movement<Model>(agents, model, tmax, 0.1);
+
+    auto rates = calculate_transition_rates(model, 10, tmax, metaregions.maxCoeff());
+
+    //check
+    for (auto rate : rates) {
+        std::cout << colorize(rate.factor,
+                              commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)) / ref_pop)
+                  << "\n";
+    }
 
     return 0;
 }

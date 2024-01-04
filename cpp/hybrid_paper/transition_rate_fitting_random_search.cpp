@@ -52,7 +52,7 @@ struct FittingFunctionSetup {
     // 7:   Ebersberg           9175
     // county_ids are the indices of the counties above in the dict "County" from
     // pycode/memilio-epidata/memilio/epidata/defaultDict.py
-    const std::vector<int> county_ids = {233, 228, 242, 238, 223, 232, 231, 229};
+    const std::vector<int> county_ids = {233, 228, 242, 223, 238, 232, 231, 229};
     // county population data
     const std::vector<double> reference_populations = {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
     // total population in all considered counties
