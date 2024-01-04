@@ -135,7 +135,7 @@ public:
                        Eigen::Ref<const Eigen::MatrixXi> metaregions,
                        std::vector<InfectionState> non_moving_states = {},
                        const std::vector<double>& sigma              = std::vector<double>(8, 1440.0 / 200.0),
-                       const double contact_radius_in_km             = 100)
+                       const double contact_radius_in_km             = 5)
         : populations(agents)
         , accumulated_contact_rates{0.}
         , contact_rates_count{0}
@@ -368,6 +368,7 @@ private:
 
             assert(metaregions(a.commuting_destination[0], a.commuting_destination[1]) - 1 == destination_region);
             //TODO: anschauen, was Normalverteilung mit den Parametern macht
+            //TODO: Zeitmessung triangular dist & normal dist übergeben
             a.t_return = t + mio::ParameterDistributionNormal(9.0 / 24.0, 23.0 / 24.0, 18.0 / 24.0).get_rand_sample();
             a.t_depart = TriangularDistribution(a.t_return - dt, t, t + 9.0 / 24.0).get_instance();
 
