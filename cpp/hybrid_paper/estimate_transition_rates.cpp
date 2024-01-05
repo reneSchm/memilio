@@ -224,6 +224,10 @@ int main(int argc, char** argv)
     // }
 
     read_initialization(init_file, agents);
+    size_t num_agents        = agents.size();
+    double persons_per_agent = ref_pop / num_agents;
+
+    std::cout << "persons per agent: " << persons_per_agent << "\n";
 
     Model model(k_provider, agents, {}, wg.gradient, metaregions, {Status::D}, sigmas);
 
@@ -233,8 +237,14 @@ int main(int argc, char** argv)
 
     //check
     for (auto rate : rates) {
-        std::cout << colorize(rate.factor,
-                              commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)) / ref_pop)
+        //rates
+        std::cout << rate.from << "->" << rate.to << ": rel: "
+                  << colorize(rate.factor,
+                              commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)) / ref_pop);
+        //number persons
+        std::cout << " abs: "
+                  << colorize(rate.factor * num_agents * persons_per_agent,
+                              commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)))
                   << "\n";
     }
 
