@@ -168,7 +168,7 @@ int main(int argc, char** argv)
     WeightedGradient wg(mio::base_dir() + "potentially_germany_grad.json", mio::base_dir() + "boundary_ids.pgm");
 
     const std::vector<int> county_ids   = {233, 228, 242, 223, 238, 232, 231, 229};
-    Eigen::MatrixXd reference_commuters = get_transition_matrix_daily_total(mio::base_dir() + "data/mobility/").value();
+    Eigen::MatrixXd reference_commuters = get_transition_matrix(mio::base_dir() + "data/mobility/").value();
     auto ref_pops = std::vector<double>{218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
     auto ref_pop  = std::accumulate(ref_pops.begin(), ref_pops.end(), 0.0);
 
