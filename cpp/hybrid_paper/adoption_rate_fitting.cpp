@@ -103,10 +103,10 @@ double single_run_infection_state_error(const FittingFunctionSetup& ffs, double 
         //calc error for every region
         for (size_t region = 0; region < extrapolated_rki.size(); ++region) {
             auto error =
-                (1.0 / 3.0) *
+                (2.0 / 3.0) *
                     std::abs(result_t[static_cast<size_t>(Status::I) + static_cast<size_t>(Status::Count) * region] -
                              extrapolated_rki[region][static_cast<size_t>(Status::I)]) +
-                (2.0 / 3.0) *
+                (1.0 / 3.0) *
                     std::abs(result_t[static_cast<size_t>(Status::D) + static_cast<size_t>(Status::Count) * region] -
                              extrapolated_rki[region][static_cast<size_t>(Status::D)]);
             l_2[t] += error * error;
@@ -143,68 +143,60 @@ int main()
     //county ids
     std::vector<int> regions = {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175};
 
-    // //estimated transition rates
-    // std::map<std::tuple<Region, Region>, double> factors{
-    //     {{Region(0), Region(1)}, 0.00178656},  {{Region(0), Region(2)}, 0.00241035},
-    //     {{Region(0), Region(3)}, 0.0169754},   {{Region(0), Region(4)}, 0.00299189},
-    //     {{Region(0), Region(5)}, 0.00046048},  {{Region(0), Region(6)}, 0.000187413},
-    //     {{Region(0), Region(7)}, 0.000208213}, {{Region(1), Region(0)}, 0.00175157},
-    //     {{Region(1), Region(2)}, 0.000338347}, {{Region(1), Region(3)}, 0.0144762},
-    //     {{Region(1), Region(4)}, 0.00243008},  {{Region(1), Region(5)}, 0.00112651},
-    //     {{Region(1), Region(6)}, 0.000342293}, {{Region(1), Region(7)}, 0.00025184},
-    //     {{Region(2), Region(0)}, 0.00241099},  {{Region(2), Region(1)}, 0.000347093},
-    //     {{Region(2), Region(3)}, 0.0108812},   {{Region(2), Region(4)}, 0.00231083},
-    //     {{Region(2), Region(5)}, 0.00027616},  {{Region(2), Region(6)}, 0.000186027},
-    //     {{Region(2), Region(7)}, 0.000153813}, {{Region(3), Region(0)}, 0.0169618},
-    //     {{Region(3), Region(1)}, 0.0144732},   {{Region(3), Region(2)}, 0.0108699},
-    //     {{Region(3), Region(4)}, 0.0605866},   {{Region(3), Region(5)}, 0.0122073},
-    //     {{Region(3), Region(6)}, 0.0158606},   {{Region(3), Region(7)}, 0.0108883},
-    //     {{Region(4), Region(0)}, 0.00300917},  {{Region(4), Region(1)}, 0.00244203},
-    //     {{Region(4), Region(2)}, 0.00235371},  {{Region(4), Region(3)}, 0.0604897},
-    //     {{Region(4), Region(5)}, 0.00473547},  {{Region(4), Region(6)}, 0.00321984},
-    //     {{Region(4), Region(7)}, 0.00504075},  {{Region(5), Region(0)}, 0.000463787},
-    //     {{Region(5), Region(1)}, 0.00111669},  {{Region(5), Region(2)}, 0.000285333},
-    //     {{Region(5), Region(3)}, 0.0121037},   {{Region(5), Region(4)}, 0.00469013},
-    //     {{Region(5), Region(6)}, 0.00480331},  {{Region(5), Region(7)}, 0.00057344},
-    //     {{Region(6), Region(0)}, 0.000179413}, {{Region(6), Region(1)}, 0.000350613},
-    //     {{Region(6), Region(2)}, 0.000195307}, {{Region(6), Region(3)}, 0.0157696},
-    //     {{Region(6), Region(4)}, 0.00321515},  {{Region(6), Region(5)}, 0.00477877},
-    //     {{Region(6), Region(7)}, 0.00210827},  {{Region(7), Region(0)}, 0.000217067},
-    //     {{Region(7), Region(1)}, 0.0002544},   {{Region(7), Region(2)}, 0.000137067},
-    //     {{Region(7), Region(3)}, 0.0107737},   {{Region(7), Region(4)}, 0.00499136},
-    //     {{Region(7), Region(5)}, 0.000580373}, {{Region(7), Region(6)}, 0.00212267}};
-
-    //exact transition rates
+    //estimated transition rates
     std::map<std::tuple<Region, Region>, double> factors{
-        {{Region(0), Region(1)}, 0.00177574},  {{Region(0), Region(2)}, 0.00242008},
-        {{Region(0), Region(3)}, 0.016983},    {{Region(0), Region(4)}, 0.00301409},
-        {{Region(0), Region(5)}, 0.00045548},  {{Region(0), Region(6)}, 0.000183093},
-        {{Region(0), Region(7)}, 0.000209522}, {{Region(1), Region(0)}, 0.00177574},
-        {{Region(1), Region(2)}, 0.00034445},  {{Region(1), Region(3)}, 0.0144554},
-        {{Region(1), Region(4)}, 0.0024382},   {{Region(1), Region(5)}, 0.00110078},
-        {{Region(1), Region(6)}, 0.000347833}, {{Region(1), Region(7)}, 0.000251346},
-        {{Region(2), Region(0)}, 0.00242008},  {{Region(2), Region(1)}, 0.00034445},
-        {{Region(2), Region(3)}, 0.0108871},   {{Region(2), Region(4)}, 0.00232572},
-        {{Region(2), Region(5)}, 0.000277803}, {{Region(2), Region(6)}, 0.000194424},
-        {{Region(2), Region(7)}, 0.000148419}, {{Region(3), Region(0)}, 0.016983},
-        {{Region(3), Region(1)}, 0.0144554},   {{Region(3), Region(2)}, 0.0108871},
-        {{Region(3), Region(4)}, 0.0605537},   {{Region(3), Region(5)}, 0.0121034},
-        {{Region(3), Region(6)}, 0.0158054},   {{Region(3), Region(7)}, 0.0108538},
-        {{Region(4), Region(0)}, 0.00301409},  {{Region(4), Region(1)}, 0.0024382},
-        {{Region(4), Region(2)}, 0.00232572},  {{Region(4), Region(3)}, 0.0605537},
-        {{Region(4), Region(5)}, 0.00498327},  {{Region(4), Region(6)}, 0.00322363},
-        {{Region(4), Region(7)}, 0.00498327},  {{Region(5), Region(0)}, 0.00045548},
-        {{Region(5), Region(1)}, 0.00110078},  {{Region(5), Region(2)}, 0.000277803},
-        {{Region(5), Region(3)}, 0.0121034},   {{Region(5), Region(4)}, 0.0047219},
-        {{Region(5), Region(6)}, 0.00478392},  {{Region(5), Region(7)}, 0.000580243},
-        {{Region(6), Region(0)}, 0.000183093}, {{Region(6), Region(1)}, 0.000347833},
-        {{Region(6), Region(2)}, 0.000194424}, {{Region(6), Region(3)}, 0.0158054},
-        {{Region(6), Region(4)}, 0.00322363},  {{Region(6), Region(5)}, 0.00478392},
-        {{Region(6), Region(7)}, 0.00210684},  {{Region(7), Region(0)}, 0.000209522},
-        {{Region(7), Region(1)}, 0.000251346}, {{Region(7), Region(2)}, 0.000148419},
-        {{Region(7), Region(3)}, 0.0108538},   {{Region(7), Region(4)}, 0.00498327},
-        {{Region(7), Region(5)}, 0.000580243}, {{Region(7), Region(6)}, 0.00210684}};
+        {{Region(0), Region(1)}, 0.000958613}, {{Region(0), Region(2)}, 0.00172736},
+        {{Region(0), Region(3)}, 0.0136988},   {{Region(0), Region(4)}, 0.00261568},
+        {{Region(0), Region(5)}, 0.000317227}, {{Region(0), Region(6)}, 0.000100373},
+        {{Region(0), Region(7)}, 0.00012256},  {{Region(1), Region(0)}, 0.000825387},
+        {{Region(1), Region(2)}, 0.00023648},  {{Region(1), Region(3)}, 0.0112213},
+        {{Region(1), Region(4)}, 0.00202101},  {{Region(1), Region(5)}, 0.00062912},
+        {{Region(1), Region(6)}, 0.000201067}, {{Region(1), Region(7)}, 0.000146773},
+        {{Region(2), Region(0)}, 0.000712533}, {{Region(2), Region(1)}, 0.000102613},
+        {{Region(2), Region(3)}, 0.00675979},  {{Region(2), Region(4)}, 0.00160171},
+        {{Region(2), Region(5)}, 0.000175467}, {{Region(2), Region(6)}, 0.00010336},
+        {{Region(2), Region(7)}, 6.21867e-05}, {{Region(3), Region(0)}, 0.00329632},
+        {{Region(3), Region(1)}, 0.00322347},  {{Region(3), Region(2)}, 0.00412565},
+        {{Region(3), Region(4)}, 0.0332566},   {{Region(3), Region(5)}, 0.00462197},
+        {{Region(3), Region(6)}, 0.00659424},  {{Region(3), Region(7)}, 0.00255147},
+        {{Region(4), Region(0)}, 0.000388373}, {{Region(4), Region(1)}, 0.000406827},
+        {{Region(4), Region(2)}, 0.000721387}, {{Region(4), Region(3)}, 0.027394},
+        {{Region(4), Region(5)}, 0.00127328},  {{Region(4), Region(6)}, 0.00068224},
+        {{Region(4), Region(7)}, 0.00104491},  {{Region(5), Region(0)}, 0.00013728},
+        {{Region(5), Region(1)}, 0.000475627}, {{Region(5), Region(2)}, 0.00010688},
+        {{Region(5), Region(3)}, 0.00754293},  {{Region(5), Region(4)}, 0.0034704},
+        {{Region(5), Region(6)}, 0.00210027},  {{Region(5), Region(7)}, 0.000226667},
+        {{Region(6), Region(0)}, 7.264e-05},   {{Region(6), Region(1)}, 0.0001424},
+        {{Region(6), Region(2)}, 9.55733e-05}, {{Region(6), Region(3)}, 0.00921109},
+        {{Region(6), Region(4)}, 0.0025216},   {{Region(6), Region(5)}, 0.00266944},
+        {{Region(6), Region(7)}, 0.00156053},  {{Region(7), Region(0)}, 7.81867e-05},
+        {{Region(7), Region(1)}, 0.0001024},   {{Region(7), Region(2)}, 8.256e-05},
+        {{Region(7), Region(3)}, 0.00833152},  {{Region(7), Region(4)}, 0.00393717},
+        {{Region(7), Region(5)}, 0.000354987}, {{Region(7), Region(6)}, 0.00055456}};
 
+    // size_t num_regions                  = 8;
+    // const std::vector<int> county_ids   = {233, 228, 242, 223, 238, 232, 231, 229};
+    // Eigen::MatrixXd reference_commuters = get_transition_matrix(mio::base_dir() + "data/mobility/").value();
+    // auto total_population               = std::accumulate(populations.begin(), populations.end(), 0.0);
+    // Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> commute_weights(num_regions, num_regions);
+    // commute_weights.setZero();
+    // for (int i = 0; i < num_regions; i++) {
+    //     for (int j = 0; j < num_regions; j++) {
+    //         if (i != j) {
+    //             commute_weights(i, j) = reference_commuters(county_ids[i], county_ids[j]);
+    //         }
+    //     }
+    //     commute_weights(i, i) = populations[i] - commute_weights.row(i).sum();
+    // }
+    // //exact transition rates
+    // std::map<std::tuple<Region, Region>, double> factors;
+    // for (int i = 0; i < num_regions; i++) {
+    //     for (int j = 0; j < num_regions; j++) {
+    //         if (i != j) {
+    //             factors.insert({{Region(i), Region(j)}, commute_weights(i, j) / total_population});
+    //         }
+    //     }
+    // }
     std::vector<Status> transitioning_states{Status::S, Status::E, Status::C, Status::I, Status::R};
     //No adapted transition behaviour when infected
     std::vector<mio::mpm::TransitionRate<Status>> transition_rates;
@@ -214,11 +206,11 @@ int main()
         }
     }
     std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =
-        mio::read_confirmed_cases_data("../../data/Germany/cases_all_county_age_ma7.json").value();
+        mio::read_confirmed_cases_data(mio::base_dir() + "/data/Germany/cases_all_county_age_ma7.json").value();
     const double tmax    = 30;
     double dt            = 0.1;
     mio::Date start_date = mio::Date(2021, 3, 1);
-
+    //mio::Date start_date = mio::Date(2021, 4, 1);
     const FittingFunctionSetup ffs(regions, populations, start_date, tmax, dt, transition_rates, confirmed_cases);
 
     std::cout << "Total threads:           " << dlib::default_thread_pool().num_threads_in_pool() << "\n";
@@ -240,7 +232,7 @@ int main()
         },
         {2.67, 2.67, 5, 0.1, 0.25, 0.002}, // lower bounds
         {4, 4, 9, 0.3, 1.25, 0.005}, // upper bounds
-        std::chrono::hours(36) // run this long
+        std::chrono::hours(70) // run this long
     );
 
     std::cout << "Minimizer:\n";

@@ -93,7 +93,8 @@ set_confirmed_case_data(std::vector<mio::ConfirmedCasesDataEntry>& confirmed_cas
 mio::IOResult<std::vector<std::vector<double>>>
 set_confirmed_case_data(const std::vector<mio::ConfirmedCasesDataEntry>& confirmed_case_data,
                         const std::vector<int>& regions, const std::vector<double>& populations, mio::Date start_date,
-                        double t_E, double t_C, double t_I, double mu_C_R, double scaling_factor_infected)
+                        double t_E, double t_C, double t_I, double mu_C_R,
+                        double scaling_factor_infected) //never fails tehrefore IOResult is not necessary
 {
     std::vector<double> pop_dist((size_t)mio::mpm::paper::InfectionState::Count);
     std::vector<std::vector<double>> pop_dist_per_region(regions.size(), pop_dist);
