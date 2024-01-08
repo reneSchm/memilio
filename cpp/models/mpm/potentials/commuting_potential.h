@@ -300,6 +300,13 @@ public:
         return m_number_commutes;
     }
 
+    bool is_contact(const Agent& agent, const Agent& contact) const
+    {
+        return (&agent != &contact) && // test if agent and contact are different objects
+               (agent.region == contact.region) && // test if they are in the same metaregion
+               (agent.position - contact.position).norm() < contact_radius; // test if contact is in the contact radius
+    }
+
     std::vector<Agent> populations;
     double accumulated_contact_rates;
     size_t contact_rates_count;
@@ -334,13 +341,6 @@ private:
             factors[metaregion - 1] = sqrt(num / areas[metaregion - 1]);
         }
         return std::accumulate(factors.begin(), factors.end(), 0.0) / metaregions.maxCoeff();
-    }
-
-    bool is_contact(const Agent& agent, const Agent& contact) const
-    {
-        return (&agent != &contact) && // test if agent and contact are different objects
-               (agent.region == contact.region) && // test if they are in the same metaregion
-               (agent.position - contact.position).norm() < contact_radius; // test if contact is in the contact radius
     }
 
     bool is_in_domain(const Position& p) const

@@ -30,3 +30,6 @@ target_link_libraries(k-model hybrid_paper)
 
 add_executable(transition_rate_fitting_random_search transition_rate_fitting_random_search.cpp)
 target_link_libraries(transition_rate_fitting_random_search hybrid_paper)
+
+add_executable(contact_frequency_counting contact_frequency_counting.cpp)
+target_link_libraries(contact_frequency_counting hybrid_paper)
