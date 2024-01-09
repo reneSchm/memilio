@@ -17,7 +17,7 @@ target_link_libraries(hybrid_paper memilio mpm)
     # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
     # $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 # )
-# target_compile_options(hybrid_paper PRIVATE ${MEMILIO_CXX_FLAGS_ENABLE_WARNING_ERRORS})
+target_compile_options(hybrid_paper PRIVATE ${MEMILIO_CXX_FLAGS_ENABLE_WARNING_ERRORS})
 
 add_executable(transition_rate_fitting transition_rate_fitting.cpp)
 target_link_libraries(transition_rate_fitting dlib::dlib hybrid_paper)

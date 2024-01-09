@@ -8,10 +8,10 @@
 
 struct TriangularDistribution {
 
-    TriangularDistribution(double upper_bound, double lower_bound, double mean)
-        : mode(std::max(lower_bound, std::min(3 * mean - upper_bound - lower_bound, upper_bound)))
-        , upper_bound(upper_bound)
-        , lower_bound(lower_bound)
+    TriangularDistribution(double max, double min, double mean)
+        : mode(std::max(min, std::min(3 * mean - max - min, max)))
+        , upper_bound(max)
+        , lower_bound(min)
     {
     }
     double mode;
@@ -30,11 +30,11 @@ struct TriangularDistribution {
 
 struct StochastiK {
     using Matrix = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-    StochastiK(Eigen::Ref<Matrix> metaregion_commute_weights, Eigen::Ref<const Eigen::MatrixXi> metaregions,
-               MetaregionSampler&& metaregion_sampler)
-        : metaregion_commute_weights(metaregion_commute_weights)
-        , metaregion_sampler(metaregion_sampler)
-        , metaregions(metaregions)
+    StochastiK(Eigen::Ref<const Matrix> commute_weights, Eigen::Ref<const Eigen::MatrixXi> regions,
+               MetaregionSampler&& sampler)
+        : metaregion_commute_weights(commute_weights)
+        , metaregion_sampler(sampler)
+        , metaregions(regions)
     {
     }
 
@@ -134,21 +134,21 @@ public:
                        Eigen::Ref<const GradientMatrix> potential_gradient,
                        Eigen::Ref<const Eigen::MatrixXi> metaregions,
                        std::vector<InfectionState> non_moving_states = {},
-                       const std::vector<double>& sigma              = std::vector<double>(8, 1440.0 / 200.0),
+                       const std::vector<double>& sigmas             = std::vector<double>(8, 1440.0 / 200.0),
                        const double contact_radius_in_km             = 5)
         : populations(agents)
         , accumulated_contact_rates{0.}
         , contact_rates_count{0}
         , m_k{K}
-        , metaregions(metaregions)
-        , sigma(sigma)
-        , contact_radius(get_contact_radius_factor() * contact_radius_in_km)
+        , m_metaregions(metaregions)
+        , m_sigmas(sigmas)
+        , m_contact_radius(get_contact_radius_factor() * contact_radius_in_km)
         , m_number_transitions(static_cast<size_t>(Status::Count),
-                               Eigen::MatrixXd::Zero(metaregions.maxCoeff(), metaregions.maxCoeff()))
+                               Eigen::MatrixXd::Zero(m_metaregions.maxCoeff(), m_metaregions.maxCoeff()))
         , m_number_commutes(static_cast<size_t>(Status::Count),
-                            Eigen::MatrixXd::Zero(metaregions.maxCoeff(), metaregions.maxCoeff()))
-        , non_moving_states(non_moving_states)
-        , potential_gradient(potential_gradient)
+                            Eigen::MatrixXd::Zero(m_metaregions.maxCoeff(), m_metaregions.maxCoeff()))
+        , m_non_moving_states(non_moving_states)
+        , m_potential_gradient(potential_gradient)
 
     {
         for (auto& agent : populations) {
@@ -215,7 +215,8 @@ public:
     void move(const double t, const double dt, Agent& agent)
     {
 
-        if (std::find(non_moving_states.begin(), non_moving_states.end(), agent.status) == non_moving_states.end()) {
+        if (std::find(m_non_moving_states.begin(), m_non_moving_states.end(), agent.status) ==
+            m_non_moving_states.end()) {
             //commuting parameters are drawn at the beginning of every new day
             if (mio::floating_point_equal(t, std::round(t), 1e-10)) {
                 draw_commuting_parameters(agent, t, dt);
@@ -224,7 +225,7 @@ public:
                           mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
 
             const int region_old = agent.region;
-            auto noise           = (sigma[region_old] * std::sqrt(dt)) * p;
+            auto noise           = (m_sigmas[region_old] * std::sqrt(dt)) * p;
             auto new_pos         = agent.position;
 
             const auto K = m_k(agent, t, dt);
@@ -239,16 +240,16 @@ public:
                     new_pos -= (dt * grad_U(agent.position) - noise) / num_substeps;
                 }
                 //if agents are outside they keep their position
-                if (metaregions(new_pos[0], new_pos[1]) == 0) {
+                if (m_metaregions(new_pos[0], new_pos[1]) == 0) {
                     new_pos = agent.position;
                 }
                 //if agent crosses the border the influence of the noise term is neglected
-                else if (metaregions(new_pos[0], new_pos[1]) - 1 != agent.region) {
+                else if (m_metaregions(new_pos[0], new_pos[1]) - 1 != agent.region) {
                     new_pos -= noise;
                 }
             }
 
-            const int region = metaregions(new_pos[0], new_pos[1]) - 1; // shift land so we can use it as index
+            const int region = m_metaregions(new_pos[0], new_pos[1]) - 1; // shift land so we can use it as index
             if (region >= 0) {
                 agent.region = region;
             }
@@ -270,7 +271,7 @@ public:
     Eigen::VectorXd time_point() const
     {
         // metaregions has values from 0 - #regions, where 0 is no particular region (e.g. borders, outside)
-        Eigen::VectorXd val = Eigen::VectorXd::Zero(metaregions.maxCoeff() * static_cast<size_t>(Status::Count));
+        Eigen::VectorXd val = Eigen::VectorXd::Zero(m_metaregions.maxCoeff() * static_cast<size_t>(Status::Count));
 
         for (auto& agent : populations) {
             val[(agent.region * static_cast<size_t>(Status::Count) + static_cast<size_t>(agent.status))]++;
@@ -304,7 +305,8 @@ public:
     {
         return (&agent != &contact) && // test if agent and contact are different objects
                (agent.region == contact.region) && // test if they are in the same metaregion
-               (agent.position - contact.position).norm() < contact_radius; // test if contact is in the contact radius
+               (agent.position - contact.position).norm() <
+                   m_contact_radius; // test if contact is in the contact radius
     }
 
     std::vector<Agent> populations;
@@ -316,44 +318,44 @@ private:
     double get_contact_radius_factor(std::vector<double> areas = std::vector<double>{435, 579, 488, 310.7, 667.3, 800,
                                                                                      870.4, 549.3})
     {
-        assert(areas.size() == metaregions.maxCoeff());
-        std::vector<double> factors(metaregions.maxCoeff());
+        assert(areas.size() == m_metaregions.maxCoeff());
+        std::vector<double> factors(m_metaregions.maxCoeff());
         //count pixels
-        for (size_t metaregion = 1; metaregion <= metaregions.maxCoeff(); ++metaregion) {
+        for (size_t metaregion = 1; metaregion <= m_metaregions.maxCoeff(); ++metaregion) {
             int num = 0;
-            for (size_t row = 0; row < metaregions.rows(); ++row) {
-                for (size_t pixel = 0; pixel < metaregions.cols(); ++pixel) {
-                    if (metaregions(row, pixel) == metaregion) {
+            for (size_t row = 0; row < m_metaregions.rows(); ++row) {
+                for (size_t pixel = 0; pixel < m_metaregions.cols(); ++pixel) {
+                    if (m_metaregions(row, pixel) == metaregion) {
                         num += 1;
-                        if (pixel > 0 && metaregions(row, pixel - 1) != metaregion) {
+                        if (pixel > 0 && m_metaregions(row, pixel - 1) != metaregion) {
                             num += 1;
                         }
                     }
                 }
             }
-            for (size_t col = 0; col < metaregions.cols(); ++col) {
-                for (size_t pixel = 1; pixel < metaregions.rows(); ++pixel) {
-                    if (metaregions(pixel, col) == metaregion && metaregions(pixel - 1, col) != metaregion) {
+            for (size_t col = 0; col < m_metaregions.cols(); ++col) {
+                for (size_t pixel = 1; pixel < m_metaregions.rows(); ++pixel) {
+                    if (m_metaregions(pixel, col) == metaregion && m_metaregions(pixel - 1, col) != metaregion) {
                         num += 1;
                     }
                 }
             }
             factors[metaregion - 1] = sqrt(num / areas[metaregion - 1]);
         }
-        return std::accumulate(factors.begin(), factors.end(), 0.0) / metaregions.maxCoeff();
+        return std::accumulate(factors.begin(), factors.end(), 0.0) / m_metaregions.maxCoeff();
     }
 
     bool is_in_domain(const Position& p) const
     {
         // restrict domain to [0, num_pixel]^2 where "escaping" is impossible, i.e. it holds x <= grad_U(x)
-        return 0 <= p[0] && p[0] <= metaregions.rows() && 0 <= p[1] && p[1] <= metaregions.cols();
+        return 0 <= p[0] && p[0] <= m_metaregions.rows() && 0 <= p[1] && p[1] <= m_metaregions.cols();
     }
 
     // precomputet discrete gradient
     Position grad_U(const Position p)
     {
         // round each coordinate to the nearest integer
-        return potential_gradient(p.x(), p.y());
+        return m_potential_gradient(p.x(), p.y());
     }
 
     void draw_commuting_parameters(Agent& a, const double t, const double dt)
@@ -366,7 +368,7 @@ private:
         if (a.commutes) {
             a.commuting_destination = m_k.metaregion_sampler(destination_region);
 
-            assert(metaregions(a.commuting_destination[0], a.commuting_destination[1]) - 1 == destination_region);
+            assert(m_metaregions(a.commuting_destination[0], a.commuting_destination[1]) - 1 == destination_region);
             //TODO: anschauen, was Normalverteilung mit den Parametern macht
             //TODO: Zeitmessung triangular dist & normal dist übergeben
             a.t_return = t + mio::ParameterDistributionNormal(9.0 / 24.0, 23.0 / 24.0, 18.0 / 24.0).get_rand_sample();
@@ -379,14 +381,14 @@ private:
         }
     }
 
-    Eigen::Ref<const Eigen::MatrixXi> metaregions;
+    Eigen::Ref<const Eigen::MatrixXi> m_metaregions;
     std::map<std::tuple<mio::mpm::Region, Status, Status>, mio::mpm::AdoptionRate<Status>> m_adoption_rates;
-    const std::vector<double> sigma;
-    const double contact_radius;
+    const std::vector<double> m_sigmas;
+    const double m_contact_radius;
     std::vector<Eigen::MatrixXd> m_number_transitions;
     std::vector<Eigen::MatrixXd> m_number_commutes;
-    std::vector<InfectionState> non_moving_states;
-    Eigen::Ref<const GradientMatrix> potential_gradient;
+    std::vector<InfectionState> m_non_moving_states;
+    Eigen::Ref<const GradientMatrix> m_potential_gradient;
 };
 
 #endif // COMMUTING_POTENTIAL_H_

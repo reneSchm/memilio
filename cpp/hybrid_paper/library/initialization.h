@@ -9,6 +9,7 @@
 #include "memilio/io/io.h"
 #include "memilio/utils/logging.h"
 #include "mpm/abm.h"
+#include <cstddef>
 
 namespace mio
 {
@@ -86,7 +87,7 @@ create_agents(std::vector<std::vector<double>>& pop_dists, const std::vector<dou
     if (save_initialization) {
         std::string save_path = "init" + std::to_string(agents.size()) + ".json";
         Json::Value all_agents;
-        for (int i = 0; i < agents.size(); ++i) {
+        for (size_t i = 0; i < agents.size(); ++i) {
             BOOST_OUTCOME_TRY(agent, mio::serialize_json(agents[i]));
             all_agents[std::to_string(i)] = agent;
         }
