@@ -33,3 +33,7 @@ target_link_libraries(transition_rate_fitting_random_search hybrid_paper)
 
 add_executable(contact_frequency_counting contact_frequency_counting.cpp)
 target_link_libraries(contact_frequency_counting hybrid_paper)
+
+add_executable(travel_time_heuristic travel_time_heuristic.cpp)
+target_link_libraries(travel_time_heuristic hybrid_paper)
+
