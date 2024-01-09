@@ -40,3 +40,6 @@ target_link_libraries(hybridization hybrid_paper)
 
 add_executable(PDMM PDMM.cpp)
 target_link_libraries(PDMM hybrid_paper)
+
+add_executable(travel_time_heuristic travel_time_heuristic.cpp)
+target_link_libraries(travel_time_heuristic hybrid_paper)
