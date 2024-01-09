@@ -1,9 +1,9 @@
-#include "initialization.h"
-#include "infection_state.h"
+#include "hybrid_paper/lib/initialization.h"
+#include "hybrid_paper/lib/infection_state.h"
+#include "hybrid_paper/lib/map_reader.h"
+#include "hybrid_paper/lib/metaregion_sampler.h"
+#include "hybrid_paper/lib/potentials/potential_germany.h"
 #include "mpm/abm.h"
-#include "mpm/potentials/potential_germany.h"
-#include "mpm/potentials/map_reader.h"
-#include "hybrid_paper/metaregion_sampler.h"
 
 #define TIME_TYPE std::chrono::high_resolution_clock::time_point
 #define TIME_NOW std::chrono::high_resolution_clock::now()

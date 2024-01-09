@@ -1,8 +1,9 @@
-#include "initialization.h"
-#include "mpm/potentials/commuting_potential.h"
-#include "hybrid_paper/infection_state.h"
+#include "hybrid_paper/lib/initialization.h"
+#include "hybrid_paper/lib/infection_state.h"
+#include "hybrid_paper/lib/weighted_gradient.h"
+#include "hybrid_paper/lib/potentials/commuting_potential.h"
 #include "mpm/abm.h"
-#include "weighted_gradient.h"
+
 #include <iostream>
 
 int main(int argc, char** argv)

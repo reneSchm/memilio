@@ -1,7 +1,8 @@
-#include "hybrid_paper/initialization.h"
-#include "hybrid_paper/infection_state.h"
+#include "hybrid_paper/lib/initialization.h"
+#include "hybrid_paper/lib/infection_state.h"
 #include "mpm/pdmm.h"
 #include "mpm/region.h"
+
 #include "memilio/data/analyze_result.h"
 #include "memilio/io/epi_data.h"
 #include "memilio/io/cli.h"

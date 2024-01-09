@@ -1,7 +1,12 @@
 #include "abm/time.h"
-#include "hybrid_paper/infection_state.h"
-#include "hybrid_paper/initialization.h"
-#include "hybrid_paper/weighted_gradient.h"
+#include "hybrid_paper/lib/infection_state.h"
+#include "hybrid_paper/lib/initialization.h"
+#include "hybrid_paper/lib/weighted_gradient.h"
+#include "hybrid_paper/lib/metaregion_sampler.h"
+#include "hybrid_paper/lib/map_reader.h"
+#include "hybrid_paper/lib/potentials/commuting_potential.h"
+#include "hybrid_paper/lib/potentials/potential_germany.h"
+
 #include "memilio/config.h"
 #include "memilio/math/eigen.h"
 #include "memilio/math/floating_point.h"
@@ -9,10 +14,6 @@
 #include "memilio/utils/random_number_generator.h"
 #include "memilio/utils/span.h"
 #include "memilio/utils/time_series.h"
-#include "mpm/potentials/commuting_potential.h"
-#include "mpm/potentials/map_reader.h"
-#include "mpm/potentials/potential_germany.h"
-#include "hybrid_paper/metaregion_sampler.h"
 
 #include <cmath>
 #include <cstddef>

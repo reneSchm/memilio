@@ -1,16 +1,15 @@
-#include "hybrid_paper/infection_state.h"
-#include "infection_state.h"
-#include "initialization.h"
+#include "hybrid_paper/lib/initialization.h"
+#include "hybrid_paper/lib/infection_state.h"
+#include "hybrid_paper/lib/weighted_gradient.h"
+#include "hybrid_paper/lib/potentials/commuting_potential.h"
+#include "hybrid_paper/lib/potentials/potential_germany.h"
 #include "mpm/abm.h"
-#include "memilio/data/analyze_result.h"
-#include "hybrid_paper/weighted_gradient.h"
-#include "memilio/utils/time_series.h"
-#include "memilio/io/json_serializer.h"
-#include "mpm/potentials/potential_germany.h"
-#include "hybrid_paper/initialization.h"
 #include "mpm/utility.h"
-#include "mpm/potentials/commuting_potential.h"
-#include <bits/types/FILE.h>
+
+#include "memilio/io/json_serializer.h"
+#include "memilio/data/analyze_result.h"
+#include "memilio/utils/time_series.h"
+
 #include <chrono>
 #include <cstddef>
 #include <cstdio>

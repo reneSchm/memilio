@@ -45,10 +45,10 @@ add_executable(ide_secir_example ide_secir.cpp)
 target_link_libraries(ide_secir_example PRIVATE memilio ide_secir)
 
 add_executable(mpm_abm_rate_estimation mpm_abm_rate_estimation.cpp)
-target_link_libraries(mpm_abm_rate_estimation PRIVATE memilio mpm)
+target_link_libraries(mpm_abm_rate_estimation PRIVATE memilio mpm hybrid_paper)
 add_executable(mpm_abm_example mpm_abm.cpp)
 
-target_link_libraries(mpm_abm_example PRIVATE memilio mpm)
+target_link_libraries(mpm_abm_example PRIVATE memilio mpm hybrid_paper)
 add_executable(mpm_pdmm_example mpm_pdmm.cpp)
 
 target_link_libraries(mpm_pdmm_example PRIVATE memilio mpm)
@@ -60,7 +60,7 @@ add_executable(hybrid_example hybrid.cpp)
 target_link_libraries(hybrid_example PRIVATE memilio mpm)
 
 add_executable(hybrid_loc_Germany_example hybrid-loc-Germany.cpp)
-target_link_libraries(hybrid_loc_Germany_example PRIVATE memilio mpm)
+target_link_libraries(hybrid_loc_Germany_example PRIVATE memilio mpm hybrid_paper)
 
 add_executable(hybrid_lok_example hybrid-lok.cpp)
 target_link_libraries(hybrid_lok_example PRIVATE memilio mpm)

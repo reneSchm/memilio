@@ -1,14 +1,16 @@
+#include "memilio/utils/random_number_generator.h"
+#include "hybrid_paper/lib/weighted_gradient.h"
+#include "hybrid_paper/lib/infection_state.h"
+#include "hybrid_paper/lib/initialization.h"
+#include "hybrid_paper/lib/potentials/potential_germany.h"
+#include "mpm/abm.h"
+#include "mpm/region.h"
+#include "mpm/utility.h"
+
 #include "memilio/compartments/simulation.h"
 #include "memilio/io/cli.h"
 #include "memilio/io/mobility_io.h"
-#include "memilio/utils/random_number_generator.h"
-#include "mpm/region.h"
-#include "mpm/utility.h"
-#include "weighted_gradient.h"
-#include "infection_state.h"
-#include "models/mpm/abm.h"
-#include "models/mpm/potentials/potential_germany.h"
-#include "hybrid_paper/initialization.h"
+
 #include <cstdio>
 #include <numeric>
 #include <sstream>

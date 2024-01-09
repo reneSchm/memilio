@@ -1,13 +1,13 @@
-#include "hybrid_paper/weighted_gradient.h"
-#include "initialization.h"
-#include "memilio/io/cli.h"
+#include "hybrid_paper/lib/weighted_gradient.h"
+#include "hybrid_paper/lib/initialization.h"
+#include "hybrid_paper/lib/map_reader.h"
+#include "hybrid_paper/lib/infection_state.h"
+#include "hybrid_paper/lib/potentials/potential_germany.h"
 #include "mpm/abm.h"
 #include "mpm/model.h"
-#include "models/mpm/potentials/map_reader.h"
-#include "mpm/potentials/potential_germany.h"
-#include "hybrid_paper/weighted_potential.h"
-#include "hybrid_paper/initialization.h"
-#include "infection_state.h"
+
+#include "memilio/io/cli.h"
+
 #include <vector>
 
 struct Tmax {

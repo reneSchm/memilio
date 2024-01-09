@@ -1,16 +1,18 @@
+#include "hybrid_paper/lib/map_reader.h"
+#include "hybrid_paper/lib/potentials/potential_germany.h"
+
 #include "memilio/compartments/simulation.h"
 #include "memilio/config.h"
 #include "memilio/utils/logging.h"
 #include "memilio/io/json_serializer.h"
 #include "memilio/utils/time_series.h"
 #include "mpm/abm.h"
-#include "mpm/potentials/potential_germany.h"
-#include "mpm/potentials/map_reader.h"
 #include "mpm/model.h"
 #include "mpm/region.h"
 #include "mpm/smm.h"
 #include "mpm/pdmm.h"
 #include "mpm/utility.h"
+
 #include "memilio/data/analyze_result.h"
 
 #include <algorithm>

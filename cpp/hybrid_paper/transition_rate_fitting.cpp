@@ -1,8 +1,9 @@
-#include "hybrid_paper/initialization.h"
-#include "hybrid_paper/weighted_gradient.h"
-#include "models/mpm/potentials/potential_germany.h"
-#include "models/mpm/potentials/map_reader.h"
-#include "models/mpm/abm.h"
+#include "hybrid_paper/lib/initialization.h"
+#include "hybrid_paper/lib/weighted_gradient.h"
+#include "hybrid_paper/lib/map_reader.h"
+#include "hybrid_paper/lib/potentials/potential_germany.h"
+#include "mpm/abm.h"
+
 #include "memilio/data/analyze_result.h"
 #include "memilio/io/mobility_io.h"
 

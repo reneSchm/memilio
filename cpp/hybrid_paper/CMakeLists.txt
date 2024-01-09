@@ -1,9 +1,24 @@
 add_subdirectory(dlib-19.24 dlib_build)
 
-add_library(hybrid_paper initialization.h initialization.cpp infection_state.h)
+add_library(hybrid_paper
+    lib/initialization.h
+    lib/initialization.cpp
+    lib/infection_state.h
+    lib/map_reader.h
+    lib/map_reader.cpp
+    lib/metaregion_sampler.h
+    lib/potentials/potential_germany.h
+    lib/potentials/commuting_potential.h
+    lib/weighted_gradient.h
+    lib/weighted_potential.h
+)
 target_link_libraries(hybrid_paper memilio mpm)
+# target_include_directories(hybrid_paper PUBLIC
+    # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    # $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+# )
+# target_compile_options(hybrid_paper PRIVATE ${MEMILIO_CXX_FLAGS_ENABLE_WARNING_ERRORS})
 
-# find_package(OpenMP REQUIRED)
 add_executable(transition_rate_fitting transition_rate_fitting.cpp)
 target_link_libraries(transition_rate_fitting dlib::dlib hybrid_paper)
 
@@ -35,8 +50,8 @@ target_link_libraries(transition_rate_fitting_random_search hybrid_paper)
 add_executable(contact_frequency_counting contact_frequency_counting.cpp)
 target_link_libraries(contact_frequency_counting hybrid_paper)
 
-add_executable(hybridization hybridization.cpp)
-target_link_libraries(hybridization hybrid_paper)
+# add_executable(hybridization hybridization.cpp)
+# target_link_libraries(hybridization hybrid_paper)
 
 add_executable(PDMM PDMM.cpp)
 target_link_libraries(PDMM hybrid_paper)

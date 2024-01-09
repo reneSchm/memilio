@@ -1,10 +1,10 @@
+#include "hybrid_paper/lib/potentials/potential_germany.h"
+#include "hybrid_paper/lib/map_reader.h"
 #include "mpm/abm.h"
 #include "mpm/utility.h"
-#include "memilio/io/json_serializer.h"
-#include "mpm/potentials/potential_germany.h"
-#include "mpm/potentials/map_reader.h"
+
 #include "memilio/data/analyze_result.h"
-#include <json/value.h>
+#include "memilio/io/json_serializer.h"
 
 #include <iostream>
 #include <sstream>
