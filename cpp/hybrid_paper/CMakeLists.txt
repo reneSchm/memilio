@@ -19,8 +19,9 @@ target_link_libraries(adoption_rate_fitting dlib::dlib hybrid_paper)
 add_executable(map_reader map_reader.cpp)
 target_link_libraries(map_reader hybrid_paper)
 
+find_package(OpenMP REQUIRED)
 add_executable(mpm_abm_sim mpm_abm_sim.cpp)
-target_link_libraries(mpm_abm_sim hybrid_paper)
+target_link_libraries(mpm_abm_sim hybrid_paper OpenMP::OpenMP_CXX)
 
 add_executable(test test.cpp)
 target_link_libraries(test hybrid_paper)
@@ -33,3 +34,9 @@ target_link_libraries(transition_rate_fitting_random_search hybrid_paper)
 
 add_executable(contact_frequency_counting contact_frequency_counting.cpp)
 target_link_libraries(contact_frequency_counting hybrid_paper)
+
+add_executable(hybridization hybridization.cpp)
+target_link_libraries(hybridization hybrid_paper)
+
+add_executable(PDMM PDMM.cpp)
+target_link_libraries(PDMM hybrid_paper)

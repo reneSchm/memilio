@@ -1,4 +1,6 @@
 #include "hybrid_paper/infection_state.h"
+#include "infection_state.h"
+#include "initialization.h"
 #include "mpm/abm.h"
 #include "memilio/data/analyze_result.h"
 #include "hybrid_paper/weighted_gradient.h"
@@ -16,6 +18,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <omp.h>
 
 #define TIME_TYPE std::chrono::steady_clock::time_point
 #define TIME_NOW std::chrono::steady_clock::now()
@@ -126,66 +129,15 @@ void percentile_output_to_file(std::vector<mio::TimeSeries<double>>& percentile_
     fclose(file);
 }
 
-void run_multiple_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<InfectionState>>& adoption_rates,
-                             WeightedGradient& wg, const std::vector<double>& sigma, Eigen::MatrixXi& metaregions,
+template <class Model>
+void run_multiple_simulation(const std::vector<typename Model::Agent>& agents,
+                             std::vector<mio::mpm::AdoptionRate<InfectionState>>& adoption_rates, WeightedGradient& wg,
+                             const std::vector<double>& sigma, Eigen::MatrixXi& metaregions, double contact_radius,
                              double tmax, double delta_t, int num_runs, bool save_percentiles)
 {
-    using Model = ABM<CommutingPotential<StochastiK, InfectionState>>;
-    std::vector<Model::Agent> agents;
-    read_initialization<ABM::Agent>(init_file, agents);
 
     size_t num_agents  = agents.size();
     size_t num_regions = metaregions.maxCoeff();
-
-    std::vector<mio::TimeSeries<double>> ensemble_results(
-        num_runs, mio::TimeSeries<double>::zero(tmax, num_regions * static_cast<size_t>(InfectionState::Count)));
-    for (int run = 0; run < num_runs; ++run) {
-        std::cerr << "run number: " << run << "\n" << std::flush;
-        std::vector<Model::Agent> agents_run = agents;
-        Model model(k_provider, agents, {}, wg.gradient, metaregions, {InfectionState::D}, sigmas);
-        auto run_result       = mio::simulate(0.0, tmax, delta_t, model);
-        ensemble_results[run] = mio::interpolate_simulation_result(run_result);
-    }
-
-    // add all results
-    mio::TimeSeries<double> mean_time_series = std::accumulate(
-        ensemble_results.begin(), ensemble_results.end(),
-        mio::TimeSeries<double>::zero(tmax, num_regions * static_cast<size_t>(InfectionState::Count)), add_time_series);
-    //calculate average
-    for (size_t t = 0; t < static_cast<size_t>(mean_time_series.get_num_time_points()); ++t) {
-        mean_time_series.get_value(t) *= 1.0 / num_runs;
-    }
-    //save mean timeseries
-    FILE* file = fopen("../../cpp/outputs/output_mean.txt", "w");
-    mio::mpm::print_to_file(file, mean_time_series, {});
-    fclose(file);
-
-    if (save_percentiles) {
-        auto ensemble_percentile = get_format_for_percentile_output(ensemble_results, metaregions.maxCoeff());
-
-        //save percentile output
-        auto ensemble_result_p05 = mio::ensemble_percentile(ensemble_percentile, 0.05);
-        auto ensemble_result_p25 = mio::ensemble_percentile(ensemble_percentile, 0.25);
-        auto ensemble_result_p50 = mio::ensemble_percentile(ensemble_percentile, 0.50);
-        auto ensemble_result_p75 = mio::ensemble_percentile(ensemble_percentile, 0.75);
-        auto ensemble_result_p95 = mio::ensemble_percentile(ensemble_percentile, 0.95);
-
-        percentile_output_to_file(ensemble_result_p05, "../../cpp/outputs/output_p05.txt");
-        percentile_output_to_file(ensemble_result_p25, "../../cpp/outputs/output_p25.txt");
-        percentile_output_to_file(ensemble_result_p50, "../../cpp/outputs/output_p50.txt");
-        percentile_output_to_file(ensemble_result_p75, "../../cpp/outputs/output_p75.txt");
-        percentile_output_to_file(ensemble_result_p95, "../../cpp/outputs/output_p95.txt");
-    }
-}
-
-void run_single_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<InfectionState>>& adoption_rates,
-                           WeightedGradient& wg, const std::vector<double>& sigma, Eigen::MatrixXi& metaregions,
-                           double tmax, double delta_t)
-{
-    using Model        = ABM<CommutingPotential<StochastiK, InfectionState>>;
-    size_t num_regions = metaregions.maxCoeff();
-    std::vector<Model::Agent> agents;
-    read_initialization<ABM::Agent>(init_file, agents);
 
     const std::vector<int> county_ids   = {233, 228, 242, 223, 238, 232, 231, 229};
     Eigen::MatrixXd reference_commuters = get_transition_matrix(mio::base_dir() + "data/mobility/").value();
@@ -202,7 +154,83 @@ void run_single_simulation(std::string init_file, std::vector<mio::mpm::Adoption
         commute_weights(i, i) = ref_pops[i] - commute_weights.row(i).sum();
     }
     StochastiK k_provider(commute_weights, metaregions, {metaregions});
-    Model model(k_provider, agents, {}, wg.gradient, metaregions, {InfectionState::D}, sigmas);
+    Model model(k_provider, agents, adoption_rates, wg.gradient, metaregions, {InfectionState::D}, sigma,
+                contact_radius);
+
+    std::vector<mio::TimeSeries<double>> ensemble_results(
+        num_runs, mio::TimeSeries<double>::zero(tmax, num_regions * static_cast<size_t>(InfectionState::Count)));
+#pragma omp parallel for
+    for (int run = 0; run < num_runs; ++run) {
+        //std::cerr << "run number: " << run << "\n" << std::flush;
+        //std::vector<Model::Agent> agents_run = agents;
+        auto run_result       = mio::simulate(0.0, tmax, delta_t, model);
+        ensemble_results[run] = mio::interpolate_simulation_result(run_result);
+    }
+
+#pragma omp single
+    { // add all results
+        mio::TimeSeries<double> mean_time_series =
+            std::accumulate(ensemble_results.begin(), ensemble_results.end(),
+                            mio::TimeSeries<double>::zero(ensemble_results[0].get_num_time_points(),
+                                                          num_regions * static_cast<size_t>(InfectionState::Count)),
+                            add_time_series);
+        //calculate average
+        for (size_t t = 0; t < static_cast<size_t>(mean_time_series.get_num_time_points()); ++t) {
+            mean_time_series.get_value(t) *= 1.0 / num_runs;
+        }
+
+        std::string dir = mio::base_dir() + "cpp/outputs/" + std::to_string(agents.size());
+
+        //save mean timeseries
+        FILE* file = fopen((dir + "_output_mean.txt").c_str(), "w");
+        mio::mpm::print_to_file(file, mean_time_series, {});
+        fclose(file);
+
+        if (save_percentiles) {
+
+            auto ensemble_percentile = get_format_for_percentile_output(ensemble_results, num_regions);
+
+            //save percentile output
+            auto ensemble_result_p05 = mio::ensemble_percentile(ensemble_percentile, 0.05);
+            auto ensemble_result_p25 = mio::ensemble_percentile(ensemble_percentile, 0.25);
+            auto ensemble_result_p50 = mio::ensemble_percentile(ensemble_percentile, 0.50);
+            auto ensemble_result_p75 = mio::ensemble_percentile(ensemble_percentile, 0.75);
+            auto ensemble_result_p95 = mio::ensemble_percentile(ensemble_percentile, 0.95);
+
+            percentile_output_to_file(ensemble_result_p05, dir + "_output_p05.txt");
+            percentile_output_to_file(ensemble_result_p25, dir + "_output_p25.txt");
+            percentile_output_to_file(ensemble_result_p50, dir + "_output_p50.txt");
+            percentile_output_to_file(ensemble_result_p75, dir + "_output_p75.txt");
+            percentile_output_to_file(ensemble_result_p95, dir + "_output_p95.txt");
+        }
+    }
+}
+
+void run_single_simulation(std::string init_file, std::vector<mio::mpm::AdoptionRate<InfectionState>>& adoption_rates,
+                           WeightedGradient& wg, const std::vector<double>& sigma, Eigen::MatrixXi& metaregions,
+                           double tmax, double delta_t)
+{
+    using Model        = ABM<CommutingPotential<StochastiK, InfectionState>>;
+    size_t num_regions = metaregions.maxCoeff();
+    std::vector<Model::Agent> agents;
+    read_initialization<Model::Agent>(init_file, agents);
+
+    const std::vector<int> county_ids   = {233, 228, 242, 223, 238, 232, 231, 229};
+    Eigen::MatrixXd reference_commuters = get_transition_matrix(mio::base_dir() + "data/mobility/").value();
+    auto ref_pops = std::vector<double>{218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
+
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> commute_weights(num_regions, num_regions);
+    commute_weights.setZero();
+    for (int i = 0; i < num_regions; i++) {
+        for (int j = 0; j < num_regions; j++) {
+            if (i != j) {
+                commute_weights(i, j) = reference_commuters(county_ids[i], county_ids[j]);
+            }
+        }
+        commute_weights(i, i) = ref_pops[i] - commute_weights.row(i).sum();
+    }
+    StochastiK k_provider(commute_weights, metaregions, {metaregions});
+    Model model(k_provider, agents, {}, wg.gradient, metaregions, {InfectionState::D}, sigma);
 
     TIME_TYPE sim   = TIME_NOW;
     auto run_result = mio::simulate(0.0, tmax, delta_t, model);
@@ -214,7 +242,7 @@ void run_single_simulation(std::string init_file, std::vector<mio::mpm::Adoption
 }
 
 void extrapolate_real_data(Date date, double num_days, double t_Exposed, double t_Carrier, double t_Infected,
-                           double mu_C_R, double persons_per_agent)
+                           double mu_C_R)
 {
     //number inhabitants per region
     std::vector<double> populations = {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
@@ -222,6 +250,9 @@ void extrapolate_real_data(Date date, double num_days, double t_Exposed, double 
     std::vector<int> regions = {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175};
     std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =
         mio::read_confirmed_cases_data("../../data/Germany/cases_all_county_age_ma7.json").value();
+    std::sort(confirmed_cases.begin(), confirmed_cases.end(), [](auto&& a, auto&& b) {
+        return std::make_tuple(get_region_id(a), a.date) < std::make_tuple(get_region_id(b), b.date);
+    });
     mio::TimeSeries<double> ts =
         mio::TimeSeries<double>::zero(num_days, regions.size() * static_cast<size_t>(InfectionState::Count));
     for (size_t t = 0; t < num_days; ++t) {
@@ -232,23 +263,17 @@ void extrapolate_real_data(Date date, double num_days, double t_Exposed, double 
                 .value();
         ts.get_time(t) = static_cast<double>(t);
         for (size_t region = 0; region < regions.size(); ++region) {
-            //int num_agents = populations[region] / persons_per_agent;
-            std::transform(pop_dists[region].begin(), pop_dists[region].end(), pop_dists[region].begin(),
-                           [&persons_per_agent](auto& c) {
-                               return std::round(c / persons_per_agent);
-                           });
-            // while (num_agents > 0) {
-            //     auto status = mio::DiscreteDistribution<int>::get_instance()(pop_dists[region]);
-            //     ts.get_value(t)[region * static_cast<size_t>(InfectionState::Count) + status]++;
-            //     num_agents -= 1;
-            // }
+            // std::transform(pop_dists[region].begin(), pop_dists[region].end(), pop_dists[region].begin(),
+            //                [&persons_per_agent](auto& c) {
+            //                    return std::round(c / persons_per_agent);
+            //                });
             for (size_t elem = 0; elem < static_cast<size_t>(InfectionState::Count); ++elem) {
                 ts.get_value(t)[region * static_cast<size_t>(InfectionState::Count) + elem] = pop_dists[region][elem];
             }
         }
         date = offset_date_by_days(date, 1);
     }
-    FILE* file = fopen("../../cpp/outputs/output_extrapolated.txt", "w");
+    FILE* file = fopen((mio::base_dir() + "cpp/outputs/output_extrapolated.txt").c_str(), "w");
     mio::mpm::print_to_file(file, ts, {});
     fclose(file);
 }
@@ -260,19 +285,19 @@ void extrapolate_real_data(Date date, double num_days, double t_Exposed, double 
 int main()
 {
     using Status = mio::mpm::paper::InfectionState;
+    using Model  = mio::mpm::ABM<CommutingPotential<StochastiK, Status>>;
 
     Eigen::MatrixXi metaregions;
     size_t num_regions = 8;
-    Eigen::MatrixXd potential;
 
-    WeightedGradient wg("../../potentially_germany_grad.json", "../../boundary_ids.pgm");
+    WeightedGradient wg(mio::base_dir() + "potentially_germany_grad.json", mio::base_dir() + "boundary_ids.pgm");
     const std::vector<double> weights(14, 500);
     const std::vector<double> sigmas(num_regions, 10);
     wg.apply_weights(weights);
 
     std::cerr << "Setup: Read metaregions.\n" << std::flush;
     {
-        const auto fname = "../../metagermany.pgm";
+        const auto fname = mio::base_dir() + "metagermany.pgm";
         std::ifstream ifile(fname);
         if (!ifile.is_open()) {
             mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
@@ -284,24 +309,55 @@ int main()
         }
     }
 
-    double t_Exposed         = 4.2;
-    double t_Carrier         = 4.2;
-    double t_Infected        = 7.5;
-    double mu_C_R            = 0.23;
-    double transmission_prob = 0.1;
-    double mu_I_D            = 0.01;
+    mio::Date start_date = mio::Date(2021, 3, 1);
+
+    double t_Exposed                 = 4;
+    double t_Carrier                 = 2.67;
+    double t_Infected                = 5.03;
+    double mu_C_R                    = 0.29;
+    double transmission_rate         = 0.25;
+    double mu_I_D                    = 0.00476;
+    double scaling_factor_trans_rate = 1.0; /// 6.48;
+    double contact_radius            = 50;
+    double persons_per_agent         = 300;
+    double tmax                      = 30;
+    double dt                        = 0.1;
+    int num_runs                     = 10;
+
+    std::vector<int> regions        = {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175};
+    std::vector<double> populations = {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
+
+    std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =
+        mio::read_confirmed_cases_data(mio::base_dir() + "data/Germany/cases_all_county_age_ma7.json").value();
+    std::sort(confirmed_cases.begin(), confirmed_cases.end(), [](auto&& a, auto&& b) {
+        return std::make_tuple(get_region_id(a), a.date) < std::make_tuple(get_region_id(b), b.date);
+    });
+
+    std::vector<std::vector<double>> pop_dists =
+        set_confirmed_case_data(confirmed_cases, regions, populations, start_date, t_Exposed, t_Carrier, t_Infected,
+                                mu_C_R)
+            .value();
+
+    std::vector<Model::Agent> agents =
+        create_agents(pop_dists, populations, persons_per_agent, {metaregions}, false).value();
+
     std::vector<mio::mpm::AdoptionRate<Status>> adoption_rates;
-    for (int i = 0; i < metaregions.maxCoeff(); ++i) {
-        adoption_rates.push_back(
-            {Status::S, Status::E, mio::mpm::Region(i), transmission_prob, {Status::C, Status::I}, {1, 1}});
+    for (int i = 0; i < num_regions; ++i) {
+        adoption_rates.push_back({Status::S,
+                                  Status::E,
+                                  mio::mpm::Region(i),
+                                  scaling_factor_trans_rate * transmission_rate,
+                                  {Status::C, Status::I},
+                                  {1, 1}});
         adoption_rates.push_back({Status::E, Status::C, mio::mpm::Region(i), 1.0 / t_Exposed});
         adoption_rates.push_back({Status::C, Status::R, mio::mpm::Region(i), mu_C_R / t_Carrier});
         adoption_rates.push_back({Status::C, Status::I, mio::mpm::Region(i), (1 - mu_C_R) / t_Carrier});
         adoption_rates.push_back({Status::I, Status::R, mio::mpm::Region(i), (1 - mu_I_D) / t_Infected});
         adoption_rates.push_back({Status::I, Status::D, mio::mpm::Region(i), mu_I_D / t_Infected});
     }
-    //run_multiple_simulation("init2809.json", adoption_rates, wg, sigmas, metaregions, 20, 0.1, 5, true);
-    //mio::mpm::paper::extrapolate_real_data(mio::Date(2021, 3, 1), 100, 4.2, 4.2, 7.5, 0.23, 1000);
+    //mio::mpm::paper::extrapolate_real_data(start_date, 30, t_Exposed, t_Carrier, t_Infected, mu_C_R);
+    mio::mpm::paper::run_multiple_simulation<Model>(agents, adoption_rates, wg, sigmas, metaregions, contact_radius,
+                                                    tmax, dt, num_runs, true);
     //run_single_simulation("init28133.json", adoption_rates, wg, sigmas, metaregions, 100, 0.1);
     //mio::mpm::paper::get_agent_movement(10, metaregions, potential, wg);
     return 0;
