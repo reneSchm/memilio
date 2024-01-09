@@ -1,7 +1,7 @@
 // generate pgm's using map.py with .shp files from https://daten.gdz.bkg.bund.de/produkte/vg/vg2500/aktuell/vg2500_12-31.gk3.shape.zip (unpack into tools/)
 
-#include "hybrid_paper/lib/map_reader.h"
-#include "hybrid_paper/lib/initialization.h"
+#include "hybrid_paper/library/map_reader.h"
+#include "hybrid_paper/library/initialization.h"
 
 #include "memilio/io/io.h"
 #include "memilio/io/json_serializer.h"

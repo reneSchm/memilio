@@ -1,5 +1,5 @@
-#include "hybrid_paper/lib/potentials/potential_germany.h"
-#include "hybrid_paper/lib/map_reader.h"
+#include "hybrid_paper/library/potentials/potential_germany.h"
+#include "hybrid_paper/library/map_reader.h"
 #include "mpm/abm.h"
 #include "mpm/utility.h"
 

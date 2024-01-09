@@ -1,8 +1,8 @@
-#include "hybrid_paper/lib/initialization.h"
-#include "hybrid_paper/lib/infection_state.h"
-#include "hybrid_paper/lib/map_reader.h"
-#include "hybrid_paper/lib/metaregion_sampler.h"
-#include "hybrid_paper/lib/potentials/potential_germany.h"
+#include "hybrid_paper/library/initialization.h"
+#include "hybrid_paper/library/infection_state.h"
+#include "hybrid_paper/library/map_reader.h"
+#include "hybrid_paper/library/metaregion_sampler.h"
+#include "hybrid_paper/library/potentials/potential_germany.h"
 #include "mpm/abm.h"
 
 #define TIME_TYPE std::chrono::high_resolution_clock::time_point

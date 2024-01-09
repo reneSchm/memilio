@@ -1,7 +1,7 @@
-#include "hybrid_paper/lib/initialization.h"
-#include "hybrid_paper/lib/infection_state.h"
-#include "hybrid_paper/lib/weighted_gradient.h"
-#include "hybrid_paper/lib/potentials/commuting_potential.h"
+#include "hybrid_paper/library/initialization.h"
+#include "hybrid_paper/library/infection_state.h"
+#include "hybrid_paper/library/weighted_gradient.h"
+#include "hybrid_paper/library/potentials/commuting_potential.h"
 #include "mpm/abm.h"
 
 #include <iostream>

@@ -1,5 +1,5 @@
 #include "memilio/utils/parameter_distributions.h"
-#include "hybrid_paper/lib/potentials/commuting_potential.h"
+#include "hybrid_paper/library/potentials/commuting_potential.h"
 #include "memilio/math/eigen.h"
 
 inline double square(double x)

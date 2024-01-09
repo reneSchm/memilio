@@ -1,16 +1,16 @@
 add_subdirectory(dlib-19.24 dlib_build)
 
 add_library(hybrid_paper
-    lib/initialization.h
-    lib/initialization.cpp
-    lib/infection_state.h
-    lib/map_reader.h
-    lib/map_reader.cpp
-    lib/metaregion_sampler.h
-    lib/potentials/potential_germany.h
-    lib/potentials/commuting_potential.h
-    lib/weighted_gradient.h
-    lib/weighted_potential.h
+    library/initialization.h
+    library/initialization.cpp
+    library/infection_state.h
+    library/map_reader.h
+    library/map_reader.cpp
+    library/metaregion_sampler.h
+    library/potentials/potential_germany.h
+    library/potentials/commuting_potential.h
+    library/weighted_gradient.h
+    library/weighted_potential.h
 )
 target_link_libraries(hybrid_paper memilio mpm)
 # target_include_directories(hybrid_paper PUBLIC
