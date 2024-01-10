@@ -7,15 +7,17 @@ add_library(hybrid_paper
     library/map_reader.h
     library/map_reader.cpp
     library/metaregion_sampler.h
+    library/model_setup.h
     library/potentials/potential_germany.h
     library/potentials/commuting_potential.h
     library/weighted_gradient.h
     library/weighted_potential.h
 )
 target_link_libraries(hybrid_paper memilio mpm)
+
 # target_include_directories(hybrid_paper PUBLIC
-    # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-    # $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+# $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+# $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 # )
 target_compile_options(hybrid_paper PRIVATE ${MEMILIO_CXX_FLAGS_ENABLE_WARNING_ERRORS})
 
@@ -50,8 +52,8 @@ target_link_libraries(transition_rate_fitting_random_search hybrid_paper)
 add_executable(contact_frequency_counting contact_frequency_counting.cpp)
 target_link_libraries(contact_frequency_counting hybrid_paper)
 
-# add_executable(hybridization hybridization.cpp)
-# target_link_libraries(hybridization hybrid_paper)
+add_executable(hybridization hybridization.cpp)
+target_link_libraries(hybridization hybrid_paper)
 
 add_executable(PDMM PDMM.cpp)
 target_link_libraries(PDMM hybrid_paper)
