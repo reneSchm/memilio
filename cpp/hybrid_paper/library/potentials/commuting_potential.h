@@ -2,9 +2,14 @@
 #define COMMUTING_POTENTIAL_H_
 
 #include "hybrid_paper/library/metaregion_sampler.h"
+#include "hybrid_paper/library/infection_state.h"
 #include "memilio/math/eigen.h"
 #include "memilio/math/floating_point.h"
 #include "mpm/model.h"
+#include "memilio/utils/time_series.h"
+#include <array>
+#include <cassert>
+#include <random>
 
 struct TriangularDistribution {
 
@@ -149,6 +154,8 @@ public:
                             Eigen::MatrixXd::Zero(m_metaregions.maxCoeff(), m_metaregions.maxCoeff()))
         , m_non_moving_states(non_moving_states)
         , m_potential_gradient(potential_gradient)
+        , m_flow_result(Eigen::Index(m_metaregions.maxCoeff() * mio::mpm::paper::flow_indices.size()))
+        , m_flows(Eigen::VectorXd::Zero(m_metaregions.maxCoeff() * mio::mpm::paper::flow_indices.size()))
 
     {
         for (auto& agent : populations) {
@@ -159,8 +166,9 @@ public:
         }
     }
 
-    inline static constexpr void adopt(Agent& agent, const Status& new_status)
+    void adopt(Agent& agent, const Status& new_status)
     {
+        update_flows(agent, new_status);
         agent.status = new_status;
     }
 
@@ -214,7 +222,11 @@ public:
 
     void move(const double t, const double dt, Agent& agent)
     {
-
+        //check whether time point already exists in flow result ts; if not add timepoint
+        if (m_flow_result.get_num_time_points() == 0 || m_flow_result.get_last_time() != t + dt) {
+            m_flow_result.add_time_point(t + dt, m_flows);
+            m_flows.setZero();
+        }
         if (std::find(m_non_moving_states.begin(), m_non_moving_states.end(), agent.status) ==
             m_non_moving_states.end()) {
             //commuting parameters are drawn at the beginning of every new day
@@ -301,6 +313,16 @@ public:
         return m_number_commutes;
     }
 
+    mio::TimeSeries<ScalarType>& get_flow_result()
+    {
+        return m_flow_result;
+    }
+
+    const mio::TimeSeries<ScalarType>& get_flow_result() const
+    {
+        return m_flow_result;
+    }
+
     bool is_contact(const Agent& agent, const Agent& contact) const
     {
         return (&agent != &contact) && // test if agent and contact are different objects
@@ -315,6 +337,11 @@ public:
     KProvider m_k;
 
 private:
+    void update_flows(Agent& agent, const Status& new_status)
+    {
+        m_flows[mio::mpm::paper::get_region_flow_index(agent.region, agent.status, new_status)]++;
+    }
+
     double get_contact_radius_factor(std::vector<double> areas = std::vector<double>{435, 579, 488, 310.7, 667.3, 800,
                                                                                      870.4, 549.3})
     {
@@ -389,6 +416,8 @@ private:
     std::vector<Eigen::MatrixXd> m_number_commutes;
     std::vector<InfectionState> m_non_moving_states;
     Eigen::Ref<const GradientMatrix> m_potential_gradient;
+    mio::TimeSeries<ScalarType> m_flow_result;
+    Eigen::VectorXd m_flows;
 };
 
 #endif // COMMUTING_POTENTIAL_H_
