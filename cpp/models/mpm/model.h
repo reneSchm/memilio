@@ -27,6 +27,8 @@
 #include "memilio/config.h"
 #include "memilio/compartments/compartmentalmodel.h"
 #include "memilio/utils/parameter_set.h"
+#include "memilio/utils/time_series.h"
+#include "memilio/math/stepper_wrapper.h"
 
 #include <vector>
 
@@ -76,6 +78,23 @@ struct TransitionRates {
 template <class Status>
 using ParametersBase = mio::ParameterSet<AdoptionRates<Status>, TransitionRates<Status>>;
 
+template <template <class State = Eigen::VectorXd, class Value = double, class Deriv = State, class Time = double,
+                    class Algebra    = boost::numeric::odeint::vector_space_algebra,
+                    class Operations = typename boost::numeric::odeint::operations_dispatcher<State>::operations_type,
+                    class Resizer    = boost::numeric::odeint::never_resizer>
+          class ControlledStepper = boost::numeric::odeint::runge_kutta_cash_karp54>
+boost::numeric::odeint::controlled_runge_kutta<ControlledStepper<>> create_stepper()
+{
+    // for more options see: boost/boost/numeric/odeint/stepper/controlled_runge_kutta.hpp
+    return boost::numeric::odeint::controlled_runge_kutta<ControlledStepper<>>(
+        boost::numeric::odeint::default_error_checker<typename ControlledStepper<>::value_type,
+                                                      typename ControlledStepper<>::algebra_type,
+                                                      typename ControlledStepper<>::operations_type>(1e-10, 1e-5),
+        boost::numeric::odeint::default_step_adjuster<typename ControlledStepper<>::value_type,
+                                                      typename ControlledStepper<>::time_type>(
+            std::numeric_limits<double>::max()));
+}
+
 template <size_t regions, class Status>
 class MetapopulationModel
     : public mio::CompartmentalModel<Status, mio::Populations<Region, Status>, ParametersBase<Status>>
@@ -89,17 +108,62 @@ public:
     {
     }
 
-    void get_derivatives(Eigen::Ref<const Eigen::VectorXd> x, Eigen::Ref<const Eigen::VectorXd> /*pop*/,
-                         ScalarType /*t*/, Eigen::Ref<Eigen::VectorXd> dxdt) const override
+    mutable int eval_ctr =
+        0; // keep track of runge-kutta evaluations of f' (there are 6, and the 5th is at the (potentially) next timepoint)
+    const int max_evals = 6;
+    mutable Eigen::MatrixXd flows; // current flow values
+    mutable Eigen::VectorXd flow_x;
+    mutable ScalarType flow_t, flow_dt, flow_t_old; // dt and time at which flows were recorded
+    mutable decltype(create_stepper()) stepper = create_stepper();
+    mutable std::shared_ptr<TimeSeries<double>> all_flows;
+
+    void get_derivatives(Eigen::Ref<const Eigen::VectorXd> x, Eigen::Ref<const Eigen::VectorXd> /*pop*/, ScalarType t,
+                         Eigen::Ref<Eigen::VectorXd> dxdt) const override
     {
         const auto& params = this->parameters;
         const auto& pop    = this->populations;
+        if (flows.cols() != params.template get<AdoptionRates<Status>>().size()) {
+            flows.resize(max_evals, params.template get<AdoptionRates<Status>>().size());
+            flows.setZero();
+            flow_x = Eigen::VectorXd::Zero(flows.cols());
+            all_flows.reset(new TimeSeries<double>(flows.cols()));
+        }
+        eval_ctr++;
+        if (eval_ctr == 1) {
+            flow_dt = -t;
+        }
+        if (eval_ctr == max_evals - 1) {
+            flow_t = t;
+            flow_dt += t;
+        }
+        // evaluate each adoption rate and apply that value to its source/target
+        int ctr = 0;
         for (const auto& rate : params.template get<AdoptionRates<Status>>()) {
             const auto source = pop.get_flat_index({rate.region, rate.from});
             const auto target = pop.get_flat_index({rate.region, rate.to});
             const auto change = evaluate(rate, x);
+            flows(eval_ctr - 1, ctr++) += change;
             dxdt[source] -= change;
             dxdt[target] += change;
+        }
+
+        if (eval_ctr == max_evals) {
+            eval_ctr = 0;
+            flow_x.setZero();
+            stepper.stepper().do_step(
+                [&](auto&&, Eigen::VectorXd& y, auto&&) {
+                    y = flows.row(eval_ctr++);
+                },
+                flow_x, flow_t, flow_dt);
+            eval_ctr = 0;
+            flows.setZero();
+            if (all_flows->get_num_time_points() == 0 || flow_t_old + flow_dt == flow_t) {
+                all_flows->add_time_point(flow_t, flow_x);
+            }
+            else {
+                all_flows->get_last_value() = flow_x;
+            }
+            flow_t_old = flow_t;
         }
     }
 
