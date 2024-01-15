@@ -3,6 +3,7 @@
 
 #include "hybrid_paper/library/weighted_gradient.h"
 #include "hybrid_paper/library/infection_state.h"
+#include "hybrid_paper/library/initialization.h"
 namespace mio
 {
 namespace mpm
@@ -26,7 +27,7 @@ struct ModelSetup {
         PDMM model;
         for (size_t k = 0; k < region_ids.size(); ++k) {
             for (int i = 0; i < static_cast<size_t>(Status::Count); ++i) {
-                model.populations[{static_cast<mio::mpm::Region>(k), static_cast<Status>(i)}] = pop_dists[k][i];
+                model.populations[{static_cast<mio::mpm::Region>(k), static_cast<Status>(i)}] = pop_dists_scaled[k][i];
             }
         }
         model.parameters.template get<TransitionRates<Status>>() = transition_rates;
@@ -59,7 +60,7 @@ struct ModelSetup {
     double contact_radius;
     //PDMM requirements
     std::vector<TransitionRate<Status>> transition_rates;
-    std::vector<std::vector<double>> pop_dists;
+    std::vector<std::vector<double>> pop_dists_scaled;
 
     ModelSetup(double t_Exposed, double t_Carrier, double t_Infected, double transmission_rate, double mu_C_R,
                double mu_I_D, const Date start_date, const std::vector<int>& region_ids,
@@ -67,7 +68,8 @@ struct ModelSetup {
                Eigen::Ref<const Eigen::MatrixXi> metaregions, const double tmax, double dt,
                Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> commute_weights,
                const WeightedGradient& wg, const std::vector<double>& sigmas, double contact_radius,
-               const std::map<std::tuple<Region, Region>, double>& transition_factors)
+               const std::map<std::tuple<Region, Region>, double>& transition_factors,
+               double scaling_factor_infected = 1.0)
         : t_Exposed(t_Exposed)
         , t_Carrier(t_Carrier)
         , t_Infected(t_Infected)
@@ -95,12 +97,18 @@ struct ModelSetup {
             return std::make_tuple(get_region_id(a), a.date) < std::make_tuple(get_region_id(b), b.date);
         });
 
-        pop_dists = set_confirmed_case_data(confirmed_cases, region_ids, populations, start_date, t_Exposed, t_Carrier,
-                                            t_Infected, mu_C_R)
-                        .value();
-
+        std::vector<std::vector<double>> pop_dists =
+            set_confirmed_case_data(confirmed_cases, region_ids, populations, start_date, t_Exposed, t_Carrier,
+                                    t_Infected, mu_C_R, scaling_factor_infected)
+                .value();
+        std::copy(pop_dists.begin(), pop_dists.end(), std::back_inserter(pop_dists_scaled));
+        for (size_t region = 0; region < region_ids.size(); ++region) {
+            std::transform(pop_dists_scaled[region].begin(), pop_dists_scaled[region].end(),
+                           pop_dists_scaled[region].begin(), [&persons_per_agent](auto& c) {
+                               return c / persons_per_agent;
+                           });
+        }
         agents = create_agents(pop_dists, populations, persons_per_agent, {metaregions}, false).value();
-
         //adoption_rates
         for (int i = 0; i < metaregions.maxCoeff(); ++i) {
             adoption_rates.push_back(
@@ -114,7 +122,6 @@ struct ModelSetup {
 
         std::vector<Status> transitioning_states{Status::S, Status::E, Status::C, Status::I, Status::R};
         //No adapted transition behaviour when infected
-        std::vector<mio::mpm::TransitionRate<Status>> transition_rates;
         for (auto& rate : transition_factors) {
             for (auto s : transitioning_states) {
                 transition_rates.push_back({s, std::get<0>(rate.first), std::get<1>(rate.first), rate.second});
