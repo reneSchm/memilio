@@ -99,7 +99,7 @@ double single_run_infection_state_error(const FittingFunctionSetup& ffs, double 
     mio::TimeSeries<double> flows(flow_ts.get_num_elements());
     size_t t     = 0;
     size_t t_int = 0;
-    for (size_t t_int = 0; t_int < interpolated_flows.get_num_time_points(); ++t_int) {
+    for (; t_int < interpolated_flows.get_num_time_points(); ++t_int) {
         Eigen::VectorXd acc_flows = Eigen::VectorXd::Zero(interpolated_flows.get_num_elements());
         while (flow_ts.get_time(t) < interpolated_flows.get_time(t_int)) {
             acc_flows += flow_ts.get_value(t);
@@ -118,14 +118,14 @@ double single_run_infection_state_error(const FittingFunctionSetup& ffs, double 
     std::vector<double> l_2(static_cast<size_t>(ffs.tmax));
     for (size_t d = 0; d < ffs.tmax; ++d) {
         auto confirmed_per_region = get_cases_at_date(ffs.confirmed_new_infections, ffs.regions, date);
+        auto flows_simulated      = flows.get_value(d);
         for (size_t region = 0; region < ffs.regions.size(); ++region) {
-            auto flows_simulated  = flows.get_value(d);
             double new_infections = 0.1 * flows_simulated[get_region_flow_index(region, Status::E, Status::C)] +
                                     flows_simulated[get_region_flow_index(region, Status::C, Status::I)];
             auto error = std::abs(confirmed_per_region.at(ffs.regions[region]) - new_infections);
             l_2[d] += error * error;
         }
-        l_2[t] = std::sqrt(l_2[t]);
+        l_2[d] = std::sqrt(l_2[d]);
         date   = mio::offset_date_by_days(date, 1);
     }
 #else
@@ -251,7 +251,7 @@ int main()
         }
     }
     std::vector<mio::ConfirmedCasesDataEntry> confirmed_new_infections =
-        mio::read_confirmed_cases_data(mio::base_dir() + "/data/Germany/new_infections_all_county_ma7.json").value();
+        mio::read_confirmed_cases_data(mio::base_dir() + "/data/Germany/new_infections_all_county_ma.json").value();
     std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =
         mio::read_confirmed_cases_data(mio::base_dir() + "/data/Germany/cases_all_county_age_ma7.json").value();
     const double tmax    = 30;
@@ -280,7 +280,7 @@ int main()
         },
         {2.67, 2.67, 5, 0.1, 0.25/*, 0.002*/}, // lower bounds
         {4, 4, 9, 0.3, 1.25/*, 0.005*/}, // upper bounds
-        std::chrono::seconds(3) // run this long
+        std::chrono::hours(16) // run this long
     );
 
     std::cout << "Minimizer:\n";
