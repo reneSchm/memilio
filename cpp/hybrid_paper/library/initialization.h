@@ -10,6 +10,7 @@
 #include "memilio/utils/logging.h"
 #include "mpm/abm.h"
 #include <cstddef>
+#include <map>
 
 namespace mio
 {
@@ -46,6 +47,9 @@ mio::IOResult<std::vector<std::vector<double>>>
 set_confirmed_case_data(const std::vector<mio::ConfirmedCasesDataEntry>& confirmed_case_data,
                         const std::vector<int>& regions, const std::vector<double>& populations, mio::Date start_date,
                         double t_E, double t_C, double t_I, double mu_C_R, double scaling_factor_infected = 1.0);
+
+std::map<int, double> get_cases_at_date(const std::vector<mio::ConfirmedCasesDataEntry>& confirmed_case_data,
+                                        const std::vector<int>& regions, mio::Date date);
 
 template <class Agent>
 void read_initialization(std::string filename, std::vector<Agent>& agents)

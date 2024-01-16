@@ -27,6 +27,7 @@ enum class InfectionState
     Count
 };
 
+//adoption rates have to be provided in the same order
 std::map<std::tuple<InfectionState, InfectionState>, Eigen::Index> flow_indices{
     {{InfectionState::S, InfectionState::E}, Eigen::Index(0)},
     {{InfectionState::E, InfectionState::C}, Eigen::Index(1)},

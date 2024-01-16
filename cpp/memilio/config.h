@@ -31,5 +31,6 @@ using ScalarType = double;
 
 #define USE_MICROSTEPPING
 #define USE_POPULATION_CHANGE_ERROR
+#define USE_NEW_INFECTIONS
 
 #endif

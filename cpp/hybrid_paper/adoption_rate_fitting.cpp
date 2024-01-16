@@ -34,11 +34,13 @@ struct FittingFunctionSetup {
     mio::Date start_date;
     std::vector<mio::mpm::TransitionRate<Model::Compartments>> transition_rates;
     std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases;
+    std::vector<mio::ConfirmedCasesDataEntry> confirmed_new_infections;
 
     explicit FittingFunctionSetup(const std::vector<int>& regions, const std::vector<double>& inhabitants,
                                   const mio::Date start_date, const double tmax, double dt,
                                   const std::vector<mio::mpm::TransitionRate<Model::Compartments>>& transition_rates,
-                                  std::vector<mio::ConfirmedCasesDataEntry>& confirmed_cases)
+                                  std::vector<mio::ConfirmedCasesDataEntry>& confirmed_cases,
+                                  std::vector<mio::ConfirmedCasesDataEntry>& confirmed_new_infections)
         : tmax(tmax)
         , dt(dt)
         , regions(regions)
@@ -46,6 +48,7 @@ struct FittingFunctionSetup {
         , start_date(start_date)
         , transition_rates(transition_rates)
         , confirmed_cases(confirmed_cases)
+        , confirmed_new_infections(confirmed_new_infections)
     {
         std::sort(confirmed_cases.begin(), confirmed_cases.end(), [](auto&& a, auto&& b) {
             return std::make_tuple(get_region_id(a), a.date) < std::make_tuple(get_region_id(b), b.date);
@@ -87,7 +90,46 @@ double single_run_infection_state_error(const FittingFunctionSetup& ffs, double 
         adoption_rates.push_back({Status::I, Status::D, mio::mpm::Region(i), mu_I_D / t_Infected});
     }
     model.parameters.get<mio::mpm::AdoptionRates<Status>>() = adoption_rates;
-    auto result                                             = mio::simulate(0, ffs.tmax, ffs.dt, model);
+#ifdef USE_NEW_INFECTIONS
+    auto sim = mio::Simulation<Model>(model, 0.0, ffs.dt);
+    sim.advance(ffs.tmax);
+    //accumulate flows
+    auto flow_ts            = *(sim.get_model().all_flows);
+    auto interpolated_flows = mio::interpolate_simulation_result(flow_ts);
+    mio::TimeSeries<double> flows(flow_ts.get_num_elements());
+    size_t t     = 0;
+    size_t t_int = 0;
+    for (size_t t_int = 0; t_int < interpolated_flows.get_num_time_points(); ++t_int) {
+        Eigen::VectorXd acc_flows = Eigen::VectorXd::Zero(interpolated_flows.get_num_elements());
+        while (flow_ts.get_time(t) < interpolated_flows.get_time(t_int)) {
+            acc_flows += flow_ts.get_value(t);
+            ++t;
+        }
+        acc_flows += interpolated_flows.get_value(t_int);
+        if (t_int > 0) {
+            acc_flows -= interpolated_flows.get_value(t_int - 1);
+        }
+        flows.add_time_point(interpolated_flows.get_time(t_int), acc_flows);
+        if (flow_ts.get_time(t) == interpolated_flows.get_time(t_int)) {
+            ++t;
+        }
+    }
+    mio::Date date = mio::offset_date_by_days(ffs.start_date, 1);
+    std::vector<double> l_2(static_cast<size_t>(ffs.tmax));
+    for (size_t d = 0; d < ffs.tmax; ++d) {
+        auto confirmed_per_region = get_cases_at_date(ffs.confirmed_new_infections, ffs.regions, date);
+        for (size_t region = 0; region < ffs.regions.size(); ++region) {
+            auto flows_simulated  = flows.get_value(d);
+            double new_infections = 0.1 * flows_simulated[get_region_flow_index(region, Status::E, Status::C)] +
+                                    flows_simulated[get_region_flow_index(region, Status::C, Status::I)];
+            auto error = std::abs(confirmed_per_region.at(ffs.regions[region]) - new_infections);
+            l_2[d] += error * error;
+        }
+        l_2[t] = std::sqrt(l_2[t]);
+        date   = mio::offset_date_by_days(date, 1);
+    }
+#else
+    auto result = mio::simulate(0, ffs.tmax, ffs.dt, model);
     //interpolate result to full days
     auto interpolated_result = mio::interpolate_simulation_result(result);
 
@@ -114,6 +156,7 @@ double single_run_infection_state_error(const FittingFunctionSetup& ffs, double 
         l_2[t] = std::sqrt(l_2[t]);
         date   = mio::offset_date_by_days(date, 1);
     }
+#endif
     //return mean over all timesteps
     return std::accumulate(l_2.begin(), l_2.end(), 0.0) / l_2.size();
 }
@@ -197,7 +240,9 @@ int main()
     //         }
     //     }
     // }
-    std::vector<Status> transitioning_states{Status::S, Status::E, Status::C, Status::I, Status::R};
+    std::vector<Status> transitioning_states{
+        Status::S, Status::E, Status::C,
+        Status::I /*, Status::R*/}; //moving agents of status R is not relevant for fitting
     //No adapted transition behaviour when infected
     std::vector<mio::mpm::TransitionRate<Status>> transition_rates;
     for (auto& rate : factors) {
@@ -205,23 +250,26 @@ int main()
             transition_rates.push_back({s, std::get<0>(rate.first), std::get<1>(rate.first), rate.second});
         }
     }
+    std::vector<mio::ConfirmedCasesDataEntry> confirmed_new_infections =
+        mio::read_confirmed_cases_data(mio::base_dir() + "/data/Germany/new_infections_all_county_ma7.json").value();
     std::vector<mio::ConfirmedCasesDataEntry> confirmed_cases =
         mio::read_confirmed_cases_data(mio::base_dir() + "/data/Germany/cases_all_county_age_ma7.json").value();
     const double tmax    = 30;
     double dt            = 0.1;
     mio::Date start_date = mio::Date(2021, 3, 1);
     //mio::Date start_date = mio::Date(2021, 4, 1);
-    const FittingFunctionSetup ffs(regions, populations, start_date, tmax, dt, transition_rates, confirmed_cases);
+    const FittingFunctionSetup ffs(regions, populations, start_date, tmax, dt, transition_rates, confirmed_cases,
+                                   confirmed_new_infections);
 
     std::cout << "Total threads:           " << dlib::default_thread_pool().num_threads_in_pool() << "\n";
     const int num_runs = 10;
-    auto result        = dlib::find_min_global(
-               dlib::default_thread_pool(),
-               [&](double t_Exposed, double t_Carrier, double t_Infected, double mu_C_R, double transmission_rate,
-            double mu_I_D) {
+    auto result = dlib::find_min_global(dlib::default_thread_pool(),
+        [&](double t_Exposed, double t_Carrier, double t_Infected, double mu_C_R, double transmission_rate/*,
+            double mu_I_D*/) {
+            double mu_I_D = 0.0;
             // calculate error
             auto err = average_run_infection_state_error(ffs, t_Exposed, t_Carrier, t_Infected, mu_C_R,
-                                                                transmission_rate, mu_I_D, num_runs);
+                                                         transmission_rate, mu_I_D, num_runs);
 
             dlib::auto_mutex lock_printing_until_end_of_scope(print_mutex);
             std::cerr << " t_E: " << t_Exposed << ", t_C: " << t_Carrier << ", t_I: " << t_Infected << "\n";
@@ -230,10 +278,10 @@ int main()
             std::cerr << "E: " << err << "\n\n";
             return err;
         },
-               {2.67, 2.67, 5, 0.1, 0.25, 0.002}, // lower bounds
-               {4, 4, 9, 0.3, 1.25, 0.005}, // upper bounds
-               std::chrono::hours(70) // run this long
-           );
+        {2.67, 2.67, 5, 0.1, 0.25/*, 0.002*/}, // lower bounds
+        {4, 4, 9, 0.3, 1.25/*, 0.005*/}, // upper bounds
+        std::chrono::seconds(3) // run this long
+    );
 
     std::cout << "Minimizer:\n";
     for (size_t param = 0; param < result.x.size(); ++param) {

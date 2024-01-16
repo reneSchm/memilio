@@ -143,3 +143,24 @@ set_confirmed_case_data(const std::vector<mio::ConfirmedCasesDataEntry>& confirm
 
     return mio::success(pop_dist_per_region);
 }
+
+std::map<int, double> get_cases_at_date(const std::vector<mio::ConfirmedCasesDataEntry>& confirmed_case_data,
+                                        const std::vector<int>& regions, mio::Date date)
+{
+    std::map<int, double> cases;
+    for (auto& region_id : regions) {
+        //get entries for region
+        auto region_entry_range_it =
+            std::equal_range(confirmed_case_data.begin(), confirmed_case_data.end(), region_id, [](auto&& a, auto&& b) {
+                return get_region_id(a) < get_region_id(b);
+            });
+        auto region_entry_range = mio::make_range(region_entry_range_it);
+        for (auto&& entry : region_entry_range) {
+            if (date == entry.date) {
+                cases[region_id] = entry.num_confirmed;
+                break;
+            }
+        }
+    }
+    return cases;
+}
