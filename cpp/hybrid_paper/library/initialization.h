@@ -41,14 +41,18 @@ inline int get_region_id(int id)
 mio::IOResult<std::vector<std::vector<double>>>
 set_confirmed_case_data(std::vector<mio::ConfirmedCasesDataEntry>& confirmed_case_data, const std::vector<int>& regions,
                         const std::vector<double>& populations, mio::Date start_date, double t_E, double t_C,
-                        double t_I, double mu_C_R, double scaling_factor_infected = 1.0);
+                        double t_I, double mu_C_R, double scaling_factor_infected = 1.0,
+                        bool set_only_infected = false);
 
 mio::IOResult<std::vector<std::vector<double>>>
 set_confirmed_case_data(const std::vector<mio::ConfirmedCasesDataEntry>& confirmed_case_data,
                         const std::vector<int>& regions, const std::vector<double>& populations, mio::Date start_date,
-                        double t_E, double t_C, double t_I, double mu_C_R, double scaling_factor_infected = 1.0);
+                        double t_E, double t_C, double t_I, double mu_C_R, double scaling_factor_infected = 1.0,
+                        bool set_only_infected = false);
 
 std::map<int, double> get_cases_at_date(const std::vector<mio::ConfirmedCasesDataEntry>& confirmed_case_data,
+                                        const std::vector<int>& regions, mio::Date date);
+std::map<int, double> get_cases_at_date(std::vector<mio::ConfirmedCasesDataEntry>& confirmed_case_data,
                                         const std::vector<int>& regions, mio::Date date);
 
 template <class Agent>

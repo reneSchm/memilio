@@ -69,7 +69,7 @@ struct ModelSetup {
                Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> commute_weights,
                const WeightedGradient& wg, const std::vector<double>& sigmas, double contact_radius,
                const std::map<std::tuple<Region, Region>, double>& transition_factors,
-               double scaling_factor_infected = 1.0)
+               double scaling_factor_infected = 1.0, bool set_only_infected = false)
         : t_Exposed(t_Exposed)
         , t_Carrier(t_Carrier)
         , t_Infected(t_Infected)
@@ -99,7 +99,7 @@ struct ModelSetup {
 
         std::vector<std::vector<double>> pop_dists =
             set_confirmed_case_data(confirmed_cases, region_ids, populations, start_date, t_Exposed, t_Carrier,
-                                    t_Infected, mu_C_R, scaling_factor_infected)
+                                    t_Infected, mu_C_R, scaling_factor_infected, set_only_infected)
                 .value();
         std::copy(pop_dists.begin(), pop_dists.end(), std::back_inserter(pop_dists_scaled));
         for (size_t region = 0; region < region_ids.size(); ++region) {
