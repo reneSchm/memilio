@@ -82,6 +82,7 @@ void run(Model model, size_t num_runs, double tmax, double dt, size_t num_region
         num_runs, mio::TimeSeries<double>::zero(tmax, num_regions * static_cast<size_t>(Status::Count)));
     TIME_TYPE total_sim_time = TIME_NOW;
     for (int run = 0; run < num_runs; ++run) {
+        std::cout << "run: " << run << "\n";
         auto run_result       = mio::simulate(0.0, tmax, dt, model);
         ensemble_results[run] = mio::interpolate_simulation_result(run_result);
     }
@@ -133,99 +134,100 @@ int main()
     using PDMM   = mio::mpm::PDMModel<8, Status>;
 
     //parameters for model setup
-    mio::Date start_date             = mio::Date(2021, 3, 1);
-    double t_Exposed                 = 4;
-    double t_Carrier                 = 2.67;
-    double t_Infected                = 5.03;
-    double mu_C_R                    = 0.29;
-    double transmission_rate         = 1.0;
-    double mu_I_D                    = 0.00476;
-    double scaling_factor_trans_rate = 1.0;
-    double contact_radius            = 50;
-    double persons_per_agent         = 300;
-    double tmax                      = 30;
-    double dt                        = 0.1;
-    size_t num_runs                  = 10;
+    // mio::Date start_date             = mio::Date(2021, 3, 1);
+    // double t_Exposed                 = 4;
+    // double t_Carrier                 = 2.67;
+    // double t_Infected                = 5.03;
+    // double mu_C_R                    = 0.29;
+    // double transmission_rate         = 1.0;
+    // double mu_I_D                    = 0.00476;
+    // double scaling_factor_trans_rate = 1.0;
+    // double contact_radius            = 50;
+    // double persons_per_agent         = 300;
+    // double tmax                      = 30;
+    // double dt                        = 0.1;
 
-    std::vector<int> regions        = {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175};
-    std::vector<double> populations = {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
+    // std::vector<int> regions        = {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175};
+    // std::vector<double> populations = {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
 
-    Eigen::MatrixXi metaregions;
-    {
-        const auto fname = mio::base_dir() + "metagermany.pgm";
-        std::ifstream ifile(fname);
-        if (!ifile.is_open()) {
-            mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
-            std::abort();
-        }
-        else {
-            metaregions = mio::mpm::read_pgm_raw(ifile).first;
-            ifile.close();
-        }
-    }
+    // Eigen::MatrixXi metaregions;
+    // {
+    //     const auto fname = mio::base_dir() + "metagermany.pgm";
+    //     std::ifstream ifile(fname);
+    //     if (!ifile.is_open()) {
+    //         mio::log(mio::LogLevel::critical, "Could not open file {}", fname);
+    //         std::abort();
+    //     }
+    //     else {
+    //         metaregions = mio::mpm::read_pgm_raw(ifile).first;
+    //         ifile.close();
+    //     }
+    // }
 
-    size_t num_regions = metaregions.maxCoeff();
+    // size_t num_regions = metaregions.maxCoeff();
 
-    WeightedGradient wg(mio::base_dir() + "potentially_germany_grad.json", mio::base_dir() + "boundary_ids.pgm");
-    const std::vector<double> weights(14, 500);
-    const std::vector<double> sigmas(metaregions.maxCoeff(), 10);
-    wg.apply_weights(weights);
+    // WeightedGradient wg(mio::base_dir() + "potentially_germany_grad.json", mio::base_dir() + "boundary_ids.pgm");
+    // const std::vector<double> weights(14, 500);
+    // const std::vector<double> sigmas(metaregions.maxCoeff(), 10);
+    // wg.apply_weights(weights);
 
-    const std::vector<int> county_ids   = {233, 228, 242, 223, 238, 232, 231, 229};
-    Eigen::MatrixXd reference_commuters = get_transition_matrix(mio::base_dir() + "data/mobility/").value();
+    // const std::vector<int> county_ids   = {233, 228, 242, 223, 238, 232, 231, 229};
+    // Eigen::MatrixXd reference_commuters = get_transition_matrix(mio::base_dir() + "data/mobility/").value();
 
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> commute_weights(metaregions.maxCoeff(),
-                                                                                           metaregions.maxCoeff());
-    commute_weights.setZero();
-    for (int i = 0; i < num_regions; i++) {
-        for (int j = 0; j < num_regions; j++) {
-            if (i != j) {
-                commute_weights(i, j) = reference_commuters(county_ids[i], county_ids[j]);
-            }
-        }
-        commute_weights(i, i) = populations[i] - commute_weights.row(i).sum();
-    }
+    // Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> commute_weights(metaregions.maxCoeff(),
+    //                                                                                        metaregions.maxCoeff());
+    // commute_weights.setZero();
+    // for (int i = 0; i < num_regions; i++) {
+    //     for (int j = 0; j < num_regions; j++) {
+    //         if (i != j) {
+    //             commute_weights(i, j) = reference_commuters(county_ids[i], county_ids[j]);
+    //         }
+    //     }
+    //     commute_weights(i, i) = populations[i] - commute_weights.row(i).sum();
+    // }
 
-    std::map<std::tuple<Region, Region>, double> transition_factors{
-        {{Region(0), Region(1)}, 0.000958613}, {{Region(0), Region(2)}, 0.00172736},
-        {{Region(0), Region(3)}, 0.0136988},   {{Region(0), Region(4)}, 0.00261568},
-        {{Region(0), Region(5)}, 0.000317227}, {{Region(0), Region(6)}, 0.000100373},
-        {{Region(0), Region(7)}, 0.00012256},  {{Region(1), Region(0)}, 0.000825387},
-        {{Region(1), Region(2)}, 0.00023648},  {{Region(1), Region(3)}, 0.0112213},
-        {{Region(1), Region(4)}, 0.00202101},  {{Region(1), Region(5)}, 0.00062912},
-        {{Region(1), Region(6)}, 0.000201067}, {{Region(1), Region(7)}, 0.000146773},
-        {{Region(2), Region(0)}, 0.000712533}, {{Region(2), Region(1)}, 0.000102613},
-        {{Region(2), Region(3)}, 0.00675979},  {{Region(2), Region(4)}, 0.00160171},
-        {{Region(2), Region(5)}, 0.000175467}, {{Region(2), Region(6)}, 0.00010336},
-        {{Region(2), Region(7)}, 6.21867e-05}, {{Region(3), Region(0)}, 0.00329632},
-        {{Region(3), Region(1)}, 0.00322347},  {{Region(3), Region(2)}, 0.00412565},
-        {{Region(3), Region(4)}, 0.0332566},   {{Region(3), Region(5)}, 0.00462197},
-        {{Region(3), Region(6)}, 0.00659424},  {{Region(3), Region(7)}, 0.00255147},
-        {{Region(4), Region(0)}, 0.000388373}, {{Region(4), Region(1)}, 0.000406827},
-        {{Region(4), Region(2)}, 0.000721387}, {{Region(4), Region(3)}, 0.027394},
-        {{Region(4), Region(5)}, 0.00127328},  {{Region(4), Region(6)}, 0.00068224},
-        {{Region(4), Region(7)}, 0.00104491},  {{Region(5), Region(0)}, 0.00013728},
-        {{Region(5), Region(1)}, 0.000475627}, {{Region(5), Region(2)}, 0.00010688},
-        {{Region(5), Region(3)}, 0.00754293},  {{Region(5), Region(4)}, 0.0034704},
-        {{Region(5), Region(6)}, 0.00210027},  {{Region(5), Region(7)}, 0.000226667},
-        {{Region(6), Region(0)}, 7.264e-05},   {{Region(6), Region(1)}, 0.0001424},
-        {{Region(6), Region(2)}, 9.55733e-05}, {{Region(6), Region(3)}, 0.00921109},
-        {{Region(6), Region(4)}, 0.0025216},   {{Region(6), Region(5)}, 0.00266944},
-        {{Region(6), Region(7)}, 0.00156053},  {{Region(7), Region(0)}, 7.81867e-05},
-        {{Region(7), Region(1)}, 0.0001024},   {{Region(7), Region(2)}, 8.256e-05},
-        {{Region(7), Region(3)}, 0.00833152},  {{Region(7), Region(4)}, 0.00393717},
-        {{Region(7), Region(5)}, 0.000354987}, {{Region(7), Region(6)}, 0.00055456}};
+    // std::map<std::tuple<Region, Region>, double> transition_factors{
+    //     {{Region(0), Region(1)}, 0.000958613}, {{Region(0), Region(2)}, 0.00172736},
+    //     {{Region(0), Region(3)}, 0.0136988},   {{Region(0), Region(4)}, 0.00261568},
+    //     {{Region(0), Region(5)}, 0.000317227}, {{Region(0), Region(6)}, 0.000100373},
+    //     {{Region(0), Region(7)}, 0.00012256},  {{Region(1), Region(0)}, 0.000825387},
+    //     {{Region(1), Region(2)}, 0.00023648},  {{Region(1), Region(3)}, 0.0112213},
+    //     {{Region(1), Region(4)}, 0.00202101},  {{Region(1), Region(5)}, 0.00062912},
+    //     {{Region(1), Region(6)}, 0.000201067}, {{Region(1), Region(7)}, 0.000146773},
+    //     {{Region(2), Region(0)}, 0.000712533}, {{Region(2), Region(1)}, 0.000102613},
+    //     {{Region(2), Region(3)}, 0.00675979},  {{Region(2), Region(4)}, 0.00160171},
+    //     {{Region(2), Region(5)}, 0.000175467}, {{Region(2), Region(6)}, 0.00010336},
+    //     {{Region(2), Region(7)}, 6.21867e-05}, {{Region(3), Region(0)}, 0.00329632},
+    //     {{Region(3), Region(1)}, 0.00322347},  {{Region(3), Region(2)}, 0.00412565},
+    //     {{Region(3), Region(4)}, 0.0332566},   {{Region(3), Region(5)}, 0.00462197},
+    //     {{Region(3), Region(6)}, 0.00659424},  {{Region(3), Region(7)}, 0.00255147},
+    //     {{Region(4), Region(0)}, 0.000388373}, {{Region(4), Region(1)}, 0.000406827},
+    //     {{Region(4), Region(2)}, 0.000721387}, {{Region(4), Region(3)}, 0.027394},
+    //     {{Region(4), Region(5)}, 0.00127328},  {{Region(4), Region(6)}, 0.00068224},
+    //     {{Region(4), Region(7)}, 0.00104491},  {{Region(5), Region(0)}, 0.00013728},
+    //     {{Region(5), Region(1)}, 0.000475627}, {{Region(5), Region(2)}, 0.00010688},
+    //     {{Region(5), Region(3)}, 0.00754293},  {{Region(5), Region(4)}, 0.0034704},
+    //     {{Region(5), Region(6)}, 0.00210027},  {{Region(5), Region(7)}, 0.000226667},
+    //     {{Region(6), Region(0)}, 7.264e-05},   {{Region(6), Region(1)}, 0.0001424},
+    //     {{Region(6), Region(2)}, 9.55733e-05}, {{Region(6), Region(3)}, 0.00921109},
+    //     {{Region(6), Region(4)}, 0.0025216},   {{Region(6), Region(5)}, 0.00266944},
+    //     {{Region(6), Region(7)}, 0.00156053},  {{Region(7), Region(0)}, 7.81867e-05},
+    //     {{Region(7), Region(1)}, 0.0001024},   {{Region(7), Region(2)}, 8.256e-05},
+    //     {{Region(7), Region(3)}, 0.00833152},  {{Region(7), Region(4)}, 0.00393717},
+    //     {{Region(7), Region(5)}, 0.000354987}, {{Region(7), Region(6)}, 0.00055456}};
 
-    //create model setup
-    mio::mpm::paper::ModelSetup<ABM::Agent> setup(
-        t_Exposed, t_Carrier, t_Infected, transmission_rate, mu_C_R, mu_I_D, start_date, regions, populations,
-        persons_per_agent, metaregions, tmax, dt, commute_weights, wg, sigmas, contact_radius, transition_factors);
+    // //create model setup
+    // mio::mpm::paper::ModelSetup<ABM::Agent> setup(
+    //     t_Exposed, t_Carrier, t_Infected, transmission_rate, mu_C_R, mu_I_D, start_date, regions, populations,
+    //     persons_per_agent, metaregions, tmax, dt, commute_weights, wg, sigmas, contact_radius, transition_factors, 10.0);
+    size_t num_runs = 1;
+    mio::mpm::paper::ModelSetup<ABM::Agent> setup;
 
-    ABM abm   = setup.create_abm<ABM>();
-    PDMM pdmm = setup.create_pdmm<PDMM>();
+    ABM abm = setup.create_abm<ABM>();
+    //PDMM pdmm = setup.create_pdmm<PDMM>();
 
-    run(abm, num_runs, tmax, dt, metaregions.maxCoeff(), true, "ABM");
-    run(pdmm, num_runs, tmax, dt, metaregions.maxCoeff(), true, "PDMM");
+    run(abm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), true, "ABM");
+    //run(pdmm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), true, "PDMM");
 
     return 0;
 }
