@@ -398,8 +398,9 @@ private:
             assert(m_metaregions(a.commuting_destination[0], a.commuting_destination[1]) - 1 == destination_region);
             //TODO: anschauen, was Normalverteilung mit den Parametern macht
             //TODO: Zeitmessung triangular dist & normal dist übergeben
-            a.t_return = t + mio::ParameterDistributionNormal(9.0 / 24.0, 23.0 / 24.0, 18.0 / 24.0).get_rand_sample();
-            a.t_depart = TriangularDistribution(a.t_return - dt, t, t + 9.0 / 24.0).get_instance();
+            a.t_return = t + mio::ParameterDistributionNormal(13.0 / 24.0, 23.0 / 24.0, 18.0 / 24.0).get_rand_sample();
+            // a.t_depart = TriangularDistribution(a.t_return - dt, t, t + 9.0 / 24.0).get_instance();
+            a.t_depart = t + mio::ParameterDistributionNormal(5.0 / 24.0, 9.0 / 24.0, 13.0 / 24.0).get_rand_sample();
 
             assert(m_k.is_in_interval(a.t_return, t, t + 1));
             assert(m_k.is_in_interval(a.t_depart, t, t + 1));

@@ -1,9 +1,11 @@
 #include "hybrid_paper/library/infection_state.h"
 #include "hybrid_paper/library/initialization.h"
 #include "hybrid_paper/library/model_setup.h"
+#include "memilio/utils/random_number_generator.h"
 #include "mpm/abm.h"
 #include "hybrid_paper/library/potentials/commuting_potential.h"
 #include "mpm/pdmm.h"
+#include <cmath>
 #include <string>
 
 #define TIME_TYPE std::chrono::high_resolution_clock::time_point
@@ -136,6 +138,10 @@ void run_simulation()
     auto simABM  = mio::Simulation<ABM>(abm, 0.0, dt);
     auto simPDMM = mio::Simulation<PDMM>(pdmm, 0.0, dt);
 
+    // set how many commuters enter the focus region each day
+    Eigen::VectorXd posteriori_commute_weight = setup.k_provider.metaregion_commute_weights.col(focus_region);
+    posteriori_commute_weight[focus_region]   = 0;
+
     for (double t = -dt;; t = std::min(t + dt, tmax)) {
         std::cerr << t << " / " << tmax << std::endl << std::flush;
         simABM.advance(t);
@@ -163,8 +169,21 @@ void run_simulation()
                 // auto p = simPDMM_state[pop.get_flat_index({focus_region, (InfectionState)i})];
                 auto& agents = pop[simPDMM.get_model().populations.get_flat_index({Region(focus_region), (Status)i})];
                 for (; agents > 0; agents -= 1) {
-                    simABM.get_model().populations.push_back(
-                        {setup.k_provider.metaregion_sampler(focus_region), (Status)i, focus_region});
+                    const double daytime = t - std::floor(t);
+                    if (daytime < 13. / 24.) {
+                        const size_t commuting_origin =
+                            mio::DiscreteDistribution<size_t>::get_instance()(posteriori_commute_weight);
+                        const double t_return =
+                            std::floor(t) +
+                            mio::ParameterDistributionNormal(13.0 / 24.0, 23.0 / 24.0, 18.0 / 24.0).get_rand_sample();
+                        simABM.get_model().populations.push_back(
+                            {setup.k_provider.metaregion_sampler(focus_region), (Status)i, focus_region, true,
+                             setup.k_provider.metaregion_sampler(commuting_origin), t_return, 0});
+                    }
+                    else {
+                        simABM.get_model().populations.push_back(
+                            {setup.k_provider.metaregion_sampler(focus_region), (Status)i, focus_region, false});
+                    }
                 }
             }
         }
