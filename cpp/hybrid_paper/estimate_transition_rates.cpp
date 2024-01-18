@@ -8,6 +8,7 @@
 
 #include "memilio/io/cli.h"
 
+#include <numeric>
 #include <vector>
 
 struct Tmax {
@@ -63,7 +64,8 @@ void print_transition_rates(std::vector<TransitionRate<InfectionState>>& transit
 
 template <class Potential>
 std::vector<TransitionRate<InfectionState>> calculate_transition_rates(ABM<Potential>& abm, size_t num_runs,
-                                                                       double tmax, size_t num_regions)
+                                                                       double tmax, size_t num_regions,
+                                                                       std::vector<double>& ref_pops)
 {
     std::vector<std::vector<TransitionRate<InfectionState>>> estimated_transition_rates(num_runs);
 
@@ -82,9 +84,11 @@ std::vector<TransitionRate<InfectionState>> calculate_transition_rates(ABM<Poten
         mio::Simulation<ABM<Potential>> sim(abm, 0, 0.05);
         sim.advance(tmax);
 
+        double scaling_factor = std::accumulate(ref_pops.begin(), ref_pops.end(), 0.0) / abm.populations.size();
         //add calculated transition rates
         for (auto& tr_rate : estimated_transition_rates[run]) {
-            tr_rate.factor = sim.get_model().number_commutes(tr_rate) / (abm.populations.size() * tmax);
+            auto region_pop = ref_pops[tr_rate.from.get()] / scaling_factor;
+            tr_rate.factor  = sim.get_model().number_transitions(tr_rate) / (region_pop * tmax);
         }
     }
 
@@ -169,6 +173,8 @@ int main(int argc, char** argv)
 
     const std::vector<int> county_ids   = {233, 228, 242, 223, 238, 232, 231, 229};
     Eigen::MatrixXd reference_commuters = get_transition_matrix(mio::base_dir() + "data/mobility/").value();
+    Eigen::MatrixXd reference_transitions_daily =
+        get_transition_matrix_daily_total(mio::base_dir() + "data/mobility/").value();
     auto ref_pops = std::vector<double>{218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
     auto ref_pop  = std::accumulate(ref_pops.begin(), ref_pops.end(), 0.0);
 
@@ -183,7 +189,9 @@ int main(int argc, char** argv)
     for (int i = 0; i < num_regions; i++) {
         for (int j = 0; j < num_regions; j++) {
             if (i != j) {
-                commute_weights(i, j) = reference_commuters(county_ids[i], county_ids[j]);
+                commute_weights(i, j) = reference_commuters(
+                    county_ids[i],
+                    county_ids[j]); //commute_weights(i,j)/persons_per_agents + (commute_weights(j,i)/ref_pop)
             }
         }
         commute_weights(i, i) = ref_pops[i] - commute_weights.row(i).sum();
@@ -233,18 +241,21 @@ int main(int argc, char** argv)
 
     //print_movement<Model>(agents, model, tmax, 0.1);
 
-    auto rates = calculate_transition_rates(model, 10, tmax, metaregions.maxCoeff());
+    auto rates = calculate_transition_rates(model, 10, tmax, metaregions.maxCoeff(), ref_pops);
 
     //check
     for (auto rate : rates) {
         //rates
         std::cout << rate.from << "->" << rate.to << ": rel: "
                   << colorize(rate.factor,
-                              commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)) / ref_pop);
+                              (commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)) +
+                               commute_weights(static_cast<size_t>(rate.to), static_cast<size_t>(rate.from))) /
+                                  ref_pops[rate.from.get()]);
         //number persons
         std::cout << " abs: "
                   << colorize(rate.factor * num_agents * persons_per_agent,
-                              commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)))
+                              (commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)) +
+                               commute_weights(static_cast<size_t>(rate.to), static_cast<size_t>(rate.from))))
                   << "\n";
     }
 

@@ -323,6 +323,11 @@ public:
         return m_flow_result;
     }
 
+    std::map<std::tuple<mio::mpm::Region, Status, Status>, mio::mpm::AdoptionRate<Status>>& get_adoption_rates()
+    {
+        return m_adoption_rates;
+    }
+
     bool is_contact(const Agent& agent, const Agent& contact) const
     {
         return (&agent != &contact) && // test if agent and contact are different objects
