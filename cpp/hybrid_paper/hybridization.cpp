@@ -113,12 +113,13 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
                     auto& agents = pop[index];
                     for (; agents > 0; agents -= 1) {
                         const double daytime = t - std::floor(t);
-                        if (daytime < 13. / 24.) {
+                        if (daytime <= 13. / 24.) {
                             const size_t commuting_origin =
                                 mio::DiscreteDistribution<size_t>::get_instance()(posteriori_commute_weight);
-                            const double t_return =
-                                std::floor(t) + mio::ParameterDistributionNormal(13.0 / 24.0, 23.0 / 24.0, 18.0 / 24.0)
-                                                    .get_rand_sample();
+                            const double t_return = std::floor(t) + mio::ParameterDistributionNormal(
+                                                                        13.0 / 24.0 + 1.01 * setup.dt,
+                                                                        23.0 / 24.0 - 1.01 * setup.dt, 18.0 / 24.0)
+                                                                        .get_rand_sample();
                             simABM.get_model().populations.push_back(
                                 {setup.k_provider.metaregion_sampler(focus_region), (Status)i, focus_region, true,
                                  setup.k_provider.metaregion_sampler(commuting_origin), t_return, 0});
