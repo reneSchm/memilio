@@ -48,6 +48,9 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
             tr = transition_rates.erase(tr);
         }
         else {
+            // tr->factor = (setup.commute_weights(static_cast<size_t>(tr->from), static_cast<size_t>(tr->to)) +
+            //               setup.commute_weights(static_cast<size_t>(tr->to), static_cast<size_t>(tr->from))) /
+            //              setup.populations[static_cast<size_t>(tr->from)];
             ++tr;
         }
     }
@@ -178,6 +181,32 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
             mio::mpm::print_to_file(file5, hybrid_flow_result, {});
             fclose(file5);
         }
+        // std::cout << "transitions ABM\n";
+        // for (size_t i = 0; i < num_regions; ++i) {
+        //     for (size_t j = 0; j < num_regions; ++j) {
+        //         if (i != j) {
+        //             double num_transitions = 0.0;
+        //             for (size_t s = 0; s < static_cast<size_t>(Status::Count); ++s) {
+        //                 num_transitions += simABM.get_model().number_transitions(
+        //                     {Status(s), mio::mpm::Region(i), mio::mpm::Region(j), 0.0});
+        //             }
+        //             std::cout << i << " -> " << j << ": " << num_transitions / setup.tmax << "\n";
+        //         }
+        //     }
+        // }
+        // std::cout << "transitions PDMM\n";
+        // for (size_t i = 0; i < num_regions; ++i) {
+        //     for (size_t j = 0; j < num_regions; ++j) {
+        //         if (i != j) {
+        //             double num_transitions = 0.0;
+        //             for (size_t s = 0; s < static_cast<size_t>(Status::Count); ++s) {
+        //                 num_transitions += simPDMM.get_model().number_transitions(
+        //                     {Status(s), mio::mpm::Region(i), mio::mpm::Region(j), 0.0});
+        //             }
+        //             std::cout << i << " -> " << j << ": " << num_transitions / setup.tmax << "\n";
+        //         }
+        //     }
+        // }
     }
     restart_timer(total_sim_time, "Time for simulation");
 

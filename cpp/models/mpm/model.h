@@ -105,6 +105,7 @@ public:
     MetapopulationModel()
         : Base(typename Base::Populations({static_cast<Region>(regions), Status::Count}, 0.),
                typename Base::ParameterSet())
+        , m_number_transitions(static_cast<size_t>(Status::Count), Eigen::MatrixXd::Zero(regions, regions))
     {
     }
 
@@ -192,6 +193,25 @@ public:
         const auto source = this->populations.get_flat_index({rate.from, rate.status});
         return rate.factor * x[source];
     }
+    double& number_transitions(const mpm::TransitionRate<Status>& tr) const
+    {
+        return m_number_transitions[static_cast<size_t>(tr.status)](static_cast<size_t>(tr.from),
+                                                                    static_cast<size_t>(tr.to));
+    }
+
+    const std::vector<Eigen::MatrixXd>& number_transitions() const
+    {
+        return m_number_transitions;
+    }
+
+    void increase_number_transitions(const mpm::TransitionRate<Status>& tr) const
+    {
+        m_number_transitions[static_cast<size_t>(tr.status)](static_cast<size_t>(tr.from),
+                                                             static_cast<size_t>(tr.to))++;
+    }
+
+private:
+    mutable std::vector<Eigen::MatrixXd> m_number_transitions;
 };
 
 } // namespace mpm

@@ -135,7 +135,7 @@ struct ModelSetup {
         : t_Exposed(3.67652)
         , t_Carrier(2.71414)
         , t_Infected(5)
-        , transmission_rates(std::vector<double>{0.6, 0.6, 0.45, 0.27, 0.27, 0.5, 0.45, 0.45})
+        , transmission_rates(std::vector<double>(8, 0.25))
         , mu_C_R(0.1)
         , mu_I_D(0.004)
         , start_date(mio::Date(2021, 3, 1))
@@ -155,7 +155,7 @@ struct ModelSetup {
                 return metaregions;
             }
         }())
-        , tmax(30) //TODO
+        , tmax(30)
         , dt(0.1)
         , commute_weights([]() {
             std::vector<double> populations     = {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};

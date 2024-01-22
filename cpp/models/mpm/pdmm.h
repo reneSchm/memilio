@@ -63,7 +63,6 @@ public:
         : m_dt(dt)
         , m_normalized_waiting_time(mio::ExponentialDistribution<ScalarType>::get_instance()(1.0))
         , m_rates(model.parameters.template get<mpm::TransitionRates<Status>>().size())
-        , m_model(std::make_unique<Model>(model))
         , m_simulation(Sim(model, t0, dt))
     {
         assert(dt > 0);
@@ -188,9 +187,9 @@ private:
         std::transform(transition_rates().begin(), transition_rates().end(), rates.begin(), [&](auto&& r) {
             // we should normalize each term by dividing by the cumulative transition rate,
             // but the DiscreteDistribution used for drawing "event" effectively does that for us
-            const ScalarType rate = m_model->evaluate(r, get_result().get_last_value());
+            const ScalarType rate = get_model().evaluate(r, get_result().get_last_value());
             const ScalarType from =
-                get_result().get_last_value()[m_model->populations.get_flat_index({r.from, r.status})];
+                get_result().get_last_value()[get_model().populations.get_flat_index({r.from, r.status})];
             // clamp rates to 0, if the adoption event would cause a negative value by moving 1 agent
             return from >= 1 ? rate : 0;
         });
@@ -201,13 +200,14 @@ private:
     {
         // get the rate corresponding to the event
         const auto& rate = transition_rates()[event];
+        get_model().increase_number_transitions(rate);
         // transitioning one person at the current time
-        get_result().get_last_value()[m_model->populations.get_flat_index({rate.from, rate.status})] -= 1;
-        get_result().get_last_value()[m_model->populations.get_flat_index({rate.to, rate.status})] += 1;
+        get_result().get_last_value()[get_model().populations.get_flat_index({rate.from, rate.status})] -= 1;
+        get_result().get_last_value()[get_model().populations.get_flat_index({rate.to, rate.status})] += 1;
     }
     inline constexpr const typename mpm::TransitionRates<Status>::Type& transition_rates()
     {
-        return m_model->parameters.template get<mpm::TransitionRates<Status>>();
+        return get_model().parameters.template get<mpm::TransitionRates<Status>>();
     }
     // retrieve dt_tracer& from m_simulation
     inline constexpr mpm::dt_tracer& get_dt_tracer()
@@ -218,7 +218,6 @@ private:
     ScalarType m_dt;
     ScalarType m_normalized_waiting_time; // tau'
     std::vector<ScalarType> m_rates; // lambda_m (for all m)
-    std::unique_ptr<const Model> m_model;
     Sim m_simulation;
 };
 

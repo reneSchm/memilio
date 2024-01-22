@@ -251,12 +251,6 @@ int main(int argc, char** argv)
                               (commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)) +
                                commute_weights(static_cast<size_t>(rate.to), static_cast<size_t>(rate.from))) /
                                   ref_pops[rate.from.get()]);
-        //number persons
-        std::cout << " abs: "
-                  << colorize(rate.factor * num_agents * persons_per_agent,
-                              (commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)) +
-                               commute_weights(static_cast<size_t>(rate.to), static_cast<size_t>(rate.from))))
-                  << "\n";
     }
 
     return 0;

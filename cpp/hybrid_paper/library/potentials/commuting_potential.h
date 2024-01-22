@@ -156,6 +156,7 @@ public:
         , m_potential_gradient(potential_gradient)
         , m_flow_result(Eigen::Index(m_metaregions.maxCoeff() * mio::mpm::paper::flow_indices.size()))
         , m_flows(Eigen::VectorXd::Zero(m_metaregions.maxCoeff() * mio::mpm::paper::flow_indices.size()))
+        , m_last_commuting_draw_time(-1.0)
 
     {
         for (auto& agent : populations) {
@@ -230,7 +231,10 @@ public:
         if (std::find(m_non_moving_states.begin(), m_non_moving_states.end(), agent.status) ==
             m_non_moving_states.end()) {
             //commuting parameters are drawn at the beginning of every new day
-            if (mio::floating_point_equal(t, std::round(t), 1e-10)) {
+            if (std::floor(t) > std::floor(m_last_commuting_draw_time)) {
+                m_last_commuting_draw_time = t;
+            }
+            if (mio::floating_point_equal(m_last_commuting_draw_time, t, 1e-10)) {
                 draw_commuting_parameters(agent, t, dt);
             }
             Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
@@ -405,7 +409,7 @@ private:
             //TODO: Zeitmessung triangular dist & normal dist übergeben
             a.t_return = t + mio::ParameterDistributionNormal(13.0 / 24.0, 23.0 / 24.0, 18.0 / 24.0).get_rand_sample();
             // a.t_depart = TriangularDistribution(a.t_return - dt, t, t + 9.0 / 24.0).get_instance();
-            a.t_depart = t + mio::ParameterDistributionNormal(5.0 / 24.0, 9.0 / 24.0, 13.0 / 24.0).get_rand_sample();
+            a.t_depart = t + mio::ParameterDistributionNormal(5.0 / 24.0, 13.0 / 24.0, 9.0 / 24.0).get_rand_sample();
 
             assert(m_k.is_in_interval(a.t_return, t, t + 1));
             assert(m_k.is_in_interval(a.t_depart, t, t + 1));
@@ -424,6 +428,7 @@ private:
     Eigen::Ref<const GradientMatrix> m_potential_gradient;
     mio::TimeSeries<ScalarType> m_flow_result;
     Eigen::VectorXd m_flows;
+    double m_last_commuting_draw_time;
 };
 
 #endif // COMMUTING_POTENTIAL_H_

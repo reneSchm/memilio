@@ -8,6 +8,8 @@
 #include "memilio/utils/time_series.h"
 #include "memilio/data/analyze_result.h"
 #include <cstddef>
+#include <memory>
+#include <numeric>
 
 #define TIME_TYPE std::chrono::high_resolution_clock::time_point
 #define TIME_NOW std::chrono::high_resolution_clock::now()
@@ -83,7 +85,21 @@ void run(Model model, size_t num_runs, double tmax, double dt, size_t num_region
     TIME_TYPE total_sim_time = TIME_NOW;
     for (int run = 0; run < num_runs; ++run) {
         std::cout << "run: " << run << "\n";
-        auto run_result       = mio::simulate(0.0, tmax, dt, model);
+        auto sim = mio::Simulation<Model>(model, 0.0, dt);
+        sim.advance(tmax);
+        auto& run_result = sim.get_result();
+        // for (size_t i = 0; i < num_regions; ++i) {
+        //     for (size_t j = 0; j < num_regions; ++j) {
+        //         if (i != j) {
+        //             double num_transitions = 0.0;
+        //             for (size_t s = 0; s < static_cast<size_t>(Status::Count); ++s) {
+        //                 num_transitions += sim.get_model().number_transitions(
+        //                     {Status(s), mio::mpm::Region(i), mio::mpm::Region(j), 0.0});
+        //             }
+        //             std::cout << i << " -> " << j << ": " << num_transitions / tmax << "\n";
+        //         }
+        //     }
+        // }
         ensemble_results[run] = mio::interpolate_simulation_result(run_result);
     }
     restart_timer(total_sim_time, "Time for simulation")
@@ -223,11 +239,43 @@ int main()
     size_t num_runs = 1;
     mio::mpm::paper::ModelSetup<ABM::Agent> setup;
 
-    ABM abm = setup.create_abm<ABM>();
-    //PDMM pdmm = setup.create_pdmm<PDMM>();
+    ABM abm   = setup.create_abm<ABM>();
+    PDMM pdmm = setup.create_pdmm<PDMM>();
+
+    // std::cout << "Transitions real per day\n";
+    // for (size_t i = 0; i < setup.metaregions.maxCoeff(); ++i) {
+    //     for (size_t j = 0; j < setup.metaregions.maxCoeff(); ++j) {
+    //         if (i != j) {
+    //             std::cout << i << " -> " << j << ": "
+    //                       << (setup.commute_weights(i, j) + setup.commute_weights(j, i)) / setup.persons_per_agent
+    //                       << "\n";
+    //         }
+    //     }
+    // }
+
+    // std::cout << "Commuters real per day\n";
+    // for (size_t i = 0; i < setup.metaregions.maxCoeff(); ++i) {
+    //     for (size_t j = 0; j < setup.metaregions.maxCoeff(); ++j) {
+    //         if (i != j) {
+    //             std::cout << i << " -> " << j << ": " << (setup.commute_weights(i, j)) / setup.persons_per_agent
+    //                       << "\n";
+    //         }
+    //     }
+    // }
+
+    auto& transition_rates = pdmm.parameters.get<mio::mpm::TransitionRates<Status>>();
+    for (auto& rate : transition_rates) {
+        rate.factor = (setup.commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)) +
+                       setup.commute_weights(static_cast<size_t>(rate.to), static_cast<size_t>(rate.from))) /
+                      setup.populations[static_cast<size_t>(rate.from)];
+    }
+
+    //std::cout << (setup.commute_weights.array() / setup.persons_per_agent).matrix() << "\n";
+    std::cout << "num_agents_pdmm: " << pdmm.populations.get_total() << std::endl;
+    std::cout << "num_agents_abm: " << abm.populations.size() << std::endl;
 
     run(abm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), true, "ABM");
-    //run(pdmm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), true, "PDMM");
+    run(pdmm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), true, "PDMM");
 
     return 0;
 }
