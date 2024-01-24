@@ -117,8 +117,8 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
                             const size_t commuting_origin =
                                 mio::DiscreteDistribution<size_t>::get_instance()(posteriori_commute_weight);
                             const double t_return = std::floor(t) + mio::ParameterDistributionNormal(
-                                                                        13.0 / 24.0 + 1.01 * setup.dt,
-                                                                        23.0 / 24.0 - 1.01 * setup.dt, 18.0 / 24.0)
+                                                                        13.0 / 24.0 + 1.1 * setup.dt,
+                                                                        23.0 / 24.0 - 1.1 * setup.dt, 18.0 / 24.0)
                                                                         .get_rand_sample();
                             simABM.get_model().populations.push_back(
                                 {setup.k_provider.metaregion_sampler(focus_region), (Status)i, focus_region, true,

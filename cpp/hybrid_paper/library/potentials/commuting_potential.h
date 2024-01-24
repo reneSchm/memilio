@@ -408,7 +408,7 @@ private:
             //TODO: anschauen, was Normalverteilung mit den Parametern macht
             //TODO: Zeitmessung triangular dist & normal dist übergeben
             a.t_return =
-                t + mio::ParameterDistributionNormal(13.0 / 24.0 + 1.01 * dt, 23.0 / 24.0 - 1.01 * dt, 18.0 / 24.0)
+                t + mio::ParameterDistributionNormal(13.0 / 24.0 + 1.1 * 0.1, 23.0 / 24.0 - 1.1 * 0.1, 18.0 / 24.0)
                         .get_rand_sample();
             // a.t_depart = TriangularDistribution(a.t_return - dt, t, t + 9.0 / 24.0).get_instance();
             a.t_depart = t + mio::ParameterDistributionNormal(5.0 / 24.0, 13.0 / 24.0, 9.0 / 24.0).get_rand_sample();
