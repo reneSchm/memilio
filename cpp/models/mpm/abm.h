@@ -82,7 +82,7 @@ public:
             ScalarType cumulative_adoption_rate =
                 std::accumulate(m_current_rates.begin(), m_current_rates.end(), 0.0); // Lambda
             // status update
-            if (waiting_time < cumulative_adoption_rate * m_dt) {
+            if (waiting_time < cumulative_adoption_rate * dt) {
                 // draw which adoption takes place
                 const size_t event_id = mio::DiscreteDistribution<size_t>::get_instance()(m_current_rates);
                 Event& event          = m_current_events[event_id];
@@ -94,7 +94,7 @@ public:
             }
             else {
                 // no event, decrease waiting time
-                waiting_time -= cumulative_adoption_rate * m_dt;
+                waiting_time -= cumulative_adoption_rate * dt;
             }
             // position update
             for (auto& agent : m_model->populations) {

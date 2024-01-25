@@ -10,6 +10,7 @@
 #include "memilio/data/analyze_result.h"
 #include "memilio/utils/random_number_generator.h"
 
+#include <ostream>
 #include <string>
 
 #define TIME_TYPE std::chrono::high_resolution_clock::time_point
@@ -73,22 +74,23 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
     std::vector<mio::TimeSeries<double>> ensemble_results_flows(
         num_runs, mio::TimeSeries<double>::zero(setup.tmax, num_regions * mio::mpm::paper::flow_indices.size()));
 
-    TIME_TYPE total_sim_time = TIME_NOW;
-
     // set how many commuters enter the focus region each day
     Eigen::VectorXd posteriori_commute_weight = setup.k_provider.metaregion_commute_weights.col(focus_region);
     posteriori_commute_weight[focus_region]   = 0;
 
+    mio::TimeSeries<double> hybrid_result(num_regions * static_cast<size_t>(Status::Count));
+
+    TIME_TYPE total_sim_time = TIME_NOW;
     for (size_t run = 0; run < num_runs; ++run) {
         std::cout << "run: " << run << "\n";
         auto simABM  = mio::Simulation<ABM>(abm, 0.0, setup.dt);
         auto simPDMM = mio::Simulation<PDMM>(pdmm, 0.0, setup.dt);
 
-        for (double t = -setup.dt;; t = std::min(t + setup.dt, setup.tmax)) {
+        for (double t = 0;; t = std::min(t + setup.dt, setup.tmax)) {
             simABM.advance(t);
             simPDMM.advance(t);
             { //move agents from abm to pdmm
-                const auto pop     = simPDMM.get_model().populations;
+                auto pop           = simPDMM.get_model().populations;
                 auto simPDMM_state = simPDMM.get_result().get_last_value();
                 auto& agents       = simABM.get_model().populations;
                 auto itr           = agents.begin();
@@ -97,6 +99,7 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
                         simABM.get_result().get_last_value()[simPDMM.get_model().populations.get_flat_index(
                             {Region(itr->region), itr->status})] -= 1;
                         simPDMM_state[pop.get_flat_index({Region(itr->region), itr->status})] += 1;
+                        pop[{Region(itr->region), itr->status}] += 1;
                         itr = agents.erase(itr);
                     }
                     else {
@@ -108,10 +111,11 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
                 auto pop = simPDMM.get_result().get_last_value();
                 for (int i = 0; i < (int)Status::Count; i++) {
                     // auto p = simPDMM_state[pop.get_flat_index({focus_region, (InfectionState)i})];
-                    auto index = simPDMM.get_model().populations.get_flat_index({Region(focus_region), (Status)i});
-                    simABM.get_result().get_last_value()[index] += 1;
+                    auto index   = simPDMM.get_model().populations.get_flat_index({Region(focus_region), (Status)i});
                     auto& agents = pop[index];
                     for (; agents > 0; agents -= 1) {
+                        simABM.get_result().get_last_value()[index] += 1;
+                        simPDMM.get_model().populations[{Region(focus_region), (Status)i}] -= 1;
                         const double daytime = t - std::floor(t);
                         if (daytime <= 13. / 24.) {
                             const size_t commuting_origin =
@@ -131,21 +135,16 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
                     }
                 }
             }
+            hybrid_result.add_time_point(t,
+                                         simABM.get_result().get_last_value() + simPDMM.get_result().get_last_value());
             if (t >= setup.tmax)
                 break;
         }
 
-        mio::TimeSeries<double> hybrid_result(num_regions * static_cast<size_t>(Status::Count));
         mio::TimeSeries<double> hybrid_flow_result(num_regions * mio::mpm::paper::flow_indices.size());
 
-        //save hybrid result
-        auto interpolated_abm_comps  = mio::interpolate_simulation_result(simABM.get_result());
-        auto interpolated_pdmm_comps = mio::interpolate_simulation_result(simPDMM.get_result());
-
-        for (size_t t = 0; t < interpolated_pdmm_comps.get_num_time_points(); ++t) {
-            hybrid_result.add_time_point(interpolated_pdmm_comps.get_time(t),
-                                         interpolated_pdmm_comps.get_value(t) + interpolated_abm_comps.get_value(t));
-        }
+        //interpolate result
+        auto interpolated_hybrid_result = mio::interpolate_simulation_result(hybrid_result);
 
         auto accumulated_abm_flows  = mio::mpm::accumulate_flows(simABM.get_model().get_flow_result());
         auto accumulated_pdmm_flows = mio::mpm::accumulate_flows(*(simPDMM.get_model().all_flows));
@@ -154,7 +153,7 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
             hybrid_flow_result.add_time_point(accumulated_abm_flows.get_time(t),
                                               accumulated_abm_flows.get_value(t) + accumulated_pdmm_flows.get_value(t));
         }
-        ensemble_results_comp[run]  = hybrid_result;
+        ensemble_results_comp[run]  = interpolated_hybrid_result;
         ensemble_results_flows[run] = hybrid_flow_result;
 
         if (save_single_outputs) {
@@ -175,7 +174,7 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
             // fclose(file3);
 
             auto file4 = fopen((std::to_string(run) + "comp_output_Hybrid.txt").c_str(), "w");
-            mio::mpm::print_to_file(file4, hybrid_result, {});
+            mio::mpm::print_to_file(file4, interpolated_hybrid_result, {});
             fclose(file4);
 
             auto file5 = fopen((std::to_string(run) + "flow_output_Hybrid.txt").c_str(), "w");
