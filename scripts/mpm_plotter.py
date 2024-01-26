@@ -1,36 +1,36 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def read_from_terminal(filename):
-    with open(filename) as file:
-        lines = file.readlines()
-        skip_to = 0
-        labels = ""
-        # find first line of the output table
-        for i in range(len(lines)):
-            if "Time" in lines[i]:
-                skip_to = i + 1
-                # read labels
-                labels = lines[i].split()[1:]
-                break
-        # throw error if table was not found
-        if labels == "":
-            raise EOFError("Could not find results table in " + filename)
-        result = []
-        for i in range(skip_to, len(lines)):
-            result+=[[]]
-            for txt in lines[i].split():
-                try:
-                    result[-1] += [float(txt)]
-                except ValueError:
-                    # remove entries from failed line (should be empty)
-                    result = result[:-1]
-                    return np.array(result), labels
-            if len(result[-1]) != len(labels) + 1:
-                # remove entries from failed line
-                result = result[:-1]
-                return np.array(result), labels
-        return np.array(result), labels
+# def read_from_terminal(filename):
+#     with open(filename) as file:
+#         lines = file.readlines()
+#         skip_to = 0
+#         labels = ""
+#         # find first line of the output table
+#         for i in range(len(lines)):
+#             if "Time" in lines[i]:
+#                 skip_to = i + 1
+#                 # read labels
+#                 labels = lines[i].split()[1:]
+#                 break
+#         # throw error if table was not found
+#         if labels == "":
+#             raise EOFError("Could not find results table in " + filename)
+#         result = []
+#         for i in range(skip_to, len(lines)):
+#             result+=[[]]
+#             for txt in lines[i].split():
+#                 try:
+#                     result[-1] += [float(txt)]
+#                 except ValueError:
+#                     # remove entries from failed line (should be empty)
+#                     result = result[:-1]
+#                     return np.array(result), labels
+#             if len(result[-1]) != len(labels) + 1:
+#                 # remove entries from failed line
+#                 result = result[:-1]
+#                 return np.array(result), labels
+#         return np.array(result), labels
 
 def plot_populations(time, metapopulations, labels, name):
     fig_ctr = 1
@@ -52,8 +52,8 @@ def plot_populations(time, metapopulations, labels, name):
         plt.savefig(name+str(fig_ctr - 1)+".png")        
         fig_ctr += 1
 
-table, labels = read_from_terminal("output.txt")
-time = table[:,0]
-# subtables = [table[:, 1:4],table[:, 4:7]]
-subtables = [table[:, 1 + i * 6: 2+i*6] for i in range(8)]
-plot_populations(time, subtables, labels, "mpm")
+# table, labels = read_from_terminal("../output.txt")
+# time = table[:,0]
+# # subtables = [table[:, 1:4],table[:, 4:7]]
+# subtables = [table[:, 1 + i * 6: 2+i*6] for i in range(8)]
+# plot_populations(time, subtables, labels, "mpm")
