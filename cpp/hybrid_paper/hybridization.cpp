@@ -25,7 +25,7 @@
         timer = new_time;                                                                                              \
     }
 
-void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_outputs)
+void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_outputs, std::string results_path)
 {
     using Status             = mio::mpm::paper::InfectionState;
     using Region             = mio::mpm::Region;
@@ -229,7 +229,7 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
         mean_time_series_flows.get_value(t) *= 1.0 / num_runs;
     }
 
-    std::string dir = mio::base_dir() + "cpp/outputs/";
+    std::string dir = mio::base_dir() + results_path;
 
     //save mean timeseries
     FILE* file_mean_comp = fopen((dir + "comps_output_mean.txt").c_str(), "w");
@@ -273,7 +273,7 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
     }
 }
 
-void save_new_infections(mio::Date start_date, size_t num_days)
+void save_new_infections(mio::Date start_date, size_t num_days, std::string result_path)
 {
     const std::vector<int> regions = {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175};
     std::vector<mio::ConfirmedCasesDataEntry> confirmed_new_infections =
@@ -290,7 +290,7 @@ void save_new_infections(mio::Date start_date, size_t num_days)
         date = mio::offset_date_by_days(date, 1);
     }
 
-    std::string dir = mio::base_dir() + "cpp/outputs/";
+    std::string dir = mio::base_dir() + result_path;
 
     //save mean timeseries
     FILE* file = fopen((dir + "new_infections.txt").c_str(), "w");
@@ -301,7 +301,7 @@ void save_new_infections(mio::Date start_date, size_t num_days)
 int main(int argc, char** argv)
 {
     mio::set_log_level(mio::LogLevel::warn);
-    run_simulation(10, true, false);
-    save_new_infections(mio::Date(2021, 3, 1), 30);
+    run_simulation(10, true, false, "cpp/outputs");
+    save_new_infections(mio::Date(2021, 3, 1), 30, "cpp/outputs");
     return 0;
 }
