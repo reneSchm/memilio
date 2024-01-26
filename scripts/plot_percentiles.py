@@ -139,7 +139,15 @@ def scale_new_infections(flow_list, real, populations, scale):
         real *= (100000.0/sum(population_real))
     else:
         print("Unknown scale")
-    print()
+    for l in range(len(flow_list)):
+        for region in range(len(flow_list[l])):
+            if scale == "local":
+                flow_list[l][region] *= (100000.0/populations[region])
+            elif scale == "global":
+                flow_list[l][region] *= (100000.0/sum(populations))
+            else:
+                print("Unknown scale")
+    return flow_list, real
 
 def get_starting_populations(mean_list):
     populations = []
@@ -166,11 +174,14 @@ plot_populations(time_hybrid_comp, comp_list_accumulated[0], ["S", "E", "C", "I"
 real, time_real = read_from_terminal(dir+"new_infections.txt")
 real = real[:, 1:]
 real_accumulated = np.sum(real, axis=1).reshape((real.shape[0], 1))
-# populations = get_starting_populations(hybrid_comp_list[0])
-# scale_new_infections(hybrid_flow_list, )
+populations = get_starting_populations(hybrid_comp_list[0])
+hybrid_flow_list, real = scale_new_infections(hybrid_flow_list, real, populations, "local")
+flow_list_accumulated, real_accumulated = scale_new_infections(flow_list_accumulated, real_accumulated, populations, "global")
 
-plot_percentiles_new_infections(time_hybrid_flows, hybrid_flow_list[0], hybrid_flow_list[1:], real, scaling_factor=100, indices=[1, 2], factors=[0.1, 1], filename="flows_")
-plot_percentiles_new_infections(time_hybrid_flows, flow_list_accumulated[0], flow_list_accumulated[1:], real_accumulated, scaling_factor=100, indices=[1, 2], factors=[0.1, 1], filename='flows_acc_')
+scaling_factor = 1
+
+plot_percentiles_new_infections(time_hybrid_flows, hybrid_flow_list[0], hybrid_flow_list[1:], real, scaling_factor=scaling_factor, indices=[1, 2], factors=[0.1, 1], filename="flows_")
+plot_percentiles_new_infections(time_hybrid_flows, flow_list_accumulated[0], flow_list_accumulated[1:], real_accumulated, scaling_factor=scaling_factor, indices=[1, 2], factors=[0.1, 1], filename='flows_acc_')
 
 plot_percentiles(time_hybrid_comp, hybrid_comp_list[0], hybrid_comp_list[1:], comp=3, scaling_factor=1, filename="comps_")
 plot_percentiles(time_hybrid_comp, comp_list_accumulated[0], comp_list_accumulated[1:], comp=3, filename='comps_acc_', scaling_factor=1)
