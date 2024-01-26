@@ -78,10 +78,9 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
     Eigen::VectorXd posteriori_commute_weight = setup.k_provider.metaregion_commute_weights.col(focus_region);
     posteriori_commute_weight[focus_region]   = 0;
 
-    mio::TimeSeries<double> hybrid_result(num_regions * static_cast<size_t>(Status::Count));
-
     TIME_TYPE total_sim_time = TIME_NOW;
     for (size_t run = 0; run < num_runs; ++run) {
+        mio::TimeSeries<double> hybrid_result(num_regions * static_cast<size_t>(Status::Count));
         std::cout << "run: " << run << "\n";
         auto simABM  = mio::Simulation<ABM>(abm, 0.0, setup.dt);
         auto simPDMM = mio::Simulation<PDMM>(pdmm, 0.0, setup.dt);

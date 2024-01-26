@@ -135,7 +135,7 @@ struct ModelSetup {
         : t_Exposed(3.67652)
         , t_Carrier(2.71414)
         , t_Infected(5)
-        , transmission_rates(std::vector<double>(8, 0.25))
+        , transmission_rates(std::vector<double>{0.37, 0.4, 0.35, 0.25, 0.34, 0.38, 0.35, 0.35})
         , mu_C_R(0.1)
         , mu_I_D(0.004)
         , start_date(mio::Date(2021, 3, 1))
