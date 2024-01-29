@@ -53,7 +53,7 @@ add_executable(contact_frequency_counting contact_frequency_counting.cpp)
 target_link_libraries(contact_frequency_counting hybrid_paper)
 
 add_executable(hybridization hybridization.cpp)
-target_link_libraries(hybridization hybrid_paper)
+target_link_libraries(hybridization hybrid_paper OpenMP::OpenMP_CXX)
 
 add_executable(PDMM PDMM.cpp)
 target_link_libraries(PDMM hybrid_paper)
