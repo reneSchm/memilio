@@ -19,28 +19,35 @@
 */
 
 #include "mpm/utility.h"
+#include <stdio.h>
 
 void mio::mpm::print_to_terminal(const mio::TimeSeries<ScalarType>& results,
                                  const std::vector<std::string>& state_names)
 {
+    mio::mpm::print_to_file(stdout, results, state_names);
+}
+
+void mio::mpm::print_to_file(FILE* outfile, const mio::TimeSeries<ScalarType>& results,
+                             const std::vector<std::string>& state_names)
+{
     // print column labels
-    printf("%-16s  ", "Time");
+    fprintf(outfile, "%-16s  ", "Time");
     for (size_t k = 0; k < static_cast<size_t>(results.get_num_elements()); k++) {
         if (k < state_names.size()) {
-            printf(" %-16s", state_names[k].data()); // print underlying char*
+            fprintf(outfile, " %-16s", state_names[k].data()); // print underlying char*
         }
         else {
-            printf(" %-16s", ("#" + std::to_string(k + 1)).data());
+            fprintf(outfile, " %-16s", ("#" + std::to_string(k + 1)).data());
         }
     }
     // print values as table
     auto num_points = static_cast<size_t>(results.get_num_time_points());
     for (size_t i = 0; i < num_points; i++) {
-        printf("\n%16.6f", results.get_time(i));
+        fprintf(outfile, "\n%16.6f", results.get_time(i));
         auto res_i = results.get_value(i);
         for (size_t j = 0; j < static_cast<size_t>(res_i.size()); j++) {
-            printf(" %16.6f", res_i[j]);
+            fprintf(outfile, " %16.6f", res_i[j]);
         }
     }
-    printf("\n");
+    fprintf(outfile, "\n");
 }
