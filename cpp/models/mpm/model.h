@@ -178,7 +178,10 @@ public:
             return rate.factor * x[source];
         }
         else { // second order adoption
-            const ScalarType N = pop.get_group_total(rate.region);
+            ScalarType N = 0;
+            for (size_t s = 0; s < static_cast<size_t>(Status::Count); ++s) {
+                N += x[pop.get_flat_index({rate.region, Status(s)})];
+            }
             // accumulate influences
             ScalarType influences = 0.0;
             for (size_t i = 0; i < rate.influences.size(); i++) {
