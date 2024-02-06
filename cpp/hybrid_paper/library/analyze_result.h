@@ -1,6 +1,7 @@
 #ifndef MIO_MPM_ANALYZE_RESULT_H_
 #define MIO_MPM_ANALYZE_RESULT_H_
 
+#include "hybrid_paper/library/infection_state.h"
 #include "memilio/math/eigen.h"
 #include "memilio/utils/time_series.h"
 #include "memilio/data/analyze_result.h"
@@ -84,8 +85,13 @@ void percentile_output_to_file(std::vector<mio::TimeSeries<double>>& percentile_
     }
 
     auto file = fopen(filename.c_str(), "w");
-    print_to_file(file, ts, {});
-    fclose(file);
+    if (file == NULL) {
+        mio::log(mio::LogLevel::critical, "Could not open file {}", filename);
+    }
+    else {
+        print_to_file(file, ts, {});
+        fclose(file);
+    }
 }
 
 } // namespace mpm

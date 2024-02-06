@@ -85,6 +85,7 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
 
     TIME_TYPE total_sim_time = TIME_NOW;
 
+#pragma omp barrier
 #pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
         std::cout << "start run: " << run << "\n" << std::flush;
@@ -171,7 +172,7 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
             mio::mpm::print_to_file(file, ensemble_results_flows[run], {});
             fclose(file);
         }
-    }
+    } // simulation for loop
 
 // post processing
 #pragma omp single
@@ -198,16 +199,26 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
             mean_time_series_flows.get_value(t) *= 1.0 / num_runs;
         }
 
-        std::string dir = mio::base_dir() + results_path;
+        std::string dir = results_path;
 
         //save mean timeseries
         FILE* file_mean_comp = fopen((dir + "comps_output_mean.txt").c_str(), "w");
-        mio::mpm::print_to_file(file_mean_comp, mean_time_series_comp, {});
-        fclose(file_mean_comp);
+        if (file_mean_comp == NULL) {
+            mio::log(mio::LogLevel::critical, "Could not open file {}", dir + "comps_output_mean.txt");
+        }
+        else {
+            mio::mpm::print_to_file(file_mean_comp, mean_time_series_comp, {});
+            fclose(file_mean_comp);
+        }
 
         FILE* file_mean_flows = fopen((dir + "flows_output_mean.txt").c_str(), "w");
-        mio::mpm::print_to_file(file_mean_flows, mean_time_series_flows, {});
-        fclose(file_mean_flows);
+        if (file_mean_flows == NULL) {
+            mio::log(mio::LogLevel::critical, "Could not open file {}", dir + "flows_output_mean.txt");
+        }
+        else {
+            mio::mpm::print_to_file(file_mean_flows, mean_time_series_flows, {});
+            fclose(file_mean_flows);
+        }
 
         if (save_percentiles) {
 

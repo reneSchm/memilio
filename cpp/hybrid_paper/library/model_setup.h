@@ -5,6 +5,7 @@
 #include "hybrid_paper/library/infection_state.h"
 #include "hybrid_paper/library/initialization.h"
 #include "potentials/commuting_potential.h"
+
 namespace mio
 {
 namespace mpm
@@ -27,7 +28,7 @@ struct ModelSetup {
     {
         PDMM model;
         for (size_t k = 0; k < region_ids.size(); ++k) {
-            for (int i = 0; i < static_cast<size_t>(Status::Count); ++i) {
+            for (size_t i = 0; i < static_cast<size_t>(Status::Count); ++i) {
                 model.populations[{static_cast<mio::mpm::Region>(k), static_cast<Status>(i)}] = pop_dists_scaled[k][i];
             }
         }
@@ -115,11 +116,11 @@ struct ModelSetup {
         for (int i = 0; i < metaregions.maxCoeff(); ++i) {
             adoption_rates.push_back(
                 {Status::S, Status::E, mio::mpm::Region(i), transmission_rate, {Status::C, Status::I}, {1, 1}});
-            adoption_rates.push_back({Status::E, Status::C, mio::mpm::Region(i), 1.0 / t_Exposed});
-            adoption_rates.push_back({Status::C, Status::R, mio::mpm::Region(i), mu_C_R / t_Carrier});
-            adoption_rates.push_back({Status::C, Status::I, mio::mpm::Region(i), (1 - mu_C_R) / t_Carrier});
-            adoption_rates.push_back({Status::I, Status::R, mio::mpm::Region(i), (1 - mu_I_D) / t_Infected});
-            adoption_rates.push_back({Status::I, Status::D, mio::mpm::Region(i), mu_I_D / t_Infected});
+            adoption_rates.push_back({Status::E, Status::C, mio::mpm::Region(i), 1.0 / t_Exposed, {}, {}});
+            adoption_rates.push_back({Status::C, Status::R, mio::mpm::Region(i), mu_C_R / t_Carrier, {}, {}});
+            adoption_rates.push_back({Status::C, Status::I, mio::mpm::Region(i), (1 - mu_C_R) / t_Carrier, {}, {}});
+            adoption_rates.push_back({Status::I, Status::R, mio::mpm::Region(i), (1 - mu_I_D) / t_Infected, {}, {}});
+            adoption_rates.push_back({Status::I, Status::D, mio::mpm::Region(i), mu_I_D / t_Infected, {}, {}});
         }
 
         std::vector<Status> transitioning_states{Status::S, Status::E, Status::C, Status::I, Status::R};
@@ -150,28 +151,27 @@ struct ModelSetup {
                 std::abort();
             }
             else {
-                auto metaregions = mio::mpm::read_pgm_raw(ifile).first;
+                auto _metaregions = mio::mpm::read_pgm_raw(ifile).first;
                 ifile.close();
-                return metaregions;
+                return _metaregions;
             }
         }())
         , tmax(30)
         , dt(0.1)
-        , commute_weights([]() {
-            std::vector<double> populations     = {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
+        , commute_weights([this]() {
             const std::vector<int> county_ids   = {233, 228, 242, 223, 238, 232, 231, 229};
             Eigen::MatrixXd reference_commuters = get_transition_matrix(mio::base_dir() + "data/mobility/").value();
-            Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> commute_weights(8, 8);
-            commute_weights.setZero();
+            Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> _commute_weights(8, 8);
+            _commute_weights.setZero();
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
                     if (i != j) {
-                        commute_weights(i, j) = reference_commuters(county_ids[i], county_ids[j]);
+                        _commute_weights(i, j) = reference_commuters(county_ids[i], county_ids[j]);
                     }
                 }
-                commute_weights(i, i) = populations[i] - commute_weights.row(i).sum();
+                _commute_weights(i, i) = populations[i] - _commute_weights.row(i).sum();
             }
-            return commute_weights;
+            return _commute_weights;
         }())
         , k_provider(commute_weights, metaregions, {metaregions})
         , wg(mio::base_dir() + "potentially_germany_grad.json", mio::base_dir() + "boundary_ids.pgm")
@@ -236,11 +236,11 @@ struct ModelSetup {
         for (int i = 0; i < metaregions.maxCoeff(); ++i) {
             adoption_rates.push_back(
                 {Status::S, Status::E, mio::mpm::Region(i), transmission_rates[i], {Status::C, Status::I}, {1, 1}});
-            adoption_rates.push_back({Status::E, Status::C, mio::mpm::Region(i), 1.0 / t_Exposed});
-            adoption_rates.push_back({Status::C, Status::R, mio::mpm::Region(i), mu_C_R / t_Carrier});
-            adoption_rates.push_back({Status::C, Status::I, mio::mpm::Region(i), (1 - mu_C_R) / t_Carrier});
-            adoption_rates.push_back({Status::I, Status::R, mio::mpm::Region(i), (1 - mu_I_D) / t_Infected});
-            adoption_rates.push_back({Status::I, Status::D, mio::mpm::Region(i), mu_I_D / t_Infected});
+            adoption_rates.push_back({Status::E, Status::C, mio::mpm::Region(i), 1.0 / t_Exposed, {}, {}});
+            adoption_rates.push_back({Status::C, Status::R, mio::mpm::Region(i), mu_C_R / t_Carrier, {}, {}});
+            adoption_rates.push_back({Status::C, Status::I, mio::mpm::Region(i), (1 - mu_C_R) / t_Carrier, {}, {}});
+            adoption_rates.push_back({Status::I, Status::R, mio::mpm::Region(i), (1 - mu_I_D) / t_Infected, {}, {}});
+            adoption_rates.push_back({Status::I, Status::D, mio::mpm::Region(i), mu_I_D / t_Infected, {}, {}});
         }
 
         std::vector<Status> transitioning_states{Status::S, Status::E, Status::C, Status::I, Status::R};
