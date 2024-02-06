@@ -11,3 +11,7 @@ if(MEMILIO_HAS_JSONCPP AND MEMILIO_HAS_HDF5)
     target_link_libraries(abm_simulation PRIVATE memilio abm Boost::filesystem ${HDF5_C_LIBRARIES})
     target_compile_options(abm_simulation PRIVATE ${MEMILIO_CXX_FLAGS_ENABLE_WARNING_ERRORS})
 endif()
+
+add_executable(transition_rate_estimation transition_rate_estimation.cpp)
+target_link_libraries(transition_rate_estimation PRIVATE memilio mpm)
+target_compile_options(transition_rate_estimation PRIVATE ${MEMILIO_CXX_FLAGS_ENABLE_WARNING_ERRORS})

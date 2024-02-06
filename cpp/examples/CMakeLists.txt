@@ -43,6 +43,7 @@ target_link_libraries(ide_seir_example PRIVATE memilio ide_seir)
 
 add_executable(ide_secir_example ide_secir.cpp)
 target_link_libraries(ide_secir_example PRIVATE memilio ide_secir)
+
 add_executable(mpm_abm_example mpm_abm.cpp)
 target_link_libraries(mpm_abm_example PRIVATE memilio mpm)
 
