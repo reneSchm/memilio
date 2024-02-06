@@ -139,7 +139,15 @@ def scale_new_infections(flow_list, real, populations, scale):
         real *= (100000.0/sum(population_real))
     else:
         print("Unknown scale")
-    print()
+    for l in range(len(flow_list)):
+        for region in range(len(flow_list[l])):
+            if scale == "local":
+                flow_list[l][region] *= (100000.0/populations[region])
+            elif scale == "global":
+                flow_list[l][region] *= (100000.0/sum(populations))
+            else:
+                print("Unknown scale")
+    return flow_list, real
 
 def get_starting_populations(mean_list):
     populations = []
@@ -147,7 +155,38 @@ def get_starting_populations(mean_list):
         comps = mean_list[region][0,:]
         populations.append(np.sum(comps))
     return populations
-dir = "../cpp/outputs/Hybrid4/"
+
+def plot_flow(time, mean, percentiles, index, filename):
+    for r in range(len(mean)):
+        region_mean = mean[r][:, index] #* scaling_factor
+        region_p05 = percentiles[0][r][:, index] #* scaling_factor
+        region_p25 = percentiles[1][r][:, index] #* scaling_factor
+        region_p50 = percentiles[2][r][:, index] #* scaling_factor
+        region_p75 = percentiles[3][r][:, index] #* scaling_factor
+        region_p95 = percentiles[4][r][:, index] #* scaling_factor
+        fig = plt.figure()
+        plt.plot(time, region_mean, label = 'mean')
+        plt.plot(time, region_p05, label = 'p05', color='navy')
+        plt.plot(time, region_p25, label = 'p25', color = 'dimgray')
+        plt.plot(time, region_p50, label = 'p50')
+        plt.plot(time, region_p75, label = 'p75', color='dimgray')
+        plt.plot(time, region_p95, label = 'p95', color='navy')
+        plt.fill_between(time, region_p05, region_p95, color='navy', alpha=0.2)
+        plt.fill_between(time, region_p25, region_p75, color='dimgray', alpha=0.4)
+        plt.legend()
+        fig.savefig(filename + 'percentiles_' + str(r) + '.png')
+        plt.close()
+
+def plot_mean(time, mean, filename, labels, index_list):
+    for region in range(len(mean)):
+        fig = plt.figure()
+        for i in index_list:
+            plt.plot(time, mean[region][:, i], label = labels[i])
+        plt.legend()
+        fig.savefig(filename + str(region) + '.png')
+        plt.close()
+
+dir = "../cpp/outputs/200runsNoTransitions/" #"/group/HPC/Gruppen/PSS/Modelle/Hybrid Models/Papers, Theses, Posters/2023_Paper_Spatio-temporal_hybrid/simulation_results/outputs_50r_20ppa_v2/" #"../cpp/outputs/150runs5/"
 prefix =""
 #table_real, labels_real = read_from_terminal(dir + "output_extrapolated.txt")
 #time = table_real[:,0]
@@ -160,17 +199,26 @@ hybrid_flow_list, time_hybrid_flows = read_mean_and_percentile_outputs(dir, "flo
 comp_list_accumulated = get_accumulated_output(hybrid_comp_list)
 flow_list_accumulated = get_accumulated_output(hybrid_flow_list)
 
-plot_populations(time_hybrid_comp, hybrid_comp_list[0], ["S", "E", "C", "I", "R", "D"]*len(hybrid_comp_list[0]), "cumulative")
+plot_mean(time_hybrid_comp, hybrid_comp_list[-1], "comps_", labels = ["S", "E", "C", "I", "R", "D"], index_list = [1, 2, 3, 5])
+plot_mean(time_hybrid_comp, comp_list_accumulated[-1], "comps_acc_", labels = ["S", "E", "C", "I", "R", "D"], index_list = [1, 2, 3, 5])
+
+plot_mean(time_hybrid_flows, hybrid_flow_list[0], "flows_", labels = ["S->E", "E->C", "C->I", "C->R", "I->R", "I->D"], index_list = [1, 2, 3, 4, 5])
+plot_mean(time_hybrid_flows, flow_list_accumulated[0], "flows_acc_", labels = ["S->E", "E->C", "C->I", "C->R", "I->R", "I->D"], index_list = [1, 2, 3, 4, 5])
+
+plot_populations(time_hybrid_comp, hybrid_comp_list[0], ["S", "E", "C", "I", "R", "D"] * len(hybrid_comp_list[0]), "cumulative")
 plot_populations(time_hybrid_comp, comp_list_accumulated[0], ["S", "E", "C", "I", "R", "D"], "cumulative_acc")
 
-real, time_real = read_from_terminal(dir+"new_infections.txt")
+real, time_real = read_from_terminal(dir + "new_infections.txt") #+"../../data/"
 real = real[:, 1:]
 real_accumulated = np.sum(real, axis=1).reshape((real.shape[0], 1))
-# populations = get_starting_populations(hybrid_comp_list[0])
-# scale_new_infections(hybrid_flow_list, )
+populations = get_starting_populations(hybrid_comp_list[0])
+hybrid_flow_list, real = scale_new_infections(hybrid_flow_list, real, populations, "local")
+flow_list_accumulated, real_accumulated = scale_new_infections(flow_list_accumulated, real_accumulated, populations, "global")
 
-plot_percentiles_new_infections(time_hybrid_flows, hybrid_flow_list[0], hybrid_flow_list[1:], real, scaling_factor=100, indices=[1, 2], factors=[0.1, 1], filename="flows_")
-plot_percentiles_new_infections(time_hybrid_flows, flow_list_accumulated[0], flow_list_accumulated[1:], real_accumulated, scaling_factor=100, indices=[1, 2], factors=[0.1, 1], filename='flows_acc_')
+scaling_factor = 1
+
+plot_percentiles_new_infections(time_hybrid_flows, hybrid_flow_list[0], hybrid_flow_list[1:], real, scaling_factor=scaling_factor, indices=[1, 2], factors=[0.1, 1], filename="flows_")
+plot_percentiles_new_infections(time_hybrid_flows, flow_list_accumulated[0], flow_list_accumulated[1:], real_accumulated, scaling_factor=scaling_factor, indices=[1, 2], factors=[0.1, 1], filename='flows_acc_')
 
 plot_percentiles(time_hybrid_comp, hybrid_comp_list[0], hybrid_comp_list[1:], comp=3, scaling_factor=1, filename="comps_")
 plot_percentiles(time_hybrid_comp, comp_list_accumulated[0], comp_list_accumulated[1:], comp=3, filename='comps_acc_', scaling_factor=1)
