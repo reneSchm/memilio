@@ -43,6 +43,23 @@ target_link_libraries(ide_seir_example PRIVATE memilio ide_seir)
 
 add_executable(ide_secir_example ide_secir.cpp)
 target_link_libraries(ide_secir_example PRIVATE memilio ide_secir)
+add_executable(mpm_abm_example mpm_abm.cpp)
+target_link_libraries(mpm_abm_example PRIVATE memilio mpm)
+
+add_executable(mpm_pdmm_example mpm_pdmm.cpp)
+target_link_libraries(mpm_pdmm_example PRIVATE memilio mpm)
+
+add_executable(mpm_smm_example mpm_smm.cpp)
+target_link_libraries(mpm_smm_example PRIVATE memilio mpm)
+
+add_executable(hybrid_example hybrid.cpp)
+target_link_libraries(hybrid_example PRIVATE memilio mpm)
+
+add_executable(hybrid_lok_example hybrid-lok.cpp)
+target_link_libraries(hybrid_lok_example PRIVATE memilio mpm)
+
+add_executable(quad_well_example quad_well.cpp)
+target_link_libraries(quad_well_example PRIVATE memilio mpm)
 
 if(MEMILIO_HAS_JSONCPP)
   add_executable(ode_secir_read_graph_example ode_secir_read_graph.cpp)
