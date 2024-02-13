@@ -289,7 +289,7 @@ void save_new_infections(mio::Date start_date, size_t num_days, std::string resu
 int main(int argc, char** argv)
 {
     mio::set_log_level(mio::LogLevel::warn);
-    run_simulation(10, true, false, "cpp/outputs/");
+    run_simulation(10, true, false, mio::base_dir() + "cpp/outputs/");
     // save_new_infections(mio::Date(2021, 3, 1), 30, "cpp/outputs/");
     return 0;
 }
