@@ -133,12 +133,12 @@ struct ModelSetup {
     }
 
     ModelSetup()
-        : t_Exposed(3.67652)
-        , t_Carrier(2.71414)
-        , t_Infected(5)
+        : t_Exposed(3)
+        , t_Carrier(3)
+        , t_Infected(6)
         , transmission_rates(std::vector<double>{0.37, 0.4, 0.35, 0.25, 0.34, 0.38, 0.35, 0.35})
-        , mu_C_R(0.1)
-        , mu_I_D(0.004)
+        , mu_C_R(0.2)
+        , mu_I_D(0.003)
         , start_date(mio::Date(2021, 3, 1))
         , region_ids({9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175})
         , populations({218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562})

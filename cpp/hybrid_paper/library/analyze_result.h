@@ -13,7 +13,7 @@ namespace mio
 namespace mpm
 {
 
-TimeSeries<double> accumulate_flows(TimeSeries<double> flow_results)
+TimeSeries<double> accumulate_flows(const TimeSeries<double>& flow_results)
 {
     auto interpolated_flows = interpolate_simulation_result(flow_results);
     TimeSeries<double> acc_flow_ts(flow_results.get_num_elements());
