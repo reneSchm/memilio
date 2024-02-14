@@ -89,7 +89,8 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
 #pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
         std::cout << "start run: " << run << "\n" << std::flush;
-        auto simABM  = mio::Simulation<ABM>(abm, 0.0, setup.dt);
+        auto simABM = mio::Simulation<ABM>(abm, 0.0, setup.dt);
+        setup.draw_ABM_population(simABM.get_model());
         auto simPDMM = mio::Simulation<PDMM>(pdmm, 0.0, setup.dt);
 
         for (double t = 0;; t = std::min(t + setup.dt, setup.tmax)) {
@@ -289,7 +290,7 @@ void save_new_infections(mio::Date start_date, size_t num_days, std::string resu
 int main(int argc, char** argv)
 {
     mio::set_log_level(mio::LogLevel::warn);
-    run_simulation(10, true, false, mio::base_dir() + "cpp/outputs/");
-    // save_new_infections(mio::Date(2021, 3, 1), 30, "cpp/outputs/");
+    run_simulation(300, true, false, mio::base_dir() + "cpp/outputs/300runs_9/");
+    save_new_infections(mio::Date(2021, 3, 1), 30, "cpp/outputs/300runs_9/");
     return 0;
 }

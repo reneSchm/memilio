@@ -37,6 +37,21 @@ struct ModelSetup {
         return model;
     }
 
+    template <class ABM>
+    void draw_ABM_population(ABM& model) const
+    {
+        model.populations.clear();
+        std::vector<std::vector<double>> pop_dists;
+        std::copy(pop_dists_scaled.begin(), pop_dists_scaled.end(), std::back_inserter(pop_dists));
+        for (size_t region = 0; region < region_ids.size(); ++region) {
+            std::transform(pop_dists[region].begin(), pop_dists[region].end(), pop_dists[region].begin(),
+                           [this](auto& c) {
+                               return c * persons_per_agent;
+                           });
+        }
+        model.populations = create_agents(pop_dists, populations, persons_per_agent, {metaregions}, false).value();
+    }
+
     //parameters
     double t_Exposed;
     double t_Carrier;
@@ -136,7 +151,7 @@ struct ModelSetup {
         : t_Exposed(3)
         , t_Carrier(3)
         , t_Infected(6)
-        , transmission_rates(std::vector<double>{0.37, 0.4, 0.35, 0.25, 0.34, 0.38, 0.35, 0.35})
+        , transmission_rates(std::vector<double>{0.1, 0.25, 0.06, 0.13, 0.09, 0.13, 0.2, 0.09})
         , mu_C_R(0.2)
         , mu_I_D(0.003)
         , start_date(mio::Date(2021, 3, 1))
