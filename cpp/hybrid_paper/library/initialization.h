@@ -71,11 +71,12 @@ void read_initialization(std::string filename, std::vector<Agent>& agents)
     }
 }
 
-mio::IOResult<std::vector<mio::mpm::ABM<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>>::Agent>>
-create_agents(std::vector<std::vector<double>>& pop_dists, const std::vector<double>& populations,
-              double persons_per_agent, const MetaregionSampler& metaregion_sampler, bool save_initialization)
+template <class Agent>
+mio::IOResult<std::vector<Agent>> create_agents(std::vector<std::vector<double>>& pop_dists,
+                                                const std::vector<double>& populations, double persons_per_agent,
+                                                const MetaregionSampler& metaregion_sampler, bool save_initialization)
 {
-    std::vector<mio::mpm::ABM<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>>::Agent> agents;
+    std::vector<Agent> agents;
     for (size_t region = size_t(0); region < pop_dists.size(); ++region) {
         int num_agents = populations[region] / persons_per_agent;
         std::transform(pop_dists[region].begin(), pop_dists[region].end(), pop_dists[region].begin(),

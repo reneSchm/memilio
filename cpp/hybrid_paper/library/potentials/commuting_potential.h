@@ -43,6 +43,33 @@ struct StochastiK {
     {
     }
 
+    template <class Agent>
+    void draw_commuting_parameters(Agent& a, const double t, const double /*dt*/)
+    {
+        size_t destination_region =
+            mio::DiscreteDistribution<size_t>::get_instance()(metaregion_commute_weights.row(a.region));
+
+        a.commutes = (destination_region != a.region);
+
+        if (a.commutes) {
+            a.commuting_destination = metaregion_sampler(destination_region);
+
+            assert(m_metaregions(a.commuting_destination[0], a.commuting_destination[1]) - 1 == destination_region);
+            //TODO: anschauen, was Normalverteilung mit den Parametern macht
+            //TODO: Zeitmessung triangular dist & normal dist übergeben
+            a.t_return =
+                t + mio::ParameterDistributionNormal(13.0 / 24.0 + 1.1 * 0.1, 23.0 / 24.0 - 1.1 * 0.1, 18.0 / 24.0)
+                        .get_rand_sample();
+            // a.t_depart = TriangularDistribution(a.t_return - dt, t, t + 9.0 / 24.0).get_instance();
+            a.t_depart = t + mio::ParameterDistributionNormal(5.0 / 24.0, 13.0 / 24.0, 9.0 / 24.0).get_rand_sample();
+
+            assert(m_k.is_in_interval(a.t_return, t, t + 1));
+            assert(m_k.is_in_interval(a.t_depart, t, t + 1));
+            assert(a.t_return < t + 1);
+            assert(a.t_depart + dt < a.t_return);
+        }
+    }
+
     //K
     // if(commutes and (t.isapprox(t_depart) or t.isapprox(t_return)))
     //    x = destination - position
@@ -81,6 +108,110 @@ struct StochastiK {
     Eigen::Ref<const Eigen::MatrixXi> metaregions;
 };
 
+struct Kedaechtnislos {
+    using Matrix = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+    Kedaechtnislos(Eigen::Ref<const Matrix> commute_weights, Eigen::Ref<const Eigen::MatrixXi> regions,
+                   MetaregionSampler&& sampler)
+        : metaregion_commute_weights(commute_weights)
+        , metaregion_sampler(sampler)
+        , metaregions(regions)
+    {
+        for (Eigen::Index i = 0; i < metaregion_commute_weights.rows(); i++) {
+            for (Eigen::Index j = 0; j < metaregion_commute_weights.cols(); j++) {
+                if (i != j) {
+                    metaregion_commute_weights(i, i) +=
+                        metaregion_commute_weights(i, j); // recover reference population
+                    metaregion_commute_weights(i, j) += metaregion_commute_weights(j, i); // symmetrice entries
+                }
+            }
+        }
+    }
+
+    template <class Agent>
+    void draw_commuting_parameters(Agent&, const double /*t*/, const double /*dt*/)
+    {
+    }
+
+    template <class Agent>
+    Eigen::Vector2d operator()(Agent& a, double /*t*/, double dt)
+    {
+        Eigen::VectorXd weights = metaregion_commute_weights.row(a.region);
+        for (Eigen::Index i = 0; i < weights.size(); i++) {
+            if (i != a.region) {
+                weights[i] *= dt;
+                weights[a.region] -= weights[i];
+            }
+        }
+        auto destination_region = mio::DiscreteDistribution<size_t>::get_instance()(weights);
+        if (destination_region == a.region) {
+            return {0, 0};
+        }
+        else {
+            const Eigen::Vector2d destinaton = metaregion_sampler(destination_region);
+            return destinaton - a.position;
+        }
+    }
+
+    bool is_in_interval(double value, double begin, double end)
+    {
+        return value >= begin and value < end;
+    }
+
+    Matrix metaregion_commute_weights;
+    MetaregionSampler metaregion_sampler;
+    Eigen::Ref<const Eigen::MatrixXi> metaregions;
+};
+
+namespace paper
+{
+
+template <class Position, class Status>
+struct Agent {
+
+    Position position;
+    Status status;
+    int region;
+
+    bool commutes                  = false;
+    Position commuting_destination = {0, 0};
+    ScalarType t_return            = 0;
+    ScalarType t_depart            = 0;
+
+    /**
+         * serialize agents.
+         * @see mio::serialize
+         */
+    template <class IOContext>
+    void serialize(IOContext& io) const
+    {
+        auto obj = io.create_object("Agent");
+        obj.add_element("Position", position);
+        obj.add_element("Status", status);
+        obj.add_element("Land", region);
+    }
+
+    /**
+         * deserialize an object of this class.
+         * @see mio::deserialize
+         */
+    template <class IOContext>
+    static mio::IOResult<Agent> deserialize(IOContext& io)
+    {
+        auto obj   = io.expect_object("Agent");
+        auto pos   = obj.expect_element("Position", mio::Tag<Position>{});
+        auto state = obj.expect_element("Status", mio::Tag<Status>{});
+        auto land  = obj.expect_element("Land", mio::Tag<int>{});
+        return apply(
+            io,
+            [](auto&& pos_, auto&& state_, auto&& land_) {
+                return Agent{pos_, state_, land_};
+            },
+            pos, state, land);
+    }
+};
+
+} // namespace paper
+
 template <class KProvider, class InfectionState>
 class CommutingPotential
 {
@@ -88,50 +219,7 @@ public:
     using Position       = Eigen::Vector2d;
     using Status         = InfectionState;
     using GradientMatrix = Eigen::Matrix<Eigen::Vector2d, Eigen::Dynamic, Eigen::Dynamic>;
-
-    struct Agent {
-
-        Position position;
-        InfectionState status;
-        int region;
-
-        bool commutes                  = false;
-        Position commuting_destination = {0, 0};
-        ScalarType t_return            = 0;
-        ScalarType t_depart            = 0;
-
-        /**
-         * serialize agents.
-         * @see mio::serialize
-         */
-        template <class IOContext>
-        void serialize(IOContext& io) const
-        {
-            auto obj = io.create_object("Agent");
-            obj.add_element("Position", position);
-            obj.add_element("Status", status);
-            obj.add_element("Land", region);
-        }
-
-        /**
-         * deserialize an object of this class.
-         * @see mio::deserialize
-         */
-        template <class IOContext>
-        static mio::IOResult<Agent> deserialize(IOContext& io)
-        {
-            auto obj   = io.expect_object("Agent");
-            auto pos   = obj.expect_element("Position", mio::Tag<Position>{});
-            auto state = obj.expect_element("Status", mio::Tag<InfectionState>{});
-            auto land  = obj.expect_element("Land", mio::Tag<int>{});
-            return apply(
-                io,
-                [](auto&& pos_, auto&& state_, auto&& land_) {
-                    return Agent{pos_, state_, land_};
-                },
-                pos, state, land);
-        }
-    };
+    using Agent          = paper::Agent<Position, Status>;
 
     // KProvider has to implement a function "Position operator() (Agent, double)"
     CommutingPotential(const KProvider& K, const std::vector<Agent>& agents,
@@ -235,7 +323,7 @@ public:
                 m_last_commuting_draw_time = t;
             }
             if (mio::floating_point_equal(m_last_commuting_draw_time, t, 1e-10)) {
-                draw_commuting_parameters(agent, t, dt);
+                m_k.draw_commuting_parameters(agent, t, dt);
             }
             Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
                           mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
@@ -392,32 +480,6 @@ private:
     {
         // round each coordinate to the nearest integer
         return m_potential_gradient(p.x(), p.y());
-    }
-
-    void draw_commuting_parameters(Agent& a, const double t, const double dt)
-    {
-        size_t destination_region =
-            mio::DiscreteDistribution<size_t>::get_instance()(m_k.metaregion_commute_weights.row(a.region));
-
-        a.commutes = (destination_region != a.region);
-
-        if (a.commutes) {
-            a.commuting_destination = m_k.metaregion_sampler(destination_region);
-
-            assert(m_metaregions(a.commuting_destination[0], a.commuting_destination[1]) - 1 == destination_region);
-            //TODO: anschauen, was Normalverteilung mit den Parametern macht
-            //TODO: Zeitmessung triangular dist & normal dist übergeben
-            a.t_return =
-                t + mio::ParameterDistributionNormal(13.0 / 24.0 + 1.1 * 0.1, 23.0 / 24.0 - 1.1 * 0.1, 18.0 / 24.0)
-                        .get_rand_sample();
-            // a.t_depart = TriangularDistribution(a.t_return - dt, t, t + 9.0 / 24.0).get_instance();
-            a.t_depart = t + mio::ParameterDistributionNormal(5.0 / 24.0, 13.0 / 24.0, 9.0 / 24.0).get_rand_sample();
-
-            assert(m_k.is_in_interval(a.t_return, t, t + 1));
-            assert(m_k.is_in_interval(a.t_depart, t, t + 1));
-            assert(a.t_return < t + 1);
-            assert(a.t_depart + dt < a.t_return);
-        }
     }
 
     Eigen::Ref<const Eigen::MatrixXi> m_metaregions;

@@ -80,7 +80,7 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
         num_runs, mio::TimeSeries<double>(num_regions * static_cast<size_t>(Status::Count)));
 
     // set how many commuters enter the focus region each day
-    Eigen::VectorXd posteriori_commute_weight = setup.k_provider.metaregion_commute_weights.col(focus_region);
+    Eigen::VectorXd posteriori_commute_weight = setup.commute_weights.col(focus_region);
     posteriori_commute_weight[focus_region]   = 0;
 
     TIME_TYPE total_sim_time = TIME_NOW;
@@ -132,12 +132,12 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
                                                                         23.0 / 24.0 - 1.1 * setup.dt, 18.0 / 24.0)
                                                                         .get_rand_sample();
                             simABM.get_model().populations.push_back(
-                                {setup.k_provider.metaregion_sampler(focus_region), (Status)i, focus_region, true,
-                                 setup.k_provider.metaregion_sampler(commuting_origin), t_return, 0});
+                                {setup.metaregion_sampler(focus_region), (Status)i, focus_region, true,
+                                 setup.metaregion_sampler(commuting_origin), t_return, 0});
                         }
                         else {
                             simABM.get_model().populations.push_back(
-                                {setup.k_provider.metaregion_sampler(focus_region), (Status)i, focus_region, false});
+                                {setup.metaregion_sampler(focus_region), (Status)i, focus_region, false});
                         }
                     }
                 }

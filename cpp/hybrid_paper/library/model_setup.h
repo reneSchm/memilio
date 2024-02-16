@@ -1,6 +1,7 @@
 #ifndef MODEL_SETUP_H_
 #define MODEL_SETUP_H_
 
+#include "hybrid_paper/library/metaregion_sampler.h"
 #include "hybrid_paper/library/weighted_gradient.h"
 #include "hybrid_paper/library/infection_state.h"
 #include "hybrid_paper/library/initialization.h"
@@ -20,7 +21,8 @@ struct ModelSetup {
     template <class ABM>
     ABM create_abm() const
     {
-        return ABM(k_provider, agents, adoption_rates, wg.gradient, metaregions, {Status::D}, sigmas, contact_radius);
+        return ABM({commute_weights, metaregions, {metaregions}}, agents, adoption_rates, wg.gradient, metaregions,
+                   {Status::D}, sigmas, contact_radius);
     }
 
     template <class PDMM>
@@ -49,7 +51,8 @@ struct ModelSetup {
                                return c * persons_per_agent;
                            });
         }
-        model.populations = create_agents(pop_dists, populations, persons_per_agent, {metaregions}, false).value();
+        model.populations =
+            create_agents<Agent>(pop_dists, populations, persons_per_agent, metaregion_sampler, false).value();
     }
 
     //parameters
@@ -71,7 +74,7 @@ struct ModelSetup {
     double dt;
     //ABM requirements
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> commute_weights;
-    StochastiK k_provider;
+    MetaregionSampler metaregion_sampler;
     WeightedGradient wg;
     std::vector<double> sigmas;
     double contact_radius;
@@ -102,7 +105,7 @@ struct ModelSetup {
         , tmax(tmax)
         , dt(dt)
         , commute_weights(commute_weights)
-        , k_provider(commute_weights, metaregions, {metaregions})
+        , metaregion_sampler(metaregions)
         , wg(wg)
         , sigmas(sigmas)
         , contact_radius(contact_radius)
@@ -126,7 +129,7 @@ struct ModelSetup {
                                return c / persons_per_agent;
                            });
         }
-        agents = create_agents(pop_dists, populations, persons_per_agent, {metaregions}, false).value();
+        agents = create_agents<Agent>(pop_dists, populations, persons_per_agent, metaregion_sampler, false).value();
         //adoption_rates
         for (int i = 0; i < metaregions.maxCoeff(); ++i) {
             adoption_rates.push_back(
@@ -188,7 +191,7 @@ struct ModelSetup {
             }
             return _commute_weights;
         }())
-        , k_provider(commute_weights, metaregions, {metaregions})
+        , metaregion_sampler(metaregions)
         , wg(mio::base_dir() + "potentially_germany_grad.json", mio::base_dir() + "boundary_ids.pgm")
         , sigmas(8, 10)
         , contact_radius(50)
@@ -246,7 +249,7 @@ struct ModelSetup {
                                return c / persons_per_agent;
                            });
         }
-        agents = create_agents(pop_dists, populations, persons_per_agent, {metaregions}, false).value();
+        agents = create_agents<Agent>(pop_dists, populations, persons_per_agent, metaregion_sampler, false).value();
         //adoption_rates
         for (int i = 0; i < metaregions.maxCoeff(); ++i) {
             adoption_rates.push_back(

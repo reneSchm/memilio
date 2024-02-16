@@ -161,6 +161,7 @@ int main()
     using Region = mio::mpm::Region;
     using ABM    = mio::mpm::ABM<CommutingPotential<StochastiK, Status>>;
 
+    const double solver_epsilon   = 1;
     const auto total_fitting_time = std::chrono::hours(16 + 5 * 24);
     const int num_runs            = 10;
     auto total_num_threads        = dlib::default_thread_pool().num_threads_in_pool();
@@ -169,9 +170,8 @@ int main()
               << "\n"
               //   << "ABM tmax:                " << tmax << "\n"
               << "Total threads:           " << total_num_threads << "\n"
-              << "Total fitting time:      " << PRINTABLE_TIME(total_fitting_time)
-              << "\n"
-              //   << "Solver epsilon:          " << solver_epsilon << "\n"
+              << "Total fitting time:      " << PRINTABLE_TIME(total_fitting_time) << "\n"
+              << "Solver epsilon:          " << solver_epsilon << "\n"
               << "\n"
               << std::flush;
 
@@ -183,11 +183,15 @@ int main()
     });
 
     ModelSetup setup{};
+    setup.transition_rates.clear();
 
     // const FittingFunctionSetup ffs(regions, populations, start_date, tmax, dt, transition_rates, confirmed_cases,
     //    confirmed_new_infections);
 
     std::cout << "Setup Finished. Starting Fitting.\n" << std::flush;
+
+    double min     = 10e10;
+    double min_num = 0;
 
     auto result = dlib::find_min_global(
         dlib::default_thread_pool(),
@@ -197,16 +201,23 @@ int main()
                                                          confirmed_new_infections, num_runs);
 
             dlib::auto_mutex lock_printing_until_end_of_scope(print_mutex);
-            std::cerr << " transmission_rates: " << tr_0 << ", " << tr_1 << ", " << tr_2 << ", " << tr_3 << ", " << tr_4
-                      << ", " << tr_5 << ", " << tr_6 << ", " << tr_7 << ", "
-                      << "\n";
-            std::cerr << "E: " << err << "\n\n";
+            std::cerr << "transmission_rates: " << tr_0 << ", " << tr_1 << ", " << tr_2 << ", " << tr_3 << ", " << tr_4
+                      << ", " << tr_5 << ", " << tr_6 << ", " << tr_7 << "\n";
+            std::cerr << "E: " << err << "\n";
+            if (err < min) {
+                min = err;
+                std::cout << "Current Minimizer[" << min_num << "] @ E: " << err << "\n";
+                std::cout << "transmission_rates: " << tr_0 << ", " << tr_1 << ", " << tr_2 << ", " << tr_3 << ", "
+                          << tr_4 << ", " << tr_5 << ", " << tr_6 << ", " << tr_7 << "\n";
+                min_num++;
+            }
+            std::cerr << "\n";
             return err;
         },
-        {0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05}, // lower bounds
+        {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01}, // lower bounds
         {0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50}, // upper bounds
-        total_fitting_time // run this long
-    );
+        total_fitting_time, // run this long
+        solver_epsilon);
 
     std::cout << "Minimizer:\n";
     for (size_t param = 0; param < result.x.size(); ++param) {

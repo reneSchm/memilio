@@ -338,7 +338,7 @@ int main()
             .value();
 
     std::vector<Model::Agent> agents =
-        create_agents(pop_dists, populations, persons_per_agent, {metaregions}, false).value();
+        create_agents<Model::Agent>(pop_dists, populations, persons_per_agent, {metaregions}, false).value();
 
     std::vector<mio::mpm::AdoptionRate<Status>> adoption_rates;
     for (int i = 0; i < num_regions; ++i) {
