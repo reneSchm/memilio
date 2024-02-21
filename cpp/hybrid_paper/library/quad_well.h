@@ -1,16 +1,69 @@
 #ifndef QUAD_WELL_H
 #define QUAD_WELL_H
 
-#include "memilio/math/eigen.h"
-#include "hybrid_paper/library/infection_state.h"
 #include "mpm/model.h"
+#include <cmath>
+
+namespace qw
+{
+
+using Position = Eigen::Vector2d;
+
+inline size_t well_index(const Position& p)
+{
+    // 0|1
+    // -+-
+    // 2|3
+    return (p.x() >= 0) + 2 * (p.y() < 0);
+}
+
+class MetaregionSampler
+{
+public:
+    MetaregionSampler(const Position& bottom_left, const Position& mid_point, const Position& top_right, double margin)
+        : m_ranges(4)
+    {
+        auto assign_range = [&](Position range_x, Position range_y) {
+            auto i = well_index({range_x.sum() / 2, range_y.sum() / 2});
+            range_x += Position{margin, -margin};
+            range_y += Position{margin, -margin};
+            m_ranges[i] = {range_x, range_y};
+        };
+
+        assign_range({bottom_left.x(), mid_point.x()}, {mid_point.y(), top_right.y()});
+        assign_range({mid_point.x(), top_right.x()}, {mid_point.y(), top_right.y()});
+        assign_range({bottom_left.x(), mid_point.x()}, {bottom_left.y(), mid_point.y()});
+        assign_range({mid_point.x(), top_right.x()}, {bottom_left.y(), mid_point.y()});
+    }
+
+    Position operator()(size_t metaregion_index) const
+    {
+        const auto& range = m_ranges[metaregion_index];
+        return {mio::UniformDistribution<double>::get_instance()(range.first[0], range.first[1]),
+                mio::UniformDistribution<double>::get_instance()(range.second[0], range.second[1])};
+    }
+
+private:
+    // stores pairs of (x-range, y-range)
+    std::vector<std::pair<Position, Position>> m_ranges;
+};
+
+} // namespace qw
+
+enum InfStates
+{
+    S,
+    I,
+    R,
+    Count
+};
 
 class QuadWellModel
 {
 
 public:
-    using Status   = InfectionState;
-    using Position = Eigen::Vector2d;
+    using Status   = InfStates;
+    using Position = qw::Position;
 
     struct Agent {
         Position position;
@@ -41,8 +94,8 @@ public:
     {
         double rate = 0;
         // get the correct adoption rate
-        auto well    = (agent.position[0] < 0) ? 0 : 1;
-        auto map_itr = m_adoption_rates.find({well, agent.status, new_status});
+        const size_t well = qw::well_index(agent.position);
+        auto map_itr      = m_adoption_rates.find({well, agent.status, new_status});
         if (map_itr != m_adoption_rates.end()) {
             const auto& adoption_rate = map_itr->second;
             // calculate the current rate, depending on order
@@ -75,30 +128,33 @@ public:
         return rate;
     }
 
-    static void move(const double t, const double dt, Agent& agent)
+    void move(const double /*t*/, const double dt, Agent& agent)
     {
-        Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
-                      mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
+        const auto old_well = qw::well_index(agent.position);
+        Position p          = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
+                               mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
 
-        agent.position = agent.position - dt * grad_U(agent.position) + (m_sigma * std::sqrt(dt)) * p;
+        agent.position      = agent.position - dt * grad_U(agent.position) + (m_sigma * std::sqrt(dt)) * p;
+        const auto new_well = qw::well_index(agent.position);
+        if (old_well != new_well) {
+            total_transitions(old_well, new_well) += 1;
+        }
     }
 
     Eigen::VectorXd time_point() const
     {
-        Eigen::Matrix<double, 4 * static_cast<size_t>(Status::Count), 1> val;
-        val.setZero();
+        Eigen::VectorXd val = Eigen::VectorXd::Zero(4 * static_cast<size_t>(Status::Count));
         for (auto& agent : populations) {
             // split population into the wells given by grad_U
-            auto position = (agent.position[0] < 0)
-                                ? static_cast<size_t>(agent.status)
-                                : static_cast<size_t>(agent.status) + static_cast<size_t>(Status::Count);
-            position += (agent.position[1] > 0) ? 0 : 2 * static_cast<size_t>(Status::Count);
-            val[position]++;
+            auto position =
+                static_cast<size_t>(agent.status) + qw::well_index(agent.position) * static_cast<size_t>(Status::Count);
+            val[position] += 1;
         }
         return val;
     }
 
     std::vector<Agent> populations;
+    Eigen::Matrix<double, 4, 4> total_transitions = Eigen::Matrix<double, 4, 4>::Zero();
 
 private:
     static Position grad_U(const Position x)

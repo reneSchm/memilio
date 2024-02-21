@@ -63,3 +63,6 @@ target_link_libraries(ABM_PDMM hybrid_paper)
 
 add_executable(travel_time_heuristic munich/travel_time_heuristic.cpp)
 target_link_libraries(travel_time_heuristic hybrid_paper)
+
+add_executable(qw_temporal_hybrid quad_well/temporal_hybrid.cpp)
+target_link_libraries(qw_temporal_hybrid hybrid_paper)

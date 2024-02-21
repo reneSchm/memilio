@@ -44,7 +44,7 @@ struct StochastiK {
     }
 
     template <class Agent>
-    void draw_commuting_parameters(Agent& a, const double t, const double /*dt*/)
+    void draw_commuting_parameters(Agent& a, const double t, const double dt)
     {
         size_t destination_region =
             mio::DiscreteDistribution<size_t>::get_instance()(metaregion_commute_weights.row(a.region));
@@ -54,7 +54,6 @@ struct StochastiK {
         if (a.commutes) {
             a.commuting_destination = metaregion_sampler(destination_region);
 
-            assert(m_metaregions(a.commuting_destination[0], a.commuting_destination[1]) - 1 == destination_region);
             //TODO: anschauen, was Normalverteilung mit den Parametern macht
             //TODO: Zeitmessung triangular dist & normal dist übergeben
             a.t_return =
@@ -63,8 +62,8 @@ struct StochastiK {
             // a.t_depart = TriangularDistribution(a.t_return - dt, t, t + 9.0 / 24.0).get_instance();
             a.t_depart = t + mio::ParameterDistributionNormal(5.0 / 24.0, 13.0 / 24.0, 9.0 / 24.0).get_rand_sample();
 
-            assert(m_k.is_in_interval(a.t_return, t, t + 1));
-            assert(m_k.is_in_interval(a.t_depart, t, t + 1));
+            assert(is_in_interval(a.t_return, t, t + 1));
+            assert(is_in_interval(a.t_depart, t, t + 1));
             assert(a.t_return < t + 1);
             assert(a.t_depart + dt < a.t_return);
         }

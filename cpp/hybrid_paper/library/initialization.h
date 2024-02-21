@@ -65,7 +65,7 @@ void read_initialization(std::string filename, std::vector<Agent>& agents)
         exit(1);
     }
 
-    for (int i = 0; i < result.size(); ++i) {
+    for (size_t i = 0; i < result.size(); ++i) {
         auto a = mio::deserialize_json(result[std::to_string(i)], mio::Tag<Agent>{}).value();
         agents.push_back(Agent{a.position, a.status, a.region});
     }

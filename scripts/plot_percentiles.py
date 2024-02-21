@@ -1,39 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from mpm_plotter import plot_populations
+from mpm_plotter import plot_populations, read_from_terminal
 
-def read_from_terminal(filename):
-    with open(filename) as file:
-        lines = file.readlines()
-        skip_to = 0
-        labels = ""
-        # find first line of the output table
-        for i in range(len(lines)):
-            if "Time" in lines[i]:
-                skip_to = i + 1
-                # read labels
-                labels = lines[i].split()[1:]
-                break
-        # throw error if table was not found
-        if labels == "":
-            raise EOFError("Could not find results table in " + filename)
-        result = []
-        for i in range(skip_to, len(lines)):
-            result+=[[]]
-            for txt in lines[i].split():
-                try:
-                    result[-1] += [float(txt)]
-                except ValueError:
-                    # remove entries from failed line (should be empty)
-                    result = result[:-1]
-                    return np.array(result), labels
-            if len(result[-1]) != len(labels) + 1:
-                # remove entries from failed line
-                result = result[:-1]
-                return np.array(result), labels
-        return np.array(result), labels
-    
 def plot(time, data1, data2, comp, labels=['data1', 'data2'], filename = 'plt', scaling_factor = 1,
           title = '', xlabel = '', ylabel = ''):
     for r in range(len(data1)):

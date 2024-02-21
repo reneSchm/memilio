@@ -2,16 +2,12 @@
 #define HYBRID_H_
 
 #include "abm_adapter.h"
-#include "memilio/math/eigen.h"
 #include "memilio/compartments/simulation.h"
-
-#include <cassert>
-#include <vector>
 
 //TODO: remove DEBUG
 //#include <iostream>
-#define DEBUG(cout_args) std::cerr << cout_args << std::endl << std::flush;
-//#define DEBUG(cout_args) (void)0;
+// #define DEBUG(cout_args) std::cerr << cout_args << std::endl << std::flush;
+#define DEBUG(cout_args) (void)0;
 
 namespace mio
 {
@@ -115,6 +111,16 @@ public:
     {
         DEBUG("get_result")
         return m_results;
+    }
+
+    const auto& get_base_simulation() const
+    {
+        return m_sim_base;
+    }
+
+    const auto& get_secondary_simulation() const
+    {
+        return m_sim_sec;
     }
 
 private:

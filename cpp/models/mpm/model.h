@@ -148,7 +148,10 @@ public:
             dxdt[target] += change;
         }
 
-        if (eval_ctr == max_evals) {
+        if (params.template get<AdoptionRates<Status>>().size() == 0) {
+            eval_ctr = 0;
+        }
+        else if (eval_ctr == max_evals) {
             eval_ctr = 0;
             flow_x.setZero();
             stepper.stepper().do_step(
