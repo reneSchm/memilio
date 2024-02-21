@@ -4,15 +4,17 @@ add_library(hybrid_paper
     library/initialization.h
     library/initialization.cpp
     library/infection_state.h
+    library/infection_state.cpp
     library/map_reader.h
     library/map_reader.cpp
     library/metaregion_sampler.h
     library/model_setup.h
     library/potentials/potential_germany.h
     library/potentials/commuting_potential.h
+    library/transition_rate_estimation.h
+    library/transition_rate_estimation.cpp
     library/weighted_gradient.h
     library/weighted_potential.h
-    library/transition_rate_estimation.h
     quad_well/quad_well_setup.h
 )
 target_link_libraries(hybrid_paper memilio mpm)

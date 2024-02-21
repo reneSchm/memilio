@@ -9,8 +9,6 @@
 #include <cstddef>
 #include <vector>
 
-const qw::MetaregionSampler pos_rng{{-2, -2}, {0, 0}, {2, 2}, 0.3};
-
 template <class Agent>
 struct QuadWellSetup {
 
@@ -36,6 +34,7 @@ struct QuadWellSetup {
         return model;
     }
 
+    qw::MetaregionSampler pos_rng{{-2, -2}, {0, 0}, {2, 2}, 0.3};
     double t_Exposed;
     double t_Carrier;
     double t_Infected;
@@ -72,27 +71,9 @@ struct QuadWellSetup {
         size_t counter = 0;
         auto& sta_rng  = mio::DiscreteDistribution<int>::get_instance();
         for (auto& agent : agents) {
-            switch (counter % 4) {
-            case 0:
-                agent.position = pos_rng(0); //upper left quadrant
-                agent.status   = static_cast<Status>(sta_rng(init_dists[0]));
-                break;
-            case 1:
-                agent.position = pos_rng(1); //upper right quadrant
-                agent.status   = static_cast<Status>(sta_rng(init_dists[1]));
-                break;
-            case 2:
-                agent.position = pos_rng(2);
-                ; //lower left quadrant
-                agent.status = static_cast<Status>(sta_rng(init_dists[2]));
-                break;
-            case 3:
-                agent.position = pos_rng(3);
-                ; //lower right quadrant
-                agent.status = static_cast<Status>(sta_rng(init_dists[3]));
-                break;
-            }
-            ++counter;
+            agent.position = pos_rng(counter); //upper left quadrant
+            agent.status   = static_cast<Status>(sta_rng(init_dists[counter]));
+            counter        = (counter + 1) % 4;
         }
 
         //set adoption rates
@@ -126,13 +107,13 @@ struct QuadWellSetup {
                         0.004, //mu_I_D
                         100.0, //tmax
                         0.1, //dt
-                        0.4, //sigma
+                        0.5, //sigma
                         0.4, //contact_radius
                         num_agents,
-                        {{0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
-                         {0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
-                         {0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
-                         {0.99, 0.002, 0.003, 0.005, 0.0, 0.0}}, //pop dists
+                        {{1.0, 0., 0., 0., 0.0, 0.0},
+                         {1.0, 0., 0., 0., 0.0, 0.0},
+                         {1.0, 0., 0., 0., 0.0, 0.0},
+                         {1.0, 0., 0., 0., 0.0, 0.0}}, //pop dists
                         std::map<std::tuple<mio::mpm::Region, mio::mpm::Region>, double>{
                             {{mio::mpm::Region(0), mio::mpm::Region(1)}, 0.02},
                             {{mio::mpm::Region(0), mio::mpm::Region(2)}, 0.02},

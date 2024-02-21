@@ -36,10 +36,7 @@ const static std::map<std::tuple<InfectionState, InfectionState>, Eigen::Index> 
     {{InfectionState::I, InfectionState::R}, Eigen::Index(4)},
     {{InfectionState::I, InfectionState::D}, Eigen::Index(5)}};
 
-Eigen::Index get_region_flow_index(int region, InfectionState from, InfectionState to)
-{
-    return Eigen::Index(flow_indices.size() * region + flow_indices.at({from, to}));
-}
+Eigen::Index get_region_flow_index(int region, InfectionState from, InfectionState to);
 } //namespace paper
 } // namespace mpm
 } // namespace mio

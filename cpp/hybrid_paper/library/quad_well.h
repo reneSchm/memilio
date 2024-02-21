@@ -134,7 +134,6 @@ public:
         const auto new_well = qw::well_index(agent.position);
         if (old_well != new_well) {
             m_number_transitions[static_cast<size_t>(agent.status)](old_well, new_well)++;
-            total_transitions(old_well, new_well) += 1;
         }
     }
 
@@ -162,7 +161,6 @@ public:
     }
 
     std::vector<Agent> populations;
-    Eigen::Matrix<double, 4, 4> total_transitions = Eigen::Matrix<double, 4, 4>::Zero();
 
 private:
     static Position grad_U(const Position x)

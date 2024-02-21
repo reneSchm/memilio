@@ -16,6 +16,7 @@ int main(int argc, char** argv)
     std::vector<double> pops{2000, 2000, 2000, 2000};
     size_t num_agents = std::accumulate(pops.begin(), pops.end(), 0.0);
     QuadWellSetup<Model::Agent> setup(num_agents);
+    setup.adoption_rates.clear();
     Model model = setup.create_abm<Model>();
 
     auto rates = mio::mpm::paper::calculate_transition_rates(model, 10, setup.tmax, 4, pops);
