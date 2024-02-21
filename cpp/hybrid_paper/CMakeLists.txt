@@ -12,6 +12,8 @@ add_library(hybrid_paper
     library/potentials/commuting_potential.h
     library/weighted_gradient.h
     library/weighted_potential.h
+    library/transition_rate_estimation.h
+    quad_well/quad_well_setup.h
 )
 target_link_libraries(hybrid_paper memilio mpm)
 
@@ -24,8 +26,11 @@ target_compile_options(hybrid_paper PRIVATE ${MEMILIO_CXX_FLAGS_ENABLE_WARNING_E
 add_executable(transition_rate_fitting munich/transition_rate_fitting.cpp)
 target_link_libraries(transition_rate_fitting dlib::dlib hybrid_paper)
 
-add_executable(estimate_transition_rates munich/estimate_transition_rates.cpp)
-target_link_libraries(estimate_transition_rates hybrid_paper)
+add_executable(estimate_transition_rates_munich munich/estimate_transition_rates.cpp)
+target_link_libraries(estimate_transition_rates_munich hybrid_paper)
+
+add_executable(estimate_transition_rates_quadwell quad_well/estimate_transition_rates.cpp)
+target_link_libraries(estimate_transition_rates_quadwell hybrid_paper)
 
 add_executable(create_agents munich/create_agents.cpp)
 target_link_libraries(create_agents hybrid_paper)
@@ -63,6 +68,9 @@ target_link_libraries(ABM_PDMM hybrid_paper)
 
 add_executable(travel_time_heuristic munich/travel_time_heuristic.cpp)
 target_link_libraries(travel_time_heuristic hybrid_paper)
+
+add_executable(spatial_hybridization_quad_well quad_well/spatial_hybridization.cpp)
+target_link_libraries(spatial_hybridization_quad_well hybrid_paper OpenMP::OpenMP_CXX)
 
 add_executable(qw_temporal_hybrid quad_well/temporal_hybrid.cpp)
 target_link_libraries(qw_temporal_hybrid hybrid_paper)

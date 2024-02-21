@@ -1,7 +1,9 @@
 #ifndef QUAD_WELL_H
 #define QUAD_WELL_H
 
+#include "infection_state.h"
 #include "mpm/model.h"
+#include "hybrid_paper/library/infection_state.h"
 #include <cmath>
 
 namespace qw
@@ -50,19 +52,12 @@ private:
 
 } // namespace qw
 
-enum InfStates
-{
-    S,
-    I,
-    R,
-    Count
-};
-
+template <class InfectionState>
 class QuadWellModel
 {
 
 public:
-    using Status   = InfStates;
+    using Status   = InfectionState;
     using Position = qw::Position;
 
     struct Agent {
@@ -75,6 +70,7 @@ public:
         : populations(agents)
         , m_contact_radius(contact_radius)
         , m_sigma(sigma)
+        , m_number_transitions(static_cast<size_t>(Status::Count), Eigen::MatrixXd::Zero(4, 4))
     {
         for (auto& agent : populations) {
             assert(is_in_domain(agent.position));
@@ -137,6 +133,7 @@ public:
         agent.position      = agent.position - dt * grad_U(agent.position) + (m_sigma * std::sqrt(dt)) * p;
         const auto new_well = qw::well_index(agent.position);
         if (old_well != new_well) {
+            m_number_transitions[static_cast<size_t>(agent.status)](old_well, new_well)++;
             total_transitions(old_well, new_well) += 1;
         }
     }
@@ -151,6 +148,17 @@ public:
             val[position] += 1;
         }
         return val;
+    }
+
+    double& number_transitions(const mio::mpm::TransitionRate<Status>& tr)
+    {
+        return m_number_transitions[static_cast<size_t>(tr.status)](static_cast<size_t>(tr.from),
+                                                                    static_cast<size_t>(tr.to));
+    }
+
+    const std::vector<Eigen::MatrixXd>& number_transitions() const
+    {
+        return m_number_transitions;
     }
 
     std::vector<Agent> populations;
@@ -179,5 +187,6 @@ private:
     std::map<std::tuple<mio::mpm::Region, Status, Status>, mio::mpm::AdoptionRate<Status>> m_adoption_rates;
     double m_contact_radius;
     double m_sigma;
+    std::vector<Eigen::MatrixXd> m_number_transitions;
 };
 #endif //QUAD_WELL_H

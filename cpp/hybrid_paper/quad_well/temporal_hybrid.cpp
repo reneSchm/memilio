@@ -12,18 +12,27 @@
 
 const qw::MetaregionSampler pos_rng{{-2, -2}, {0, 0}, {2, 2}, 0.3};
 
+enum InfStates
+{
+    S,
+    I,
+    R,
+    Count
+};
+
 template <>
-void mio::convert_model(const Simulation<mio::mpm::ABM<QuadWellModel>>&, mio::mpm::PDMModel<4, QuadWellModel::Status>&)
+void mio::convert_model(const Simulation<mio::mpm::ABM<QuadWellModel<InfStates>>>&,
+                        mio::mpm::PDMModel<4, QuadWellModel<InfStates>::Status>&)
 {
     DEBUG("convert_model abm->pdmm")
 }
 
 template <>
-void mio::convert_model(const Simulation<mio::mpm::PDMModel<4, QuadWellModel::Status>>& a,
-                        mio::mpm::ABM<QuadWellModel>& b)
+void mio::convert_model(const Simulation<mio::mpm::PDMModel<4, QuadWellModel<InfStates>::Status>>& a,
+                        mio::mpm::ABM<QuadWellModel<InfStates>>& b)
 {
     DEBUG("convert_model pdmmm->abm")
-    using Status = QuadWellModel::Status;
+    using Status = QuadWellModel<InfStates>::Status;
 
     auto values = a.get_result().get_last_value().eval();
 
@@ -41,7 +50,7 @@ int main()
     mio::set_log_level(mio::LogLevel::warn);
 
     using namespace mio::mpm;
-    using Model            = ABM<QuadWellModel>;
+    using Model            = ABM<QuadWellModel<InfStates>>;
     using Status           = Model::Status;
     const unsigned regions = 4;
     size_t n_agents        = 4000;
@@ -108,7 +117,8 @@ int main()
     // const int n_samples                         = 1000;
 
     // for (int i = 0; i < n_samples; i++) {
-    mio::HybridSimulation<mio::mpm::ABM<QuadWellModel>, mio::mpm::PDMModel<regions, Status>> sim(abm, pdmm, 0.5);
+    mio::HybridSimulation<mio::mpm::ABM<QuadWellModel<Status>>, mio::mpm::PDMModel<regions, Status>> sim(abm, pdmm,
+                                                                                                         0.5);
 
     sim.advance(100, [](bool b, double t, auto&& Base, auto&& Other) {
         const int critical_num_infections = 10;
