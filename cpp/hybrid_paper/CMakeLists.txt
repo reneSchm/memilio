@@ -1,6 +1,8 @@
 add_subdirectory(dlib-19.24 dlib_build)
 
 add_library(hybrid_paper
+    library/ensemble_run.h
+    library/ensemble_run.cpp
     library/initialization.h
     library/initialization.cpp
     library/infection_state.h
@@ -65,8 +67,11 @@ target_link_libraries(hybridization hybrid_paper OpenMP::OpenMP_CXX)
 add_executable(PDMM munich/PDMM.cpp)
 target_link_libraries(PDMM hybrid_paper)
 
-add_executable(ABM_PDMM munich/ABM_PDMM.cpp)
-target_link_libraries(ABM_PDMM hybrid_paper)
+add_executable(ABM_PDMM_munich munich/ABM_PDMM.cpp)
+target_link_libraries(ABM_PDMM_munich hybrid_paper)
+
+add_executable(ABM_PDMM_quad_well quad_well/ABM_PDMM.cpp)
+target_link_libraries(ABM_PDMM_quad_well hybrid_paper)
 
 add_executable(travel_time_heuristic munich/travel_time_heuristic.cpp)
 target_link_libraries(travel_time_heuristic hybrid_paper)
