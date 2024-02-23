@@ -2,7 +2,7 @@
 #define TRANSITION_RATE_ESTIMATION_H
 
 #include "hybrid_paper/library/infection_state.h"
-#include "hybrid_paper/library/initialization.h"
+#include "memilio/compartments/simulation.h"
 #include "mpm/model.h"
 
 namespace mio
@@ -20,8 +20,9 @@ std::vector<TransitionRate<InfectionState>> add_transition_rates(std::vector<Tra
 void print_transition_rates(std::vector<TransitionRate<InfectionState>>& transition_rates, bool print_to_file);
 
 template <class ABM>
-std::vector<TransitionRate<InfectionState>>
-calculate_transition_rates(ABM& abm, size_t num_runs, double tmax, size_t num_regions, std::vector<double>& ref_pops)
+std::vector<TransitionRate<InfectionState>> calculate_transition_rates(ABM& abm, size_t num_runs, double tmax,
+                                                                       size_t num_regions,
+                                                                       std::vector<double>& ref_pops, double ppa)
 {
     std::vector<std::vector<TransitionRate<InfectionState>>> estimated_transition_rates(num_runs);
 
@@ -40,10 +41,9 @@ calculate_transition_rates(ABM& abm, size_t num_runs, double tmax, size_t num_re
         mio::Simulation<ABM> sim(abm, 0, 0.05);
         sim.advance(tmax);
 
-        double scaling_factor = std::accumulate(ref_pops.begin(), ref_pops.end(), 0.0) / abm.populations.size();
         //add calculated transition rates
         for (auto& tr_rate : estimated_transition_rates[run]) {
-            auto region_pop = ref_pops[tr_rate.from.get()] / scaling_factor;
+            auto region_pop = ref_pops[tr_rate.from.get()] / ppa;
             tr_rate.factor  = sim.get_model().number_transitions(tr_rate) / (region_pop * tmax);
         }
     }

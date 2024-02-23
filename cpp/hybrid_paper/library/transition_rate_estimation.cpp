@@ -1,4 +1,5 @@
 #include "transition_rate_estimation.h"
+#include "hybrid_paper/library/initialization.h"
 
 namespace mio
 {

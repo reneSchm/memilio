@@ -1,15 +1,13 @@
 #include "hybrid_paper/library/model_setup.h"
 #include "hybrid_paper/library/potentials/commuting_potential.h"
 #include "hybrid_paper/library/weighted_gradient.h"
-#include "hybrid_paper/library/initialization.h"
-#include "hybrid_paper/library/map_reader.h"
 #include "hybrid_paper/library/infection_state.h"
-#include "hybrid_paper/library/potentials/potential_germany.h"
 #include "hybrid_paper/library/transition_rate_estimation.h"
+#include "memilio/utils/logging.h"
 #include "mpm/abm.h"
 #include "mpm/model.h"
-
-#include "memilio/io/cli.h"
+#include "mpm/pdmm.h"
+#include "ode_secir/model.h"
 
 #include <numeric>
 #include <vector>
@@ -74,16 +72,30 @@ std::string colorize(double a, double b)
 
 int main(int argc, char** argv)
 {
-    using Model  = mio::mpm::ABM<CommutingPotential<Kedaechtnislos, mio::mpm::paper::InfectionState>>;
+    mio::set_log_level(mio::LogLevel::warn);
     using Status = mio::mpm::paper::InfectionState;
+    using ABM    = mio::mpm::ABM<CommutingPotential<Kedaechtnislos, Status>>;
+    using PDMM   = mio::mpm::PDMModel<8, Status>;
 
-    mio::mpm::paper::ModelSetup<Model::Agent> setup;
-    Model model = setup.create_abm<Model>();
+    using Model = PDMM;
+
+    mio::mpm::paper::ModelSetup<ABM::Agent> setup;
+    setup.adoption_rates.clear();
+    for (int k = 0; k < 8; k++) {
+        setup.pop_dists_scaled[k][0] =
+            std::accumulate(setup.pop_dists_scaled[k].begin(), setup.pop_dists_scaled[k].end(), 0.0);
+        for (int s = 1; s < (int)Status::Count; s++) {
+            setup.pop_dists_scaled[k][s] = 0;
+        }
+    }
+    Model model = setup.create_pdmm<Model>();
+
+    // ({setup.commute_weights, setup.metaregions, {setup.metaregions}, setup.persons_per_agent}, setup.agents,            setup.adoption_rates, setup.wg.gradient, setup.metaregions, {Status::D}, setup.sigmas,setup.contact_radius);
 
     //print_movement<Model>(agents, model, tmax, 0.1);
 
-    auto rates =
-        mio::mpm::paper::calculate_transition_rates(model, 10, setup.tmax, setup.region_ids.size(), setup.populations);
+    auto rates = mio::mpm::paper::calculate_transition_rates(model, 10, setup.tmax, setup.region_ids.size(),
+                                                             setup.populations, setup.persons_per_agent);
 
     //check
     for (auto rate : rates) {

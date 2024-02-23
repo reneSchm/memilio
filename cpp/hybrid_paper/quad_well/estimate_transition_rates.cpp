@@ -19,7 +19,7 @@ int main(int argc, char** argv)
     setup.adoption_rates.clear();
     Model model = setup.create_abm<Model>();
 
-    auto rates = mio::mpm::paper::calculate_transition_rates(model, 10, setup.tmax, 4, pops);
+    auto rates = mio::mpm::paper::calculate_transition_rates(model, 10, setup.tmax, 4, pops, 1);
 
     return 0;
 }

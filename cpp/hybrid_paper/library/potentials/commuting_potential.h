@@ -3,12 +3,14 @@
 
 #include "hybrid_paper/library/metaregion_sampler.h"
 #include "hybrid_paper/library/infection_state.h"
-#include "memilio/math/eigen.h"
 #include "memilio/math/floating_point.h"
+#include "memilio/utils/random_number_generator.h"
 #include "mpm/model.h"
 #include "memilio/utils/time_series.h"
+#include <algorithm>
 #include <array>
 #include <cassert>
+#include <limits>
 #include <random>
 
 struct TriangularDistribution {
@@ -114,6 +116,10 @@ struct Kedaechtnislos {
         : metaregion_commute_weights(commute_weights)
         , metaregion_sampler(sampler)
         , metaregions(regions)
+        // , m_ppa(ppa)
+        // , m_normalized_waiting_time(mio::ExponentialDistribution<double>::get_instance()(1.))
+        // , m_remaining_time(0)
+        , m_t(-std::numeric_limits<double>::max())
     {
         for (Eigen::Index i = 0; i < metaregion_commute_weights.rows(); i++) {
             for (Eigen::Index j = 0; j < metaregion_commute_weights.cols(); j++) {
@@ -127,27 +133,48 @@ struct Kedaechtnislos {
     }
 
     template <class Agent>
-    void draw_commuting_parameters(Agent&, const double /*t*/, const double /*dt*/)
+    void draw_commuting_parameters(Agent& /*a*/, const double /*t*/, const double /*dt*/)
     {
     }
 
     template <class Agent>
-    Eigen::Vector2d operator()(Agent& a, double /*t*/, double dt)
+    Eigen::Vector2d operator()(Agent& a, double t, double dt)
     {
+        if (m_t < t) {
+            m_t = t;
+            // m_remaining_time = dt;
+            m_call = std::min(2, m_call + 1);
+        }
+        if (m_call == 1) {
+            a.t_depart = mio::ExponentialDistribution<double>::get_instance()(1.);
+        }
+
         Eigen::VectorXd weights = metaregion_commute_weights.row(a.region);
-        for (Eigen::Index i = 0; i < weights.size(); i++) {
-            if (i != a.region) {
-                weights[i] *= dt;
-                weights[a.region] -= weights[i];
+        const double pop        = weights[a.region];
+        weights[a.region]       = 0;
+
+        // accumulated transition rate per agent per unit time
+        double acc_rate = weights.sum() / pop;
+
+        auto& normalized_waiting_time = a.t_depart;
+
+        if (normalized_waiting_time < dt * acc_rate) {
+            normalized_waiting_time = mio::ExponentialDistribution<double>::get_instance()(1.);
+            auto destination_region = mio::DiscreteDistribution<size_t>::get_instance()(weights);
+            // m_remaining_time -= m_normalized_waiting_time / acc_rate;
+
+            // if (destination_region == a.region) {
+            //     return {0, 0};
+            // }
+            // else
+            {
+                const Eigen::Vector2d destinaton = metaregion_sampler(destination_region);
+                return destinaton - a.position;
             }
         }
-        auto destination_region = mio::DiscreteDistribution<size_t>::get_instance()(weights);
-        if (destination_region == a.region) {
-            return {0, 0};
-        }
         else {
-            const Eigen::Vector2d destinaton = metaregion_sampler(destination_region);
-            return destinaton - a.position;
+            normalized_waiting_time -= dt * acc_rate;
+            return {0, 0};
         }
     }
 
@@ -159,6 +186,8 @@ struct Kedaechtnislos {
     Matrix metaregion_commute_weights;
     MetaregionSampler metaregion_sampler;
     Eigen::Ref<const Eigen::MatrixXi> metaregions;
+    double m_t;
+    int m_call = 0;
 };
 
 namespace paper

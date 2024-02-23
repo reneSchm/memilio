@@ -21,7 +21,6 @@
 #define MPM_PDMM_H_
 
 #include "memilio/config.h"
-#include "memilio/mobility/graph_simulation.h"
 #include "mpm/model.h"
 #include "mpm/utility.h"
 
