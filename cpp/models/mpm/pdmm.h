@@ -27,6 +27,7 @@
 #include "memilio/compartments/simulation.h"
 
 #include <algorithm>
+#include <iostream>
 #include <numeric>
 
 namespace mio
@@ -90,31 +91,26 @@ public:
             evaluate_current_tramsition_rates(m_rates, cctr);
             // check if one or more transitions occur during this time step
             if (m_normalized_waiting_time < remaining_time * cctr) { // (at least one) event occurs
-                // perform transition(s)
-                do {
-                    current_time += m_normalized_waiting_time / cctr; // event time t**
-                    // advance all locations to t**
-                    m_simulation.advance(current_time);
-                    // draw which transition event occurs, then execute it
-                    size_t event = mio::DiscreteDistribution<size_t>::get_instance()(m_rates);
-                    perform_transition(event);
-                    remaining_time -= m_normalized_waiting_time / cctr;
-                    // update current (cumulative) transition rates
-                    evaluate_current_tramsition_rates(m_rates, cctr);
-                    // draw new waiting time
-                    m_normalized_waiting_time = mio::ExponentialDistribution<ScalarType>::get_instance()(1.0);
-                    // repeat, if another event occurs in the remaining time interval
-                } while (m_normalized_waiting_time < remaining_time * cctr);
+                current_time += m_normalized_waiting_time / cctr; // compute first event time t**
+                // advance all locations to t**
+                m_simulation.advance(current_time);
+                m_dt = get_dt_tracer().get_dt(); // used to set new remaining_time
+                // draw which transition event occurs, then execute it
+                size_t event = mio::DiscreteDistribution<size_t>::get_instance()(m_rates);
+                perform_transition(event);
+                // draw new waiting time
+                m_normalized_waiting_time = mio::ExponentialDistribution<ScalarType>::get_instance()(1.0);
+                // end time step early, if another event occurs during remaining_time, it will be handled there
             }
             else { // no event occurs
+                // progress time
+                current_time += remaining_time;
                 // reduce waiting time for the next step
                 m_normalized_waiting_time -= remaining_time * cctr;
+                // advance all locations
+                m_simulation.advance(current_time);
+                m_dt = get_dt_tracer().get_dt(); // used to set new remaining_time
             }
-            // advance time
-            current_time += remaining_time;
-            // advance all locations
-            m_simulation.advance(current_time);
-            m_dt = get_dt_tracer().get_dt();
         }
         return get_result().get_last_value();
     }
