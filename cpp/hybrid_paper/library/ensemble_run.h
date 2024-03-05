@@ -1,11 +1,15 @@
 #ifndef ENSEMBLE_RUN_H
 #define ENSEMBLE_RUN_H
 
+#include "hybrid_paper/library/quad_well.h"
 #include "infection_state.h"
 #include "initialization.h"
 #include "memilio/utils/time_series.h"
 #include "models/mpm/utility.h"
 #include "memilio/data/analyze_result.h"
+
+#include <cstddef>
+#include <omp.h>
 
 #define TIME_TYPE std::chrono::high_resolution_clock::time_point
 #define TIME_NOW std::chrono::high_resolution_clock::now()
@@ -35,23 +39,33 @@ void percentile_output_to_file(std::vector<TimeSeries<double>>& percentile_outpu
 
 TimeSeries<double> add_time_series(TimeSeries<double>& t1, TimeSeries<double>& t2);
 
-template <class Model>
+template <class Model, class SampleStatusFunction>
 void run(Model model, size_t num_runs, double tmax, double dt, size_t num_regions, bool save_percentiles,
-         std::string result_prefix)
+         std::string result_prefix, std::string result_path, SampleStatusFunction sample_function)
 {
     using Status = InfectionState;
     std::vector<mio::TimeSeries<double>> ensemble_results(
         num_runs, mio::TimeSeries<double>::zero(tmax, num_regions * static_cast<size_t>(Status::Count)));
     TIME_TYPE total_sim_time = TIME_NOW;
+#pragma omp barrier
+#pragma omp parallel for
     for (int run = 0; run < num_runs; ++run) {
-        std::cout << "run: " << run << "\n" << std::flush;
-        auto sim = mio::Simulation<Model>(model, 0.0, dt);
+        std::cout << "Start run " << run << "\n" << std::flush;
+        TIME_TYPE sim_time_begin = TIME_NOW;
+        auto sim                 = mio::Simulation<Model>(model, 0.0, dt);
+        sample_function(sim);
         sim.advance(tmax);
-        auto& run_result      = sim.get_result();
+        TIME_TYPE sim_time_end = TIME_NOW;
+        std::cout << "Time run " << run << ": " << PRINTABLE_TIME(sim_time_end - sim_time_begin) << std::endl
+                  << std::flush;
+        auto& run_result = sim.get_result();
+
         ensemble_results[run] = mio::interpolate_simulation_result(run_result);
     }
-    restart_timer(total_sim_time, "Time for simulation")
-    { // add all results
+#pragma omp single
+    {
+        restart_timer(total_sim_time, "Time for simulation");
+        // add all results
         mio::TimeSeries<double> mean_time_series =
             std::accumulate(ensemble_results.begin(), ensemble_results.end(),
                             mio::TimeSeries<double>::zero(ensemble_results[0].get_num_time_points(),
@@ -62,7 +76,7 @@ void run(Model model, size_t num_runs, double tmax, double dt, size_t num_region
             mean_time_series.get_value(t) *= 1.0 / num_runs;
         }
 
-        std::string dir = mio::base_dir() + "cpp/outputs/" + result_prefix;
+        std::string dir = result_path + result_prefix;
 
         //save mean timeseries
         FILE* file = fopen((dir + "_output_mean.txt").c_str(), "w");

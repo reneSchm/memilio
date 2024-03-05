@@ -19,7 +19,7 @@ add_library(hybrid_paper
     library/weighted_potential.h
     quad_well/quad_well_setup.h
 )
-target_link_libraries(hybrid_paper memilio mpm)
+target_link_libraries(hybrid_paper memilio mpm OpenMP::OpenMP_CXX)
 
 # target_include_directories(hybrid_paper PUBLIC
 # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>

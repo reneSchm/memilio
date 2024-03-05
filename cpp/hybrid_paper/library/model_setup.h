@@ -55,6 +55,11 @@ struct ModelSetup {
             create_agents<Agent>(pop_dists, populations, persons_per_agent, metaregion_sampler, false).value();
     }
 
+    template <class Model>
+    void dummy(Model& /*model*/)
+    {
+    }
+
     //parameters
     double t_Exposed;
     double t_Carrier;
@@ -154,7 +159,7 @@ struct ModelSetup {
         : t_Exposed(3)
         , t_Carrier(3)
         , t_Infected(6)
-        , transmission_rates(std::vector<double>{0.1, 0.25, 0.06, 0.13, 0.09, 0.13, 0.2, 0.09})
+        , transmission_rates(8, 0.15)
         , mu_C_R(0.2)
         , mu_I_D(0.003)
         , start_date(mio::Date(2021, 3, 1))
@@ -174,7 +179,7 @@ struct ModelSetup {
                 return _metaregions;
             }
         }())
-        , tmax(30)
+        , tmax(50)
         , dt(0.1)
         , commute_weights([this]() {
             const std::vector<int> county_ids   = {233, 228, 242, 223, 238, 232, 231, 229};
@@ -265,7 +270,12 @@ struct ModelSetup {
         //No adapted transition behaviour when infected
         for (auto& rate : transition_factors) {
             for (auto s : transitioning_states) {
-                transition_rates.push_back({s, std::get<0>(rate.first), std::get<1>(rate.first), rate.second});
+                auto from = std::get<0>(rate.first);
+                auto to   = std::get<1>(rate.first);
+                transition_rates.push_back({s, from, to,
+                                            (commute_weights(static_cast<size_t>(from), static_cast<size_t>(to)) +
+                                             commute_weights(static_cast<size_t>(to), static_cast<size_t>(from))) /
+                                                populations[static_cast<size_t>(from)]});
             }
         }
     }

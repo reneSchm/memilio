@@ -210,6 +210,11 @@ public:
         return m_number_transitions;
     }
 
+    std::vector<Eigen::MatrixXd>& number_transitions()
+    {
+        return m_number_transitions;
+    }
+
     void increase_number_transitions(const mpm::TransitionRate<Status>& tr) const
     {
         m_number_transitions[static_cast<size_t>(tr.status)](static_cast<size_t>(tr.from),

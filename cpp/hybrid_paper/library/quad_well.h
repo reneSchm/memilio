@@ -4,7 +4,9 @@
 #include "infection_state.h"
 #include "mpm/model.h"
 #include "hybrid_paper/library/infection_state.h"
+#include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace qw
 {
@@ -18,6 +20,33 @@ inline size_t well_index(const Position& p)
     // 2|3
     return (p.x() >= 0) + 2 * (p.y() < 0);
 }
+
+class PositionSampler
+{
+public:
+    /*
+    * x: for each metaregion neighboring the focus region has [x_min, x_max] as entry
+    * y: for each metaregion neighboring the focus region has [y_min, y_max] as entry
+    */
+    PositionSampler(const std::vector<Position> x, const std::vector<Position> y)
+        : m_x(x)
+        , m_y(y)
+    {
+    }
+
+    Position operator()(size_t metaregion_index) const
+    {
+        const auto& x = m_x[metaregion_index];
+        const auto& y = m_y[metaregion_index];
+
+        return {mio::UniformDistribution<double>::get_instance()(x[0], x[1]),
+                mio::UniformDistribution<double>::get_instance()(y[0], y[1])};
+    }
+
+private:
+    std::vector<Position> m_x;
+    std::vector<Position> m_y;
+};
 
 class MetaregionSampler
 {
@@ -160,6 +189,16 @@ public:
         return m_number_transitions;
     }
 
+    std::vector<Eigen::MatrixXd>& number_transitions()
+    {
+        return m_number_transitions;
+    }
+
+    std::map<std::tuple<mio::mpm::Region, Status, Status>, mio::mpm::AdoptionRate<Status>>& get_adoption_rates()
+    {
+        return m_adoption_rates;
+    }
+
     std::vector<Agent> populations;
 
 private:
@@ -173,7 +212,8 @@ private:
     bool is_contact(const Agent& agent, const Agent& contact) const
     {
         //      test if contact is in the contact radius                     and test if agent and contact are different objects
-        return (agent.position - contact.position).norm() < m_contact_radius && (&agent != &contact);
+        return (agent.position - contact.position).norm() < m_contact_radius && (&agent != &contact) &&
+               qw::well_index(agent.position) == qw::well_index(contact.position);
     }
 
     bool is_in_domain(const Position& p) const
