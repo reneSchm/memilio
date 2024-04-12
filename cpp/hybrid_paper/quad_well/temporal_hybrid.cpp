@@ -1,6 +1,7 @@
 #include "hybrid_paper/library/initialization.h"
 #include "hybrid_paper/library/quad_well.h"
 #include "examples/hybrid.h"
+#include "memilio/utils/custom_index_array.h"
 #include "memilio/utils/logging.h"
 #include "memilio/utils/random_number_generator.h"
 #include "mpm/abm.h"
@@ -120,30 +121,28 @@ int main()
     mio::HybridSimulation<mio::mpm::ABM<QuadWellModel<Status>>, mio::mpm::PDMModel<regions, Status>> sim(abm, pdmm,
                                                                                                          0.5);
 
-    sim.advance(100, [](bool b, double t, auto&& Base, auto&& Other) {
+    sim.advance(100, [](bool b, const auto& results) {
         const int critical_num_infections = 10;
-        std::array<size_t, 4> n{0, 0, 0, 0};
-        for (const auto a : Base.populations) {
-            auto well = qw::well_index(a.position);
-            if (a.status == Status::I) {
-                n[well]++;
+
+        bool use_base = true; // some I comps are subcritical
+        bool use_sec  = true; // all I comps are critical
+
+        for (size_t i = 0; i < regions; i++) {
+            if (results.get_last_value()[mio::flatten_index<mio::Index<Region, Status>>(
+                    {Region(i), Status::I}, {Region(regions), Status::Count})] < critical_num_infections) {
+                use_base &= true;
+                use_sec = false;
+            }
+            else {
+                use_base = false;
+                use_sec &= true;
             }
         }
 
-        if (std::all_of(n.begin(), n.end(), [](auto&& i) {
-                return i > critical_num_infections;
-            })) {
-            return false;
-        }
-        else {
-            const auto m = Other.populations.slice(Status::I);
-            for (const auto& i : m) {
-                if (i <= critical_num_infections)
-                    return true;
-            }
-        }
-
-        return b;
+        if (use_base == !use_sec)
+            return use_base;
+        else
+            return b;
     });
     //     avg_transitions += sim.get_base_simulation().get_model().total_transitions / n_samples;
     // }

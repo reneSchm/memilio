@@ -28,8 +28,8 @@ std::vector<TransitionRate<InfectionState>> calculate_transition_rates(ABM& abm,
 
     std::vector<TransitionRate<InfectionState>> zero_transition_rates;
 
-    for (int i = 0; i < num_regions; ++i) {
-        for (int j = 0; j < num_regions; ++j) {
+    for (size_t i = 0; i < num_regions; ++i) {
+        for (size_t j = 0; j < num_regions; ++j) {
             if (i != j) {
                 zero_transition_rates.push_back({InfectionState::S, mio::mpm::Region(i), mio::mpm::Region(j), 0});
             }

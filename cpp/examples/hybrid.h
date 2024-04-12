@@ -3,6 +3,8 @@
 
 #include "abm_adapter.h"
 #include "memilio/compartments/simulation.h"
+#include "memilio/config.h"
+#include "memilio/utils/time_series.h"
 
 //TODO: remove DEBUG
 //#include <iostream>
@@ -34,8 +36,7 @@ class HybridSimulation
 {
 
 public:
-    using switch_fct =
-        std::function<bool(const bool& using_base, const double&, const BaseModel&, const SecondaryModel&)>;
+    using switch_fct = std::function<bool(const bool& using_base, const TimeSeries<ScalarType>& results)>;
 
     HybridSimulation(BaseModel& base_model, SecondaryModel& secondary_model, double dt_switch, double t0 = 0,
                      double dt = 0.1)
@@ -56,9 +57,8 @@ public:
         double t = get_result().get_last_time(); // current hybrid sim time
         while (t < tmax) {
             DEBUG(t << "\t/ " << std::min(t + m_dt_switch, tmax) << "\t/ " << tmax << " :: " << m_using_base_model
-                    << " " << use_base_model(m_using_base_model, t, m_sim_base.get_model(), m_sim_sec.get_model()))
-            if (m_using_base_model !=
-                use_base_model(m_using_base_model, t, m_sim_base.get_model(), m_sim_sec.get_model())) {
+                    << " " << use_base_model(m_using_base_model, m_results))
+            if (m_using_base_model != use_base_model(m_using_base_model, m_results)) {
                 if (m_using_base_model) {
                     m_using_base_model = false;
                     // set up sec model to start at the current state of the hybrid simulation
@@ -117,8 +117,16 @@ public:
     {
         return m_sim_base;
     }
+    auto& get_base_simulation()
+    {
+        return m_sim_base;
+    }
 
     const auto& get_secondary_simulation() const
+    {
+        return m_sim_sec;
+    }
+    auto& get_secondary_simulation()
     {
         return m_sim_sec;
     }

@@ -49,7 +49,7 @@ mio::TimeSeries<double> add_time_series(mio::TimeSeries<double>& t1, mio::TimeSe
 }
 
 std::vector<std::vector<mio::TimeSeries<double>>>
-get_format_for_percentile_output(std::vector<mio::TimeSeries<double>>& ensemble_result, size_t num_regions)
+get_format_for_percentile_output(const std::vector<mio::TimeSeries<double>>& ensemble_result, size_t num_regions)
 {
     std::vector<std::vector<mio::TimeSeries<double>>> ensemble_percentile(ensemble_result.size());
     auto num_time_points = ensemble_result[0].get_num_time_points();

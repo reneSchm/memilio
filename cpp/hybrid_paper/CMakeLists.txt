@@ -81,3 +81,6 @@ target_link_libraries(spatial_hybridization_quad_well hybrid_paper OpenMP::OpenM
 
 add_executable(qw_temporal_hybrid quad_well/temporal_hybrid.cpp)
 target_link_libraries(qw_temporal_hybrid hybrid_paper)
+
+add_executable(extinction_model extinction_model.cpp)
+target_link_libraries(extinction_model hybrid_paper OpenMP::OpenMP_CXX)

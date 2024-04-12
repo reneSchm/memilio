@@ -232,14 +232,14 @@ int main()
     std::vector<std::vector<ScalarType>> populations = {{950, 50, 0}, {1000, 0, 0}, {1000, 0, 0}, {1000, 0, 0}};
     smm.parameters.get<AdoptionRates<Status>>()      = adoption_rates;
     smm.parameters.get<TransitionRates<Status>>()    = {
-           {Status::S, 0, 1, 0.1 * kappa}, {Status::I, 0, 1, 0.1 * kappa}, {Status::R, 0, 1, 0.1 * kappa},
-           {Status::S, 0, 2, 0.1 * kappa}, {Status::I, 0, 2, 0.1 * kappa}, {Status::R, 0, 2, 0.1 * kappa},
-           {Status::S, 1, 0, 0.1 * kappa}, {Status::I, 1, 0, 0.1 * kappa}, {Status::R, 1, 0, 0.1 * kappa},
-           {Status::S, 1, 3, 0.1 * kappa}, {Status::I, 1, 3, 0.1 * kappa}, {Status::R, 1, 3, 0.1 * kappa},
-           {Status::S, 2, 0, 0.1 * kappa}, {Status::I, 2, 0, 0.1 * kappa}, {Status::R, 2, 0, 0.1 * kappa},
-           {Status::S, 2, 3, 0.1 * kappa}, {Status::I, 2, 3, 0.1 * kappa}, {Status::R, 2, 3, 0.1 * kappa},
-           {Status::S, 3, 1, 0.1 * kappa}, {Status::I, 3, 1, 0.1 * kappa}, {Status::R, 3, 1, 0.1 * kappa},
-           {Status::S, 3, 2, 0.1 * kappa}, {Status::I, 3, 2, 0.1 * kappa}, {Status::R, 3, 2, 0.1 * kappa}};
+        {Status::S, 0, 1, 0.1 * kappa}, {Status::I, 0, 1, 0.1 * kappa}, {Status::R, 0, 1, 0.1 * kappa},
+        {Status::S, 0, 2, 0.1 * kappa}, {Status::I, 0, 2, 0.1 * kappa}, {Status::R, 0, 2, 0.1 * kappa},
+        {Status::S, 1, 0, 0.1 * kappa}, {Status::I, 1, 0, 0.1 * kappa}, {Status::R, 1, 0, 0.1 * kappa},
+        {Status::S, 1, 3, 0.1 * kappa}, {Status::I, 1, 3, 0.1 * kappa}, {Status::R, 1, 3, 0.1 * kappa},
+        {Status::S, 2, 0, 0.1 * kappa}, {Status::I, 2, 0, 0.1 * kappa}, {Status::R, 2, 0, 0.1 * kappa},
+        {Status::S, 2, 3, 0.1 * kappa}, {Status::I, 2, 3, 0.1 * kappa}, {Status::R, 2, 3, 0.1 * kappa},
+        {Status::S, 3, 1, 0.1 * kappa}, {Status::I, 3, 1, 0.1 * kappa}, {Status::R, 3, 1, 0.1 * kappa},
+        {Status::S, 3, 2, 0.1 * kappa}, {Status::I, 3, 2, 0.1 * kappa}, {Status::R, 3, 2, 0.1 * kappa}};
 
     for (size_t k = 0; k < regions; k++) {
         for (int i = 0; i < static_cast<size_t>(Status::Count); i++) {
@@ -254,29 +254,28 @@ int main()
 
     mio::HybridSimulation<mio::mpm::ABM<QuadWellModel>, mio::mpm::PDMModel<regions, Status>> sim(abm, pdmm, 0.5);
 
-    sim.advance(100, [&](bool b, double t, auto&& Base, auto&& Other) {
-        std::array<size_t, 4> n{0, 0, 0, 0};
-        for (const auto a : Base.populations) {
-            auto well = (a.position[0] < 0) ? 0 : 1;
-            well += (a.position[1] > 0) ? 0 : 2;
-            if (a.status == Status::I) {
-                n[well]++;
+    sim.advance(100, [](bool b, const auto& results) {
+        const int critical_num_infections = 20;
+
+        bool use_base = true; // some I comps are subcritical
+        bool use_sec  = true; // all I comps are critical
+
+        for (size_t i = 0; i < regions; i++) {
+            if (results.get_last_value()[mio::flatten_index<mio::Index<Region, Status>>(
+                    {Region(i), Status::I}, {Region(regions), Status::Count})] < critical_num_infections) {
+                use_base &= true;
+                use_sec = false;
             }
-        }
-        if (std::all_of(n.begin(), n.end(), [](auto&& i) {
-                return i > 20;
-            })) {
-            return false;
-        }
-        else {
-            const auto m = Other.populations.slice(Status::I);
-            for (const auto& i : m) {
-                if (i <= 20)
-                    return true;
+            else {
+                use_base = false;
+                use_sec &= true;
             }
         }
 
-        return b;
+        if (use_base == !use_sec)
+            return use_base;
+        else
+            return b;
     });
 
     print_to_terminal(sim.get_result(), {"S", "I", "R", "S", "I", "R", "S", "I", "R", "S", "I", "R"});
