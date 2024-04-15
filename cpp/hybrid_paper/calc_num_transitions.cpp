@@ -57,9 +57,9 @@ int main(int argc, char** argv)
     mio::Simulation<ABMReal> sim_real(abm_real, 0, 0.1);
     mio::Simulation<PDMM> sim_pdmm(pdmm, 0, 0.1);
     //mio::Simulation<SMM> sim_smm(smm, 0, 0.1);
-    (reinterpret_cast<mio::ControlledStepperWrapper<boost::numeric::odeint::runge_kutta_cash_karp54>*>(
-         &sim_pdmm.get_integrator()))
-        ->set_dt_max(0.1);
+    // (reinterpret_cast<mio::ControlledStepperWrapper<boost::numeric::odeint::runge_kutta_cash_karp54>*>(
+    //      &sim_pdmm.get_integrator()))
+    //     ->set_dt_max(0.1);
 
     //colums: 0 - ABM Kedaechtnislos, 1 - ABM Real, 2 - PDMM, 3 - Real
     Eigen::MatrixXd transitions = Eigen::MatrixXd::Zero(tmax + 1, 4);
@@ -95,7 +95,7 @@ int main(int argc, char** argv)
         {{Region(7), Region(5)}, transitions}, {{Region(7), Region(6)}, transitions}};
 
     for (size_t t = 1; t <= tmax; ++t) {
-        sim_kedaechtnislos.advance(t);
+        //sim_kedaechtnislos.advance(t);
         sim_real.advance(t);
         sim_pdmm.advance(t);
         //sim_smm.advance(t);
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
     }
 
     //print result
-    //std::cout << "from to t ABMKedachtnislos ABMReal PDMM SMM Real" << std::endl;
+    //std::cout << "from to t ABMKedachtnislos ABMReal PDMM Real" << std::endl;
     for (auto& rate : res) {
         auto from = std::get<0>(rate.first);
         auto to   = std::get<1>(rate.first);

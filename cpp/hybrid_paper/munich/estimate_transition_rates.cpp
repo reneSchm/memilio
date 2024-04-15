@@ -74,7 +74,7 @@ int main(int argc, char** argv)
 {
     mio::set_log_level(mio::LogLevel::warn);
     using Status = mio::mpm::paper::InfectionState;
-    using ABM    = mio::mpm::ABM<CommutingPotential<Kedaechtnislos, Status>>;
+    using ABM    = mio::mpm::ABM<CommutingPotential<StochastiK, Status>>; //Kedaechtnislos
     using PDMM   = mio::mpm::PDMModel<8, Status>;
 
     using Model = PDMM;
@@ -88,7 +88,12 @@ int main(int argc, char** argv)
             setup.pop_dists_scaled[k][s] = 0;
         }
     }
-    Model model = setup.create_pdmm<Model>();
+    //Model model = setup.create_pdmm<Model>();
+    for (auto& agent : setup.agents) {
+        agent.status = Status::S;
+    }
+
+    ABM model = setup.create_abm<ABM>();
 
     // ({setup.commute_weights, setup.metaregions, {setup.metaregions}, setup.persons_per_agent}, setup.agents,            setup.adoption_rates, setup.wg.gradient, setup.metaregions, {Status::D}, setup.sigmas,setup.contact_radius);
 

@@ -30,9 +30,8 @@ target_compile_options(hybrid_paper PRIVATE ${MEMILIO_CXX_FLAGS_ENABLE_WARNING_E
 add_executable(transition_rate_fitting munich/transition_rate_fitting.cpp)
 target_link_libraries(transition_rate_fitting dlib::dlib hybrid_paper)
 
-add_executable(estimate_transition_rates_munich munich/estimate_transition_rates.cpp)
-target_link_libraries(estimate_transition_rates_munich hybrid_paper)
-
+# add_executable(estimate_transition_rates_munich munich/estimate_transition_rates.cpp)
+# target_link_libraries(estimate_transition_rates_munich hybrid_paper)
 add_executable(estimate_transition_rates_quadwell quad_well/estimate_transition_rates.cpp)
 target_link_libraries(estimate_transition_rates_quadwell hybrid_paper)
 
@@ -76,6 +75,8 @@ target_link_libraries(ABM_PDMM_quad_well hybrid_paper)
 add_executable(travel_time_heuristic munich/travel_time_heuristic.cpp)
 target_link_libraries(travel_time_heuristic hybrid_paper)
 
+# add_executable(calc_num_transitions calc_num_transitions)
+# target_link_libraries(calc_num_transitions hybrid_paper)
 add_executable(spatial_hybridization_quad_well quad_well/spatial_hybridization.cpp)
 target_link_libraries(spatial_hybridization_quad_well hybrid_paper OpenMP::OpenMP_CXX)
 

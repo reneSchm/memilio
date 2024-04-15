@@ -29,11 +29,15 @@ struct ModelSetup {
     PDMM create_pdmm() const
     {
         PDMM model;
-        for (size_t k = 0; k < region_ids.size(); ++k) {
-            for (size_t i = 0; i < static_cast<size_t>(Status::Count); ++i) {
-                model.populations[{static_cast<mio::mpm::Region>(k), static_cast<Status>(i)}] = pop_dists_scaled[k][i];
-            }
+        model.populations.array().setZero();
+        for (auto& agent : agents) {
+            model.populations[{static_cast<mio::mpm::Region>(agent.region), agent.status}] += 1;
         }
+        // for (size_t k = 0; k < region_ids.size(); ++k) {
+        //     for (size_t i = 0; i < static_cast<size_t>(Status::Count); ++i) {
+        //         model.populations[{static_cast<mio::mpm::Region>(k), static_cast<Status>(i)}] = pop_dists_scaled[k][i];
+        //     }
+        // }
         model.parameters.template get<TransitionRates<Status>>() = transition_rates;
         model.parameters.template get<AdoptionRates<Status>>()   = adoption_rates;
         return model;
@@ -55,6 +59,21 @@ struct ModelSetup {
             create_agents<Agent>(pop_dists, populations, persons_per_agent, metaregion_sampler, false).value();
     }
 
+    template <class Sim>
+    void redraw_agents_status(Sim& sim) const
+    {
+        using Index = mio::Index<mio::mpm::Region, Status>;
+        // result last value in result timeseries
+        sim.get_result().get_last_value() = Eigen::VectorXd::Zero(sim.get_result().get_num_elements());
+        auto& sta_rng                     = mio::DiscreteDistribution<int>::get_instance();
+        for (auto& agent : sim.get_model().populations) {
+            agent.status = static_cast<Status>(sta_rng(init_dists[agent.region]));
+            auto index   = mio::flatten_index(Index{static_cast<mio::mpm::Region>(agent.region), agent.status},
+                                              Index{mio::mpm::Region(8), Status::Count});
+            sim.get_result().get_last_value()[index] += 1;
+        }
+    }
+
     template <class Model>
     void dummy(Model& /*model*/)
     {
@@ -71,6 +90,7 @@ struct ModelSetup {
     std::vector<int> region_ids;
     std::vector<double> populations;
     double persons_per_agent;
+    const std::vector<std::vector<double>> init_dists;
     //Model requirements
     std::vector<Agent> agents;
     Eigen::MatrixXi metaregions;
@@ -159,13 +179,21 @@ struct ModelSetup {
         : t_Exposed(3)
         , t_Carrier(3)
         , t_Infected(6)
-        , transmission_rates(8, 0.15)
+        , transmission_rates(8, 0.2)
         , mu_C_R(0.2)
         , mu_I_D(0.003)
         , start_date(mio::Date(2021, 3, 1))
         , region_ids({9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175})
         , populations({218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562})
-        , persons_per_agent(100)
+        , persons_per_agent(500)
+        , init_dists({{0.97, 0.01, 0.01, 0.01, 0.0, 0.0},
+                      {0.997, 0.001, 0.001, 0.001, 0.0, 0.0},
+                      {0.997, 0.001, 0.001, 0.001, 0.0, 0.0},
+                      {0.997, 0.001, 0.001, 0.001, 0.0, 0.0},
+                      {0.997, 0.001, 0.001, 0.001, 0.0, 0.0},
+                      {0.997, 0.001, 0.001, 0.001, 0.0, 0.0},
+                      {0.997, 0.001, 0.001, 0.001, 0.0, 0.0},
+                      {0.997, 0.001, 0.001, 0.001, 0.0, 0.0}})
         , metaregions([]() {
             const auto fname = mio::base_dir() + "metagermany.pgm";
             std::ifstream ifile(fname);
@@ -202,7 +230,7 @@ struct ModelSetup {
         , contact_radius(50)
     {
 
-        const std::vector<double> weights(14, 500);
+        const std::vector<double> weights(14, 10);
         wg.apply_weights(weights);
 
         std::map<std::tuple<Region, Region>, double> transition_factors{
@@ -255,6 +283,11 @@ struct ModelSetup {
                            });
         }
         agents = create_agents<Agent>(pop_dists, populations, persons_per_agent, metaregion_sampler, false).value();
+
+        auto& sta_rng = mio::DiscreteDistribution<int>::get_instance();
+        for (auto& a : agents) {
+            a.status = static_cast<Status>(sta_rng(init_dists[a.region]));
+        }
         //adoption_rates
         for (int i = 0; i < metaregions.maxCoeff(); ++i) {
             adoption_rates.push_back(

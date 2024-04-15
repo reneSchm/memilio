@@ -2,6 +2,7 @@
 #define QUAD_WELL_SETUP_H
 
 #include "hybrid_paper/library/infection_state.h"
+#include "hybrid_paper/library/initialization.h"
 #include "hybrid_paper/library/quad_well.h"
 #include "memilio/utils/index.h"
 #include "models/mpm/model.h"
@@ -10,7 +11,12 @@
 #include "mpm/region.h"
 #include <map>
 #include <cstddef>
+#include <sstream>
+#include <string>
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 template <class Agent>
 struct QuadWellSetup {
@@ -20,7 +26,8 @@ struct QuadWellSetup {
     template <class ABM>
     ABM create_abm() const
     {
-        return ABM(agents, adoption_rates, contact_radius, sigma);
+        return ABM(agents, adoption_rates, contact_radius, sigma,
+                   {Status::D}); //{Status::S, Status::E, Status::C, Status::I, Status::R, Status::D}
     }
 
     template <class PDMM>
@@ -81,9 +88,36 @@ struct QuadWellSetup {
     {
     }
 
-    qw::MetaregionSampler pos_rng{{-2, -2}, {0, 0}, {2, 2}, 0.7};
-    qw::PositionSampler focus_pos_rng{{{-0.28, -0.0001}, {-1.49, -0.15}, {-0.032, -0.034}},
-                                      {{0.23, 1.49}, {0.0001, 0.28}, {0.15, 0.17}}};
+    void read_positions(std::string filename, std::vector<Agent>& agents)
+    {
+        size_t iter = 0;
+        std::string line;
+        std::ifstream file(filename);
+        if (file.is_open()) {
+            while (std::getline(file, line)) {
+                if (iter == agents.size()) {
+                    break;
+                }
+                std::stringstream ss(line);
+                std::string pos;
+                size_t pos_iter = 0;
+                while (std::getline(ss, pos, ' ')) {
+                    agents[iter].position[pos_iter] = std::stod(pos);
+                    ++pos_iter;
+                }
+                ++iter;
+            }
+            file.close();
+        }
+    }
+
+    qw::MetaregionSampler pos_rng{{-2, -2}, {0, 0}, {2, 2}, 0.5};
+    // qw::PositionSampler focus_pos_rng{{{0.0001, 0.25, 0.12505}, {0.008, 1.78, 0.93}, {0.1, 0.3, 0.2}}, //0.52
+    //                                   {{0.15, 1.65, 0.9}, {0.0001, 0.25, 0.12505}, {0.1, 0.3, 0.2}}};
+
+    qw::PositionSampler focus_pos_rng{{{0.0001, 0.199, 0.1}, {0.008, 1.78, 0.93}, {0.1, 0.3, 0.2}}, //0.52
+                                      {{0.15, 1.65, 0.9}, {0.0001, 0.199, 0.1}, {0.1, 0.3, 0.2}}};
+
     double t_Exposed;
     double t_Carrier;
     double t_Infected;
@@ -121,10 +155,16 @@ struct QuadWellSetup {
         //initialize agents
         size_t counter = 0;
         auto& sta_rng  = mio::DiscreteDistribution<int>::get_instance();
+        bool read_pos  = true;
+        if (read_pos) {
+            read_positions(mio::base_dir() + "cpp/hybrid_paper/quad_well/input/positions_40000.txt", agents);
+        }
         for (auto& agent : agents) {
-            agent.position = pos_rng(counter); //upper left quadrant
-            agent.status   = static_cast<Status>(sta_rng(init_dists[counter]));
-            counter        = (counter + 1) % 4;
+            agent.status = static_cast<Status>(sta_rng(init_dists[counter]));
+            if (!read_pos) {
+                agent.position = pos_rng(counter);
+            }
+            counter = (counter + 1) % 4;
         }
 
         //set adoption rates
@@ -153,25 +193,25 @@ struct QuadWellSetup {
         : QuadWellSetup(3.0, //t_Exposed
                         3.0, //t_Carrier
                         5.0, //t_Infected
-                        std::vector<double>{0.15, 0.3, 0.2, 0.15}, //transmission_rates
+                        std::vector<double>{0.1, 0.3, 0.1, 0.1}, //transmission_rates
                         0.1, //mu_C_R
                         0.004, //mu_I_D
-                        100.0, //tmax
+                        150.0, //tmax
                         0.1, //dt
                         0.55, //sigma
                         0.4, //contact_radius
                         num_agents,
-                        {{1.0, 0., 0., 0., 0.0, 0.0},
-                         {1.0, 0., 0., 0., 0.0, 0.0},
-                         {1.0, 0., 0., 0., 0.0, 0.0},
-                         {1.0, 0., 0., 0., 0.0, 0.0}}, //pop dists
+                        {{0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
+                         {0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
+                         {0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
+                         {0.99, 0.002, 0.003, 0.005, 0.0, 0.0}}, //pop dists,
                         std::map<std::tuple<mio::mpm::Region, mio::mpm::Region>, double>{
-                            {{mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0043},
-                            {{mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0043},
-                            {{mio::mpm::Region(0), mio::mpm::Region(3)}, 1e-07},
+                            {{mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0048},
+                            {{mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0048},
+                            {{mio::mpm::Region(0), mio::mpm::Region(3)}, 1e-07}, //1e-07
                             {{mio::mpm::Region(1), mio::mpm::Region(2)}, 1e-07},
-                            {{mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0043},
-                            {{mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0043}}) //transition rates for sigma = 0.55
+                            {{mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0048},
+                            {{mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0048}}) //transition rates for sigma = 0.55
     {
     }
 };
@@ -196,5 +236,10 @@ struct QuadWellSetup {
 //                {0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
 //                {0.97, 0.01, 0.01, 0.01, 0.0, 0.0},
 //                {0.99, 0.002, 0.003, 0.005, 0.0, 0.0}
+
+// {0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
+// {0.98, 0.002, 0.008, 0.01, 0.0, 0.0},
+// {0.97, 0.01, 0.01, 0.01, 0.0, 0.0},
+// {0.98, 0.002, 0.008, 0.01, 0.0, 0.0}
 
 #endif //QUAD_WELL_SETUP_H

@@ -240,11 +240,11 @@ int main()
     // mio::mpm::paper::ModelSetup<ABM::Agent> setup(
     //     t_Exposed, t_Carrier, t_Infected, transmission_rate, mu_C_R, mu_I_D, start_date, regions, populations,
     //     persons_per_agent, metaregions, tmax, dt, commute_weights, wg, sigmas, contact_radius, transition_factors, 10.0);
-    size_t num_runs = 1;
+    size_t num_runs = 100;
     mio::mpm::paper::ModelSetup<ABM::Agent> setup;
 
-    ABM abm   = setup.create_abm<ABM>();
-    PDMM pdmm = setup.create_pdmm<PDMM>();
+    ABM abm = setup.create_abm<ABM>();
+    //PDMM pdmm = setup.create_pdmm<PDMM>();
 
     // std::cout << "Transitions real per day\n";
     // for (size_t i = 0; i < setup.metaregions.maxCoeff(); ++i) {
@@ -267,24 +267,24 @@ int main()
     //     }
     // }
 
-    auto& transition_rates = pdmm.parameters.get<mio::mpm::TransitionRates<Status>>();
-    for (auto& rate : transition_rates) {
-        rate.factor = (setup.commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)) +
-                       setup.commute_weights(static_cast<size_t>(rate.to), static_cast<size_t>(rate.from))) /
-                      setup.populations[static_cast<size_t>(rate.from)];
-    }
+    // auto& transition_rates = pdmm.parameters.get<mio::mpm::TransitionRates<Status>>();
+    // for (auto& rate : transition_rates) {
+    //     rate.factor = (setup.commute_weights(static_cast<size_t>(rate.from), static_cast<size_t>(rate.to)) +
+    //                    setup.commute_weights(static_cast<size_t>(rate.to), static_cast<size_t>(rate.from))) /
+    //                   setup.populations[static_cast<size_t>(rate.from)];
+    // }
 
     //std::cout << (setup.commute_weights.array() / setup.persons_per_agent).matrix() << "\n";
-    std::cout << "num_agents_pdmm: " << pdmm.populations.get_total() << std::endl;
+    //std::cout << "num_agents_pdmm: " << pdmm.populations.get_total() << std::endl;
     //std::cout << "num_agents_abm: " << abm.populations.size() << std::endl;
     auto draw_func = [&setup](auto& model) {
-        setup.dummy(model);
+        setup.redraw_agents_status(model);
     };
 
-    run(abm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), true, "ABM",
-        mio::base_dir() + "cpp/outputs/", draw_func);
-    mio::mpm::paper::run(pdmm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), true, "PDMM",
-                         mio::base_dir() + "cpp/outputs/", draw_func);
+    mio::mpm::paper::run(abm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), true, "1ABM",
+                         mio::base_dir() + "cpp/outputs/Munich/Vortrag_Martin/", draw_func);
+    // mio::mpm::paper::run(pdmm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), true, "PDMM",
+    //                      mio::base_dir() + "cpp/outputs/", draw_func);
 
     return 0;
 }

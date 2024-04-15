@@ -422,6 +422,11 @@ public:
         return m_number_transitions;
     }
 
+    std::vector<Eigen::MatrixXd>& number_transitions()
+    {
+        return m_number_transitions;
+    }
+
     double& number_commutes(const mio::mpm::TransitionRate<Status>& tr)
     {
         return m_number_commutes[static_cast<size_t>(tr.status)](static_cast<size_t>(tr.from),

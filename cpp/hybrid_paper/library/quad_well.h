@@ -6,6 +6,7 @@
 #include "hybrid_paper/library/infection_state.h"
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <vector>
 
 namespace qw
@@ -28,7 +29,7 @@ public:
     * x: for each metaregion neighboring the focus region has [x_min, x_max] as entry
     * y: for each metaregion neighboring the focus region has [y_min, y_max] as entry
     */
-    PositionSampler(const std::vector<Position> x, const std::vector<Position> y)
+    PositionSampler(const std::vector<std::vector<double>> x, const std::vector<std::vector<double>> y)
         : m_x(x)
         , m_y(y)
     {
@@ -39,13 +40,13 @@ public:
         const auto& x = m_x[metaregion_index];
         const auto& y = m_y[metaregion_index];
 
-        return {mio::UniformDistribution<double>::get_instance()(x[0], x[1]),
-                mio::UniformDistribution<double>::get_instance()(y[0], y[1])};
+        return {-1 * mio::ParameterDistributionNormal(x[0], x[1], x[3]).get_rand_sample(),
+                mio::ParameterDistributionNormal(y[0], y[1], y[3]).get_rand_sample()};
     }
 
 private:
-    std::vector<Position> m_x;
-    std::vector<Position> m_y;
+    std::vector<std::vector<double>> m_x;
+    std::vector<std::vector<double>> m_y;
 };
 
 class MetaregionSampler
@@ -92,13 +93,16 @@ public:
     struct Agent {
         Position position;
         Status status;
+        // vector with all transitions (timepoint, from ,to)
+        std::vector<std::tuple<double, size_t, size_t>> transitions;
     };
 
     QuadWellModel(const std::vector<Agent>& agents, const typename mio::mpm::AdoptionRates<Status>::Type& rates,
-                  double contact_radius = 0.4, double sigma = 0.4)
+                  double contact_radius = 0.4, double sigma = 0.4, std::vector<Status> non_moving_states = {})
         : populations(agents)
         , m_contact_radius(contact_radius)
         , m_sigma(sigma)
+        , m_non_moving_states(non_moving_states)
         , m_number_transitions(static_cast<size_t>(Status::Count), Eigen::MatrixXd::Zero(4, 4))
     {
         for (auto& agent : populations) {
@@ -153,17 +157,24 @@ public:
         return rate;
     }
 
-    void move(const double /*t*/, const double dt, Agent& agent)
+    void move(const double t, const double dt, Agent& agent)
     {
         const auto old_well = qw::well_index(agent.position);
-        Position p          = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
-                               mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
+        if (std::find(m_non_moving_states.begin(), m_non_moving_states.end(), agent.status) ==
+                m_non_moving_states.end() &&
+            std::find(m_non_moving_regions.begin(), m_non_moving_regions.end(), old_well) ==
+                m_non_moving_regions.end()) {
+            Position p = {mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0),
+                          mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(0.0, 1.0)};
 
-        agent.position      = agent.position - dt * grad_U(agent.position) + (m_sigma * std::sqrt(dt)) * p;
-        const auto new_well = qw::well_index(agent.position);
-        if (old_well != new_well) {
-            m_number_transitions[static_cast<size_t>(agent.status)](old_well, new_well)++;
+            agent.position      = agent.position - dt * grad_U(agent.position) + (m_sigma * std::sqrt(dt)) * p;
+            const auto new_well = qw::well_index(agent.position);
+            if (old_well != new_well) {
+                agent.transitions.push_back({t + dt, old_well, new_well});
+                m_number_transitions[static_cast<size_t>(agent.status)](old_well, new_well)++;
+            }
         }
+        //else{agent has non-moving status or region}
     }
 
     Eigen::VectorXd time_point() const
@@ -199,6 +210,11 @@ public:
         return m_adoption_rates;
     }
 
+    void set_non_moving_regions(std::vector<size_t> non_moving_regions)
+    {
+        m_non_moving_regions = non_moving_regions;
+    }
+
     std::vector<Agent> populations;
 
 private:
@@ -225,6 +241,8 @@ private:
     std::map<std::tuple<mio::mpm::Region, Status, Status>, mio::mpm::AdoptionRate<Status>> m_adoption_rates;
     double m_contact_radius;
     double m_sigma;
+    std::vector<Status> m_non_moving_states;
+    std::vector<size_t> m_non_moving_regions{};
     std::vector<Eigen::MatrixXd> m_number_transitions;
 };
 #endif //QUAD_WELL_H

@@ -21,6 +21,7 @@
 #ifndef MPM_ABM_H_
 #define MPM_ABM_H_
 
+#include "memilio/config.h"
 #include "mpm/model.h"
 
 #include "memilio/compartments/simulation.h"
@@ -77,24 +78,28 @@ public:
         // draw time until an adoption takes place
         ScalarType waiting_time = mio::ExponentialDistribution<ScalarType>::get_instance()(1.0);
         while (m_t0 < t_max) {
-            ScalarType dt = std::min({m_dt, t_max - m_t0});
-            compute_current_rates_and_events(); // lambda_k (aka f-hat(N))
-            ScalarType cumulative_adoption_rate =
-                std::accumulate(m_current_rates.begin(), m_current_rates.end(), 0.0); // Lambda
-            // status update
-            if (waiting_time < cumulative_adoption_rate * dt) {
-                // draw which adoption takes place
-                const size_t event_id = mio::DiscreteDistribution<size_t>::get_instance()(m_current_rates);
-                Event& event          = m_current_events[event_id];
-                // perform adoption
-                m_model->adopt(event.agent, event.new_status);
-                // draw new waiting time
-                dt           = waiting_time / cumulative_adoption_rate;
-                waiting_time = mio::ExponentialDistribution<ScalarType>::get_instance()(1.0);
-            }
-            else {
-                // no event, decrease waiting time
-                waiting_time -= cumulative_adoption_rate * dt;
+            ScalarType dt             = std::min({m_dt, t_max - m_t0});
+            ScalarType remaining_time = dt;
+            while (remaining_time > 0) {
+                compute_current_rates_and_events(); // lambda_k (aka f-hat(N))
+                ScalarType cumulative_adoption_rate =
+                    std::accumulate(m_current_rates.begin(), m_current_rates.end(), 0.0); // Lambda
+                // status update
+                if (waiting_time < cumulative_adoption_rate * remaining_time) {
+                    // draw which adoption takes place
+                    const size_t event_id = mio::DiscreteDistribution<size_t>::get_instance()(m_current_rates);
+                    Event& event          = m_current_events[event_id];
+                    // perform adoption
+                    m_model->adopt(event.agent, event.new_status);
+                    // draw new waiting time
+                    remaining_time -= waiting_time / cumulative_adoption_rate;
+                    waiting_time = mio::ExponentialDistribution<ScalarType>::get_instance()(1.0);
+                }
+                else {
+                    // no event, decrease waiting time
+                    waiting_time -= cumulative_adoption_rate * remaining_time;
+                    break;
+                }
             }
             // position update
             for (auto& agent : m_model->populations) {
