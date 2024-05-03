@@ -1,4 +1,4 @@
-#include "hybrid_paper/library/model_setup.h"
+#include "hybrid_paper/munich/munich_setup.h"
 #include "hybrid_paper/library/potentials/commuting_potential.h"
 #include "hybrid_paper/library/weighted_gradient.h"
 #include "hybrid_paper/library/infection_state.h"
@@ -79,7 +79,7 @@ int main(int argc, char** argv)
 
     using Model = PDMM;
 
-    mio::mpm::paper::ModelSetup<ABM::Agent> setup;
+    mio::mpm::paper::MunichSetup<ABM::Agent> setup;
     setup.adoption_rates.clear();
     for (int k = 0; k < 8; k++) {
         setup.pop_dists_scaled[k][0] =

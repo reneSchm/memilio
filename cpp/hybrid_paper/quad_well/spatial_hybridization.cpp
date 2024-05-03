@@ -31,7 +31,7 @@ void run_hybridization(size_t num_runs, bool save_percentiles, std::string resul
     using ABM                = mio::mpm::ABM<QuadWellModel<Status>>;
     using PDMM               = mio::mpm::PDMModel<4, Status>;
 
-    size_t num_agents = 40000;
+    size_t num_agents = 8000;
 
     const QuadWellSetup<ABM::Agent> setup(num_agents);
 
@@ -73,8 +73,8 @@ void run_hybridization(size_t num_runs, bool save_percentiles, std::string resul
         num_runs, mio::TimeSeries<double>(num_regions * static_cast<size_t>(Status::Count)));
 
     auto& region_rng = mio::DiscreteDistribution<size_t>::get_instance();
-    const std::vector<double> region_weights{1, 1, 0.001};
-    bool save_res = false;
+    std::vector<double> region_weights(3);
+    bool save_res = true;
 #pragma omp barrier
 #pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
@@ -134,6 +134,11 @@ void run_hybridization(size_t num_runs, bool save_percentiles, std::string resul
                 for (size_t s = 0; s < static_cast<size_t>(Status::Count); ++s) {
                     size_t index         = pop_PDMM.get_flat_index({Region(focus_region), (Status)s});
                     auto& agents_to_move = state_PDMM[index];
+                    region_weights[2]    = 0.001 / (num_agents / 4.0);
+                    region_weights[0] =
+                        state_PDMM[pop_PDMM.get_flat_index({Region(1), (Status)s})] / (num_agents / 4.0);
+                    region_weights[1] =
+                        state_PDMM[pop_PDMM.get_flat_index({Region(2), (Status)s})] / (num_agents / 4.0);
                     for (; agents_to_move > 0; agents_to_move -= 1) {
                         //agents_entering_abm_cnt++;
                         state_ABM[index] += 1;
@@ -197,6 +202,6 @@ void run_hybridization(size_t num_runs, bool save_percentiles, std::string resul
 int main()
 {
     mio::set_log_level(mio::LogLevel::warn);
-    run_hybridization(2, true, mio::base_dir() + "cpp/outputs/QuadWell/test/test_Hybrid_");
+    run_hybridization(500, true, mio::base_dir() + "cpp/outputs/QuadWell/Scenario2/2.4_new_Hybrid_");
     return 0;
 }

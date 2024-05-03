@@ -10,7 +10,6 @@ add_library(hybrid_paper
     library/map_reader.h
     library/map_reader.cpp
     library/metaregion_sampler.h
-    library/model_setup.h
     library/potentials/potential_germany.h
     library/potentials/commuting_potential.h
     library/transition_rate_estimation.h
@@ -18,6 +17,7 @@ add_library(hybrid_paper
     library/weighted_gradient.h
     library/weighted_potential.h
     quad_well/quad_well_setup.h
+    munich/munich_setup.h
 )
 target_link_libraries(hybrid_paper memilio mpm OpenMP::OpenMP_CXX)
 
@@ -33,7 +33,7 @@ target_link_libraries(transition_rate_fitting dlib::dlib hybrid_paper)
 # add_executable(estimate_transition_rates_munich munich/estimate_transition_rates.cpp)
 # target_link_libraries(estimate_transition_rates_munich hybrid_paper)
 add_executable(estimate_transition_rates_quadwell quad_well/estimate_transition_rates.cpp)
-target_link_libraries(estimate_transition_rates_quadwell hybrid_paper)
+target_link_libraries(estimate_transition_rates_quadwell hybrid_paper OpenMP::OpenMP_CXX)
 
 add_executable(create_agents munich/create_agents.cpp)
 target_link_libraries(create_agents hybrid_paper)
@@ -60,8 +60,8 @@ target_link_libraries(transition_rate_fitting_random_search hybrid_paper)
 add_executable(contact_frequency_counting munich/contact_frequency_counting.cpp)
 target_link_libraries(contact_frequency_counting hybrid_paper)
 
-add_executable(hybridization munich/hybridization.cpp)
-target_link_libraries(hybridization hybrid_paper OpenMP::OpenMP_CXX)
+add_executable(spatial_hybridization_munich munich/spatial_hybridization.cpp)
+target_link_libraries(spatial_hybridization_munich hybrid_paper OpenMP::OpenMP_CXX)
 
 add_executable(PDMM munich/PDMM.cpp)
 target_link_libraries(PDMM hybrid_paper)
@@ -75,7 +75,7 @@ target_link_libraries(ABM_PDMM_quad_well hybrid_paper)
 add_executable(travel_time_heuristic munich/travel_time_heuristic.cpp)
 target_link_libraries(travel_time_heuristic hybrid_paper)
 
-# add_executable(calc_num_transitions calc_num_transitions)
+# add_executable(calc_num_transitions calc_num_transitions.cpp)
 # target_link_libraries(calc_num_transitions hybrid_paper)
 add_executable(spatial_hybridization_quad_well quad_well/spatial_hybridization.cpp)
 target_link_libraries(spatial_hybridization_quad_well hybrid_paper OpenMP::OpenMP_CXX)

@@ -1,7 +1,7 @@
 #include "hybrid_paper/library/analyze_result.h"
 #include "hybrid_paper/library/initialization.h"
 #include "hybrid_paper/library/infection_state.h"
-#include "hybrid_paper/library/model_setup.h"
+#include "hybrid_paper/munich/munich_setup.h"
 #include "hybrid_paper/library/potentials/commuting_potential.h"
 #include "mpm/abm.h"
 #include "mpm/pdmm.h"
@@ -28,8 +28,8 @@
         timer = TIME_NOW;                                                                                              \
     }
 
-using ModelSetup =
-    mio::mpm::paper::ModelSetup<mio::mpm::ABM<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>>::Agent>;
+using MunichSetup =
+    mio::mpm::paper::MunichSetup<mio::mpm::ABM<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>>::Agent>;
 
 struct FittingFunctionSetup {
     using Model = mio::mpm::PDMModel<8, mio::mpm::paper::InfectionState>;
@@ -64,11 +64,11 @@ struct FittingFunctionSetup {
     }
 };
 
-double single_run_infection_state_error(const ModelSetup& setup, const std::vector<double>& transmission_rate,
+double single_run_infection_state_error(const MunichSetup& setup, const std::vector<double>& transmission_rate,
                                         const std::vector<mio::ConfirmedCasesDataEntry>& confirmed_new_infections)
 {
     const int num_regions = 8;
-    using Model           = mio::mpm::PDMModel<num_regions, ModelSetup::Status>;
+    using Model           = mio::mpm::PDMModel<num_regions, MunichSetup::Status>;
     using Status          = Model::Compartments;
 
     Model model = setup.create_pdmm<Model>();
@@ -140,7 +140,7 @@ double single_run_infection_state_error(const ModelSetup& setup, const std::vect
     return std::accumulate(l_2.begin(), l_2.end(), 0.0) / l_2.size();
 }
 
-double average_run_infection_state_error(const ModelSetup& setup, const std::vector<double>& transmission_rate,
+double average_run_infection_state_error(const MunichSetup& setup, const std::vector<double>& transmission_rate,
                                          const std::vector<mio::ConfirmedCasesDataEntry>& confirmed_new_infections,
                                          int num_runs)
 {
@@ -182,7 +182,7 @@ int main()
         return std::make_tuple(get_region_id(a), a.date) < std::make_tuple(get_region_id(b), b.date);
     });
 
-    ModelSetup setup{};
+    MunichSetup setup{};
     setup.transition_rates.clear();
 
     // const FittingFunctionSetup ffs(regions, populations, start_date, tmax, dt, transition_rates, confirmed_cases,

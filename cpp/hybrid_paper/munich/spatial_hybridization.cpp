@@ -1,6 +1,6 @@
 #include "hybrid_paper/library/infection_state.h"
 #include "hybrid_paper/library/initialization.h"
-#include "hybrid_paper/library/model_setup.h"
+#include "hybrid_paper/munich/munich_setup.h"
 #include "hybrid_paper/library/analyze_result.h"
 #include "hybrid_paper/library/infection_state.h"
 #include "hybrid_paper/library/potentials/commuting_potential.h"
@@ -38,12 +38,11 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
     const size_t num_regions = 8;
     const int focus_region   = 3;
 
-    mio::mpm::paper::ModelSetup<ABM::Agent> setup;
+    mio::mpm::paper::MunichSetup<ABM::Agent> setup;
+    bool save_res = false;
 
     ABM abm   = setup.create_abm<ABM>();
     PDMM pdmm = setup.create_pdmm<PDMM>();
-
-    std::cout << "num agents: " << abm.populations.size() << std::endl;
 
     pdmm.populations.array().setZero();
 
@@ -84,13 +83,12 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
     Eigen::VectorXd posteriori_commute_weight = setup.commute_weights.col(focus_region);
     posteriori_commute_weight[focus_region]   = 0;
 
-    TIME_TYPE total_sim_time = TIME_NOW;
-
-#pragma omp barrier
-#pragma omp parallel for
+    //#pragma omp barrier
+    //#pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
         std::cout << "start run: " << run << "\n" << std::flush;
-        auto simABM = mio::Simulation<ABM>(abm, 0.0, setup.dt);
+        double t_start = omp_get_wtime();
+        auto simABM    = mio::Simulation<ABM>(abm, 0.0, setup.dt);
         //setup.draw_ABM_population(simABM.get_model());
         setup.redraw_agents_status(simABM);
         auto simPDMM = mio::Simulation<PDMM>(pdmm, 0.0, setup.dt);
@@ -163,6 +161,8 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
                                                        accumulated_abm_flows.get_value(t) +
                                                            accumulated_pdmm_flows.get_value(t));
         }
+        double t_end = omp_get_wtime();
+        std::cout << "Time: " << (t_end - t_start) << std::endl << std::flush;
         std::cout << "stop run: " << run << "\n" << std::flush;
 
         if (save_single_outputs) {
@@ -177,10 +177,9 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
         }
     } // simulation for loop
 
-// post processing
-#pragma omp single
-    {
-        restart_timer(total_sim_time, "Time for simulation");
+    // post processing
+    //#pragma omp single
+    if (save_res) {
 
         mio::TimeSeries<double> mean_time_series_comp =
             std::accumulate(ensemble_results_comp.begin(), ensemble_results_comp.end(),
@@ -292,7 +291,7 @@ void save_new_infections(mio::Date start_date, size_t num_days, std::string resu
 int main(int argc, char** argv)
 {
     mio::set_log_level(mio::LogLevel::warn);
-    run_simulation(1, true, false, mio::base_dir() + "cpp/outputs/Munich/Vortrag_Martin/Test_");
+    run_simulation(3, false, false, mio::base_dir() + "cpp/outputs/Munich/test/test_Hybrid");
     //save_new_infections(mio::Date(2021, 3, 1), 30, "cpp/outputs/300runs_9/");
     return 0;
 }

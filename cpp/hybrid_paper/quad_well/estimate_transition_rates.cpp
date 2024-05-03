@@ -25,13 +25,14 @@ int main(int argc, char** argv)
     mio::Simulation<Model> sim(model, 0.0, setup.dt);
     PDMM pdmm = setup.create_pdmm<PDMM>();
 
-    auto rates = mio::mpm::paper::calculate_transition_rates(model, 300, 100, 4, pops, 1);
+    auto rates = mio::mpm::paper::calculate_transition_rates(model, 300, setup.tmax, 4, pops, 1);
     //auto rates_pdmm = mio::mpm::paper::calculate_transition_rates(pdmm, 300, 100, 4, pops, 1);
 
     for (size_t r = 0; r < rates.size(); ++r) {
         auto rate = rates[r];
         //auto rate_pdmm = rates_pdmm[r];
-        std::cout << rate.from << "->" << rate.to << ": " << rate.factor
+        std::cout << rate.from << "->" << rate.to << ": "
+                  << " Status: " << static_cast<size_t>(rate.status) << ": " << rate.factor
                   << std::endl; //<< "/" << rate_pdmm.factor << std::endl;
     }
 

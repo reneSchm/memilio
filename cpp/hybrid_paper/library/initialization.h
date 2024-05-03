@@ -11,6 +11,7 @@
 #include "mpm/abm.h"
 #include <cstddef>
 #include <map>
+#include <vector>
 
 namespace mio
 {
@@ -93,6 +94,33 @@ mio::IOResult<std::vector<Agent>> create_agents(std::vector<std::vector<double>>
         }
     }
 
+    if (save_initialization) {
+        std::string save_path = "init" + std::to_string(agents.size()) + ".json";
+        Json::Value all_agents;
+        for (size_t i = 0; i < agents.size(); ++i) {
+            BOOST_OUTCOME_TRY(agent, mio::serialize_json(agents[i]));
+            all_agents[std::to_string(i)] = agent;
+        }
+        auto write_status = mio::write_json(save_path, all_agents);
+    }
+
+    return mio::success(agents);
+}
+
+template <class Agent>
+mio::IOResult<std::vector<Agent>>
+create_susceptible_agents(const std::vector<double>& populations, double persons_per_agent,
+                          const MetaregionSampler& metaregion_sampler, bool save_initialization)
+{
+    std::vector<Agent> agents;
+    for (size_t region = 0; region < populations.size(); ++region) {
+        int num_agents = populations[region] / persons_per_agent;
+        while (num_agents > 0) {
+            Eigen::Vector2d position = metaregion_sampler(region);
+            agents.push_back({position, mio::mpm::paper::InfectionState::S, int(region)});
+            num_agents -= 1;
+        }
+    }
     if (save_initialization) {
         std::string save_path = "init" + std::to_string(agents.size()) + ".json";
         Json::Value all_agents;

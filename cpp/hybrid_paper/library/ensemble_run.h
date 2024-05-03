@@ -9,7 +9,9 @@
 #include "memilio/data/analyze_result.h"
 
 #include <cstddef>
+#include <iostream>
 #include <omp.h>
+#include <ostream>
 
 #define TIME_TYPE std::chrono::high_resolution_clock::time_point
 #define TIME_NOW std::chrono::high_resolution_clock::now()
@@ -51,13 +53,12 @@ void run(Model model, size_t num_runs, double tmax, double dt, size_t num_region
 #pragma omp parallel for
     for (int run = 0; run < num_runs; ++run) {
         std::cout << "Start run " << run << "\n" << std::flush;
-        TIME_TYPE sim_time_begin = TIME_NOW;
-        auto sim                 = mio::Simulation<Model>(model, 0.0, dt);
+        double t_start = omp_get_wtime();
+        auto sim       = mio::Simulation<Model>(model, 0.0, dt);
         sample_function(sim);
         sim.advance(tmax);
-        TIME_TYPE sim_time_end = TIME_NOW;
-        std::cout << "Time run " << run << ": " << PRINTABLE_TIME(sim_time_end - sim_time_begin) << std::endl
-                  << std::flush;
+        double t_end = omp_get_wtime();
+        std::cout << "Time: " << (t_end - t_start) << std::endl << std::flush;
         auto& run_result = sim.get_result();
 
         ensemble_results[run] = mio::interpolate_simulation_result(run_result);
