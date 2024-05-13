@@ -12,8 +12,10 @@
 #include "mpm/model.h"
 #include "mpm/pdmm.h"
 #include "mpm/region.h"
+#include <algorithm>
 #include <cstdio>
 #include <omp.h>
+#include <string>
 #include <vector>
 
 static qw::MetaregionSampler pos_rng{{-2, -2}, {2, 2}, {2, 2}, 0.3};
@@ -168,8 +170,8 @@ int main()
 
     mio::set_log_level(mio::LogLevel::err);
 
-    const int num_runs          = 1000;
-    const size_t n_agents       = 1000;
+    const int num_runs          = 10000;
+    const size_t n_agents       = 10000;
     const double t0             = 0;
     const double tnpi           = 20;
     const double tmax           = 40;
@@ -200,22 +202,21 @@ int main()
     pdmm.populations[{mio::mpm::Region(0), Status::S}] = n_agents - 1;
     pdmm.populations[{mio::mpm::Region(0), Status::I}] = 1;
 
-    int extinctions = 0;
-
     const auto is_extinction = [](const mio::TimeSeries<double>& result) {
         const auto& v = result.get_last_value();
         return v[(int)Status::E] + v[(int)Status::C] + v[(int)Status::I] <= 1e-14;
     };
 
-    // const auto dir = mio::base_dir() + "results_hybrid/abm_";
+    const int survival_threshold = 5;
+    // const auto dir               = mio::base_dir() + "results_hybrid/abm_";
     // const auto dir = mio::base_dir() + "results_hybrid/pdmm_";
-    const auto dir = mio::base_dir() + "results_hybrid/hybrid_";
+    const auto dir = mio::base_dir() + "results_hybrid/hybrid_" + std::to_string(survival_threshold) + "_";
 
-    const auto use_base_model = [&is_extinction](const bool&, const auto& results) {
+    const auto use_base_model = [&is_extinction, survival_threshold](const bool&, const auto& results) {
         // return true;
         // return false;
         const auto& v = results.get_last_value();
-        if (is_extinction(results) || (v[(int)Status::E] + v[(int)Status::C] + v[(int)Status::I] > 5))
+        if (is_extinction(results) || (v[(int)Status::E] + v[(int)Status::C] + v[(int)Status::I] > survival_threshold))
             return false;
         else
             return true;
@@ -223,6 +224,7 @@ int main()
 
     double time_min = 1e+100, time_mean = 0, time_max = 0;
     double time_min_e = 1e+100, time_mean_e = 0, time_max_e = 0;
+    int extinctions = 0;
 
     std::vector<mio::TimeSeries<double>> results(num_runs, {(int)Status::Count});
 #pragma omp parallel for
@@ -239,7 +241,7 @@ int main()
         sim.advance(tmax, use_base_model);
         double stop_tp = omp_get_wtime();
         result         = sim.get_result();
-        std::cout << result.get_last_value().transpose().cast<int>() << "\n";
+        // std::cout << result.get_last_value().transpose().cast<int>() << "\n";
 #pragma omp critical
         {
             double time = stop_tp - start_tp;
@@ -288,9 +290,13 @@ int main()
 #pragma omp single
     {
         std::cout << "timing surv: min= " << time_min << " mean= " << (time_mean / (num_runs - extinctions))
-                  << " max= " << time_max << "\n";
-        std::cout << "timing ext : min= " << time_min_e << " mean= " << (extinctions ? time_mean_e / extinctions : 0)
-                  << " max= " << time_max_e << "\n";
+                  << " max= " << time_max << "\n"
+                  << "timing ext : min= " << time_min_e << " mean= " << (extinctions ? time_mean_e / extinctions : 0)
+                  << " max= " << time_max_e << "\n"
+                  << "timing all : min= " << std::min(time_min, time_min_e)
+                  << " mean= " << ((time_mean + time_mean_e) / num_runs) << " max= " << std::max(time_max, time_max_e)
+                  << "\n";
+
         std::vector<mio::TimeSeries<double>> survival_res, extinction_res;
         for (const auto& result : results) {
             if (is_extinction(result)) {
@@ -320,6 +326,16 @@ int main()
             mio::mpm::percentile_output_to_file(ensemble_result_p50, dir + file_prefix + "_p50.txt");
             mio::mpm::percentile_output_to_file(ensemble_result_p75, dir + file_prefix + "_p75.txt");
             mio::mpm::percentile_output_to_file(ensemble_result_p95, dir + file_prefix + "_p95.txt");
+
+            auto ensemble_result_mean = std::vector<mio::TimeSeries<double>>{
+                std::accumulate(ensemble_result.cbegin(), ensemble_result.cend(),
+                                mio::TimeSeries<double>::zero(ensemble_result[0].get_num_time_points(),
+                                                              ensemble_result[0].get_num_elements()),
+                                mio::mpm::add_time_series)};
+            for (Eigen::Index i = 0; i < ensemble_result_mean[0].get_num_time_points(); ++i) {
+                ensemble_result_mean[0].get_value(i) *= 1.0 / ensemble_result.size();
+            }
+            mio::mpm::percentile_output_to_file(ensemble_result_mean, dir + file_prefix + "_mean.txt");
         };
 
         print_percentiles(results, "combined");

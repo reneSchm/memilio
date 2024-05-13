@@ -37,7 +37,7 @@ TimeSeries<double> accumulate_flows(const TimeSeries<double>& flow_results)
     return acc_flow_ts;
 }
 
-mio::TimeSeries<double> add_time_series(mio::TimeSeries<double>& t1, mio::TimeSeries<double>& t2)
+mio::TimeSeries<double> add_time_series(const mio::TimeSeries<double>& t1, const mio::TimeSeries<double>& t2)
 {
     assert(t1.get_num_time_points() == t2.get_num_time_points());
     mio::TimeSeries<double> added_time_series(t1.get_num_elements());
