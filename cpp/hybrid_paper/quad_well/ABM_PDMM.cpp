@@ -12,8 +12,8 @@ int main()
     using ABM    = mio::mpm::ABM<QuadWellModel<Status>>;
     using PDMM   = mio::mpm::PDMModel<4, Status>;
 
-    size_t num_runs = 300;
-    const QuadWellSetup<ABM::Agent> setup(8000);
+    size_t num_runs = 50;
+    const QuadWellSetup<ABM::Agent> setup(1000);
     ABM abm            = setup.create_abm<ABM>();
     PDMM pdmm          = setup.create_pdmm<PDMM>();
     auto draw_func_abm = [&setup](auto& model) {
@@ -26,9 +26,9 @@ int main()
     auto draw_func_no_draw = [&setup](auto& model) {
         setup.dummy(model);
     };
-    mio::mpm::paper::run(abm, num_runs, setup.tmax, setup.dt, 4, true, "2.5_ABM",
-                         mio::base_dir() + "cpp/outputs/QuadWell/Scenario2/", draw_func_abm);
-    mio::mpm::paper::run(pdmm, num_runs, setup.tmax, setup.dt, 4, true, "2.5_PDMM",
-                         mio::base_dir() + "cpp/outputs/QuadWell/Scenario2/", draw_func_pdmm);
+    mio::mpm::paper::run(abm, num_runs, setup.tmax, setup.dt, 4, false, "test_ABM", mio::base_dir() + "cpp/outputs/",
+                         draw_func_abm);
+    mio::mpm::paper::run(pdmm, num_runs, setup.tmax, setup.dt, 4, false, "test_PDMM", mio::base_dir() + "cpp/outputs/",
+                         draw_func_pdmm);
     return 0;
 }

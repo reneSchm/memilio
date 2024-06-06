@@ -26,8 +26,7 @@ struct QuadWellSetup {
     template <class ABM>
     ABM create_abm() const
     {
-        return ABM(agents, adoption_rates, contact_radius, sigma,
-                   {Status::D}); //{Status::S, Status::E, Status::C, Status::I, Status::R, Status::D}
+        return ABM(agents, adoption_rates, contact_radius, sigma, {Status::D});
     }
 
     template <class PDMM>
@@ -157,7 +156,7 @@ struct QuadWellSetup {
         auto& sta_rng  = mio::DiscreteDistribution<int>::get_instance();
         bool read_pos  = true;
         if (read_pos) {
-            read_positions(mio::base_dir() + "cpp/hybrid_paper/quad_well/input/positions_8000.txt", agents);
+            read_positions(mio::base_dir() + "cpp/hybrid_paper/quad_well/input/positions_1000.txt", agents);
         }
         for (auto& agent : agents) {
             agent.status = static_cast<Status>(sta_rng(init_dists[counter]));
@@ -166,6 +165,7 @@ struct QuadWellSetup {
             }
             counter = (counter + 1) % 4;
         }
+        std::cout << "Num Agents: " << agents.size() << "\n";
 
         //set adoption rates
         for (size_t r = 0; r < 4; ++r) {
@@ -232,31 +232,5 @@ struct QuadWellSetup {
     {
     }
 };
-
-//transition rates for sigma=0.5
-// {{mio::mpm::Region(0), mio::mpm::Region(1)}, 0.001196},
-// {{mio::mpm::Region(0), mio::mpm::Region(2)}, 0.001196},
-// {{mio::mpm::Region(0), mio::mpm::Region(3)}, 1e-07},
-// {{mio::mpm::Region(1), mio::mpm::Region(3)}, 0.001196},
-// {{mio::mpm::Region(2), mio::mpm::Region(3)}, 0.001196}
-// {{mio::mpm::Region(1), mio::mpm::Region(2)}, 1e-07},
-
-//transition rates for sigma=0.55
-// {{mio::mpm::Region(0), mio::mpm::Region(1)}, 0.00448308125},
-// {{mio::mpm::Region(0), mio::mpm::Region(2)}, 0.00448308125},
-// {{mio::mpm::Region(0), mio::mpm::Region(3)}, 1e-07},
-// {{mio::mpm::Region(1), mio::mpm::Region(2)}, 1e-07},
-// {{mio::mpm::Region(1), mio::mpm::Region(3)}, 0.00448308125},
-// {{mio::mpm::Region(2), mio::mpm::Region(3)}, 0.00448308125}
-
-// {0.98, 0.002, 0.008, 0.01, 0.0, 0.0},
-//                {0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
-//                {0.97, 0.01, 0.01, 0.01, 0.0, 0.0},
-//                {0.99, 0.002, 0.003, 0.005, 0.0, 0.0}
-
-// {0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
-// {0.98, 0.002, 0.008, 0.01, 0.0, 0.0},
-// {0.97, 0.01, 0.01, 0.01, 0.0, 0.0},
-// {0.98, 0.002, 0.008, 0.01, 0.0, 0.0}
 
 #endif //QUAD_WELL_SETUP_H

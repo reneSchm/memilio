@@ -31,7 +31,8 @@ void run_hybridization(size_t num_runs, bool save_percentiles, std::string resul
     using ABM                = mio::mpm::ABM<QuadWellModel<Status>>;
     using PDMM               = mio::mpm::PDMModel<4, Status>;
 
-    size_t num_agents = 8000;
+    size_t num_agents = 40000;
+    double time_mean  = 0;
 
     const QuadWellSetup<ABM::Agent> setup(num_agents);
 
@@ -73,14 +74,15 @@ void run_hybridization(size_t num_runs, bool save_percentiles, std::string resul
         num_runs, mio::TimeSeries<double>(num_regions * static_cast<size_t>(Status::Count)));
 
     auto& region_rng = mio::DiscreteDistribution<size_t>::get_instance();
-    std::vector<double> region_weights(3);
-    bool save_res = true;
+    bool save_res    = false;
+    std::cerr << "num_runs " << num_runs << "\n" << std::flush;
 #pragma omp barrier
 #pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
-        std::cout << "Start run " << run << std::endl << std::flush;
-        TIME_TYPE sim_time_begin = TIME_NOW;
-        auto simABM              = mio::Simulation<ABM>(abm, 0.0, setup.dt);
+        std::cerr << "Start run " << run << std::endl << std::flush;
+        std::vector<double> region_weights(3);
+        double t_start = omp_get_wtime();
+        auto simABM    = mio::Simulation<ABM>(abm, 0.0, setup.dt);
         setup.redraw_agents_status(simABM);
         auto simPDMM = mio::Simulation<PDMM>(pdmm, 0.0, setup.dt);
         mio::TimeSeries<double> hybrid_result(num_regions * static_cast<size_t>(Status::Count));
@@ -93,25 +95,6 @@ void run_hybridization(size_t num_runs, bool save_percentiles, std::string resul
             auto& abm_agents       = simABM.get_model().populations;
             auto& abm_transitions  = simABM.get_model().number_transitions()[0];
             auto& pdmm_transitions = simPDMM.get_model().number_transitions()[0];
-            // if (t >= day) {
-            //     std::cout << "t = " << t << std::endl;
-            //     std::cout << "0<->1: " << abm_transitions(0, 1) << "/" << pdmm_transitions(1, 0)
-            //               << " rate: " << abm_transitions(0, 1) / (10 * 1000) << "/"
-            //               << pdmm_transitions(1, 0) / (10 * 1000) << std::endl;
-            //     abm_transitions(0, 1)  = 0;
-            //     pdmm_transitions(1, 0) = 0;
-            //     std::cout << "0<->2: " << abm_transitions(0, 2) << "/" << pdmm_transitions(2, 0)
-            //               << " rate: " << abm_transitions(0, 2) / (10 * 1000) << "/"
-            //               << pdmm_transitions(2, 0) / (10 * 1000) << std::endl;
-            //     abm_transitions(0, 2)  = 0;
-            //     pdmm_transitions(2, 0) = 0;
-            //     std::cout << "0<->3: " << abm_transitions(0, 3) << "/" << pdmm_transitions(3, 0)
-            //               << " rate: " << abm_transitions(0, 3) / (10 * 1000) << "/"
-            //               << pdmm_transitions(3, 0) / (10 * 1000) << std::endl;
-            //     abm_transitions(0, 3)  = 0;
-            //     pdmm_transitions(3, 0) = 0;
-            //     day += 10;
-            // }
 
             { //move agents from abm to pdmm
                 auto itr = abm_agents.begin();
@@ -153,47 +136,52 @@ void run_hybridization(size_t num_runs, bool save_percentiles, std::string resul
                 break;
             }
         }
-        TIME_TYPE sim_time_end = TIME_NOW;
-        std::cout << "Time run " << run << ": " << PRINTABLE_TIME(sim_time_end - sim_time_begin) << std::endl
-                  << std::flush;
-        if (save_res) {
-            ensemble_results[run] = mio::interpolate_simulation_result(hybrid_result);
+        double t_end          = omp_get_wtime();
+        ensemble_results[run] = mio::interpolate_simulation_result(hybrid_result);
+#pragma omp critical
+        {
+            double time = t_end - t_start;
+            std::cout << "Run  " << run << ": Time: " << time << std::endl << std::flush;
+            time_mean += time;
         }
     }
 #pragma omp single
-    //post processing
-    if (save_res) {
-        {
-            //calculate mean
-            mio::TimeSeries<double> mean =
-                std::accumulate(ensemble_results.begin(), ensemble_results.end(),
-                                mio::TimeSeries<double>::zero(ensemble_results[0].get_num_time_points(),
-                                                              ensemble_results[0].get_num_elements()),
-                                mio::mpm::paper::add_time_series);
-            for (size_t t = 0; t < static_cast<size_t>(mean.get_num_time_points()); ++t) {
-                mean.get_value(t) *= 1.0 / num_runs;
-            }
+    {
+        std::cout << "Mean time: " << time_mean / double(num_runs) << std::endl << std::flush;
+        //post processing
+        if (save_res) {
+            {
+                //calculate mean
+                mio::TimeSeries<double> mean =
+                    std::accumulate(ensemble_results.begin(), ensemble_results.end(),
+                                    mio::TimeSeries<double>::zero(ensemble_results[0].get_num_time_points(),
+                                                                  ensemble_results[0].get_num_elements()),
+                                    mio::mpm::paper::add_time_series);
+                for (size_t t = 0; t < static_cast<size_t>(mean.get_num_time_points()); ++t) {
+                    mean.get_value(t) *= 1.0 / num_runs;
+                }
 
-            FILE* file = fopen((result_path + "output_mean.txt").c_str(), "w");
-            mio::mpm::print_to_file(file, mean, {});
-            fclose(file);
+                FILE* file = fopen((result_path + "output_mean.txt").c_str(), "w");
+                mio::mpm::print_to_file(file, mean, {});
+                fclose(file);
 
-            if (save_percentiles) {
-                auto ensemble_percentile =
-                    mio::mpm::paper::get_format_for_percentile_output(ensemble_results, num_regions);
+                if (save_percentiles) {
+                    auto ensemble_percentile =
+                        mio::mpm::paper::get_format_for_percentile_output(ensemble_results, num_regions);
 
-                //save percentile output
-                auto ensemble_result_p05 = mio::ensemble_percentile(ensemble_percentile, 0.05);
-                auto ensemble_result_p25 = mio::ensemble_percentile(ensemble_percentile, 0.25);
-                auto ensemble_result_p50 = mio::ensemble_percentile(ensemble_percentile, 0.50);
-                auto ensemble_result_p75 = mio::ensemble_percentile(ensemble_percentile, 0.75);
-                auto ensemble_result_p95 = mio::ensemble_percentile(ensemble_percentile, 0.95);
+                    //save percentile output
+                    auto ensemble_result_p05 = mio::ensemble_percentile(ensemble_percentile, 0.05);
+                    auto ensemble_result_p25 = mio::ensemble_percentile(ensemble_percentile, 0.25);
+                    auto ensemble_result_p50 = mio::ensemble_percentile(ensemble_percentile, 0.50);
+                    auto ensemble_result_p75 = mio::ensemble_percentile(ensemble_percentile, 0.75);
+                    auto ensemble_result_p95 = mio::ensemble_percentile(ensemble_percentile, 0.95);
 
-                mio::mpm::paper::percentile_output_to_file(ensemble_result_p05, result_path + "output_p05.txt");
-                mio::mpm::paper::percentile_output_to_file(ensemble_result_p25, result_path + "output_p25.txt");
-                mio::mpm::paper::percentile_output_to_file(ensemble_result_p50, result_path + "output_p50.txt");
-                mio::mpm::paper::percentile_output_to_file(ensemble_result_p75, result_path + "output_p75.txt");
-                mio::mpm::paper::percentile_output_to_file(ensemble_result_p95, result_path + "output_p95.txt");
+                    mio::mpm::paper::percentile_output_to_file(ensemble_result_p05, result_path + "output_p05.txt");
+                    mio::mpm::paper::percentile_output_to_file(ensemble_result_p25, result_path + "output_p25.txt");
+                    mio::mpm::paper::percentile_output_to_file(ensemble_result_p50, result_path + "output_p50.txt");
+                    mio::mpm::paper::percentile_output_to_file(ensemble_result_p75, result_path + "output_p75.txt");
+                    mio::mpm::paper::percentile_output_to_file(ensemble_result_p95, result_path + "output_p95.txt");
+                }
             }
         }
     }
@@ -202,6 +190,6 @@ void run_hybridization(size_t num_runs, bool save_percentiles, std::string resul
 int main()
 {
     mio::set_log_level(mio::LogLevel::warn);
-    run_hybridization(500, true, mio::base_dir() + "cpp/outputs/QuadWell/Scenario2/2.4_new_Hybrid_");
+    run_hybridization(50, false, mio::base_dir() + "cpp/outputs/timing_Hybrid_");
     return 0;
 }

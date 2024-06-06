@@ -48,23 +48,30 @@ void run(Model model, size_t num_runs, double tmax, double dt, size_t num_region
     using Status = InfectionState;
     std::vector<mio::TimeSeries<double>> ensemble_results(
         num_runs, mio::TimeSeries<double>::zero(tmax, num_regions * static_cast<size_t>(Status::Count)));
+    double time_mean         = 0;
     TIME_TYPE total_sim_time = TIME_NOW;
 #pragma omp barrier
 #pragma omp parallel for
     for (int run = 0; run < num_runs; ++run) {
-        std::cout << "Start run " << run << "\n" << std::flush;
+        std::cerr << "Start run " << run << "\n" << std::flush;
         double t_start = omp_get_wtime();
         auto sim       = mio::Simulation<Model>(model, 0.0, dt);
         sample_function(sim);
         sim.advance(tmax);
-        double t_end = omp_get_wtime();
-        std::cout << "Time: " << (t_end - t_start) << std::endl << std::flush;
+        double t_end     = omp_get_wtime();
         auto& run_result = sim.get_result();
 
         ensemble_results[run] = mio::interpolate_simulation_result(run_result);
+#pragma omp critical
+        {
+            double time = t_end - t_start;
+            std::cout << "Run  " << run << ": Time: " << time << std::endl << std::flush;
+            time_mean += time;
+        }
     }
 #pragma omp single
     {
+        std::cout << "Mean time: " << time_mean / double(num_runs) << std::endl << std::flush;
         restart_timer(total_sim_time, "Time for simulation");
         // add all results
         mio::TimeSeries<double> mean_time_series =

@@ -38,8 +38,9 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
     const size_t num_regions = 8;
     const int focus_region   = 3;
 
-    mio::mpm::paper::MunichSetup<ABM::Agent> setup;
-    bool save_res = false;
+    const mio::mpm::paper::MunichSetup<ABM::Agent> setup;
+    bool save_res    = false;
+    double time_mean = 0;
 
     ABM abm   = setup.create_abm<ABM>();
     PDMM pdmm = setup.create_pdmm<PDMM>();
@@ -83,10 +84,10 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
     Eigen::VectorXd posteriori_commute_weight = setup.commute_weights.col(focus_region);
     posteriori_commute_weight[focus_region]   = 0;
 
-    //#pragma omp barrier
-    //#pragma omp parallel for
+#pragma omp barrier
+#pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
-        std::cout << "start run: " << run << "\n" << std::flush;
+        std::cerr << "start run: " << run << "\n" << std::flush;
         double t_start = omp_get_wtime();
         auto simABM    = mio::Simulation<ABM>(abm, 0.0, setup.dt);
         //setup.draw_ABM_population(simABM.get_model());
@@ -148,6 +149,7 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
                 break;
         }
 
+        double t_end = omp_get_wtime();
         mio::TimeSeries<double> hybrid_flow_result(num_regions * mio::mpm::paper::flow_indices.size());
 
         //interpolate result
@@ -161,9 +163,12 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
                                                        accumulated_abm_flows.get_value(t) +
                                                            accumulated_pdmm_flows.get_value(t));
         }
-        double t_end = omp_get_wtime();
-        std::cout << "Time: " << (t_end - t_start) << std::endl << std::flush;
-        std::cout << "stop run: " << run << "\n" << std::flush;
+#pragma omp critical
+        {
+            double time = t_end - t_start;
+            std::cout << "Run  " << run << ": Time: " << time << std::endl << std::flush;
+            time_mean += time;
+        }
 
         if (save_single_outputs) {
             FILE* file;
@@ -177,82 +182,85 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
         }
     } // simulation for loop
 
-    // post processing
-    //#pragma omp single
-    if (save_res) {
+// post processing
+#pragma omp single
+    {
+        std::cout << "Mean time: " << time_mean / double(num_runs) << std::endl << std::flush;
+        if (save_res) {
 
-        mio::TimeSeries<double> mean_time_series_comp =
-            std::accumulate(ensemble_results_comp.begin(), ensemble_results_comp.end(),
-                            mio::TimeSeries<double>::zero(ensemble_results_comp[0].get_num_time_points(),
-                                                          ensemble_results_comp[0].get_num_elements()),
-                            mio::mpm::add_time_series);
+            mio::TimeSeries<double> mean_time_series_comp =
+                std::accumulate(ensemble_results_comp.begin(), ensemble_results_comp.end(),
+                                mio::TimeSeries<double>::zero(ensemble_results_comp[0].get_num_time_points(),
+                                                              ensemble_results_comp[0].get_num_elements()),
+                                mio::mpm::add_time_series);
 
-        mio::TimeSeries<double> mean_time_series_flows =
-            std::accumulate(ensemble_results_flows.begin(), ensemble_results_flows.end(),
-                            mio::TimeSeries<double>::zero(ensemble_results_flows[0].get_num_time_points(),
-                                                          ensemble_results_flows[0].get_num_elements()),
-                            mio::mpm::add_time_series);
-        //calculate average
-        for (size_t t = 0; t < static_cast<size_t>(mean_time_series_comp.get_num_time_points()); ++t) {
-            mean_time_series_comp.get_value(t) *= 1.0 / num_runs;
-        }
+            mio::TimeSeries<double> mean_time_series_flows =
+                std::accumulate(ensemble_results_flows.begin(), ensemble_results_flows.end(),
+                                mio::TimeSeries<double>::zero(ensemble_results_flows[0].get_num_time_points(),
+                                                              ensemble_results_flows[0].get_num_elements()),
+                                mio::mpm::add_time_series);
+            //calculate average
+            for (size_t t = 0; t < static_cast<size_t>(mean_time_series_comp.get_num_time_points()); ++t) {
+                mean_time_series_comp.get_value(t) *= 1.0 / num_runs;
+            }
 
-        for (size_t t = 0; t < static_cast<size_t>(mean_time_series_flows.get_num_time_points()); ++t) {
-            mean_time_series_flows.get_value(t) *= 1.0 / num_runs;
-        }
+            for (size_t t = 0; t < static_cast<size_t>(mean_time_series_flows.get_num_time_points()); ++t) {
+                mean_time_series_flows.get_value(t) *= 1.0 / num_runs;
+            }
 
-        std::string dir = results_path;
+            std::string dir = results_path;
 
-        //save mean timeseries
-        FILE* file_mean_comp = fopen((dir + "comps_output_mean.txt").c_str(), "w");
-        if (file_mean_comp == NULL) {
-            mio::log(mio::LogLevel::critical, "Could not open file {}", dir + "comps_output_mean.txt");
-        }
-        else {
-            mio::mpm::print_to_file(file_mean_comp, mean_time_series_comp, {});
-            fclose(file_mean_comp);
-        }
+            //save mean timeseries
+            FILE* file_mean_comp = fopen((dir + "comps_output_mean.txt").c_str(), "w");
+            if (file_mean_comp == NULL) {
+                mio::log(mio::LogLevel::critical, "Could not open file {}", dir + "comps_output_mean.txt");
+            }
+            else {
+                mio::mpm::print_to_file(file_mean_comp, mean_time_series_comp, {});
+                fclose(file_mean_comp);
+            }
 
-        FILE* file_mean_flows = fopen((dir + "flows_output_mean.txt").c_str(), "w");
-        if (file_mean_flows == NULL) {
-            mio::log(mio::LogLevel::critical, "Could not open file {}", dir + "flows_output_mean.txt");
-        }
-        else {
-            mio::mpm::print_to_file(file_mean_flows, mean_time_series_flows, {});
-            fclose(file_mean_flows);
-        }
+            FILE* file_mean_flows = fopen((dir + "flows_output_mean.txt").c_str(), "w");
+            if (file_mean_flows == NULL) {
+                mio::log(mio::LogLevel::critical, "Could not open file {}", dir + "flows_output_mean.txt");
+            }
+            else {
+                mio::mpm::print_to_file(file_mean_flows, mean_time_series_flows, {});
+                fclose(file_mean_flows);
+            }
 
-        if (save_percentiles) {
+            if (save_percentiles) {
 
-            auto ensemble_percentile_comps =
-                mio::mpm::get_format_for_percentile_output(ensemble_results_comp, num_regions);
-            auto ensemble_percentile_flows =
-                mio::mpm::get_format_for_percentile_output(ensemble_results_flows, num_regions);
+                auto ensemble_percentile_comps =
+                    mio::mpm::get_format_for_percentile_output(ensemble_results_comp, num_regions);
+                auto ensemble_percentile_flows =
+                    mio::mpm::get_format_for_percentile_output(ensemble_results_flows, num_regions);
 
-            //save percentile output
-            auto ensemble_result_comps_p05 = mio::ensemble_percentile(ensemble_percentile_comps, 0.05);
-            auto ensemble_result_comps_p25 = mio::ensemble_percentile(ensemble_percentile_comps, 0.25);
-            auto ensemble_result_comps_p50 = mio::ensemble_percentile(ensemble_percentile_comps, 0.50);
-            auto ensemble_result_comps_p75 = mio::ensemble_percentile(ensemble_percentile_comps, 0.75);
-            auto ensemble_result_comps_p95 = mio::ensemble_percentile(ensemble_percentile_comps, 0.95);
+                //save percentile output
+                auto ensemble_result_comps_p05 = mio::ensemble_percentile(ensemble_percentile_comps, 0.05);
+                auto ensemble_result_comps_p25 = mio::ensemble_percentile(ensemble_percentile_comps, 0.25);
+                auto ensemble_result_comps_p50 = mio::ensemble_percentile(ensemble_percentile_comps, 0.50);
+                auto ensemble_result_comps_p75 = mio::ensemble_percentile(ensemble_percentile_comps, 0.75);
+                auto ensemble_result_comps_p95 = mio::ensemble_percentile(ensemble_percentile_comps, 0.95);
 
-            auto ensemble_result_flows_p05 = mio::ensemble_percentile(ensemble_percentile_flows, 0.05);
-            auto ensemble_result_flows_p25 = mio::ensemble_percentile(ensemble_percentile_flows, 0.25);
-            auto ensemble_result_flows_p50 = mio::ensemble_percentile(ensemble_percentile_flows, 0.50);
-            auto ensemble_result_flows_p75 = mio::ensemble_percentile(ensemble_percentile_flows, 0.75);
-            auto ensemble_result_flows_p95 = mio::ensemble_percentile(ensemble_percentile_flows, 0.95);
+                auto ensemble_result_flows_p05 = mio::ensemble_percentile(ensemble_percentile_flows, 0.05);
+                auto ensemble_result_flows_p25 = mio::ensemble_percentile(ensemble_percentile_flows, 0.25);
+                auto ensemble_result_flows_p50 = mio::ensemble_percentile(ensemble_percentile_flows, 0.50);
+                auto ensemble_result_flows_p75 = mio::ensemble_percentile(ensemble_percentile_flows, 0.75);
+                auto ensemble_result_flows_p95 = mio::ensemble_percentile(ensemble_percentile_flows, 0.95);
 
-            mio::mpm::percentile_output_to_file(ensemble_result_comps_p05, dir + "comps_output_p05.txt");
-            mio::mpm::percentile_output_to_file(ensemble_result_comps_p25, dir + "comps_output_p25.txt");
-            mio::mpm::percentile_output_to_file(ensemble_result_comps_p50, dir + "comps_output_p50.txt");
-            mio::mpm::percentile_output_to_file(ensemble_result_comps_p75, dir + "comps_output_p75.txt");
-            mio::mpm::percentile_output_to_file(ensemble_result_comps_p95, dir + "comps_output_p95.txt");
+                mio::mpm::percentile_output_to_file(ensemble_result_comps_p05, dir + "comps_output_p05.txt");
+                mio::mpm::percentile_output_to_file(ensemble_result_comps_p25, dir + "comps_output_p25.txt");
+                mio::mpm::percentile_output_to_file(ensemble_result_comps_p50, dir + "comps_output_p50.txt");
+                mio::mpm::percentile_output_to_file(ensemble_result_comps_p75, dir + "comps_output_p75.txt");
+                mio::mpm::percentile_output_to_file(ensemble_result_comps_p95, dir + "comps_output_p95.txt");
 
-            mio::mpm::percentile_output_to_file(ensemble_result_flows_p05, dir + "flows_output_p05.txt");
-            mio::mpm::percentile_output_to_file(ensemble_result_flows_p25, dir + "flows_output_p25.txt");
-            mio::mpm::percentile_output_to_file(ensemble_result_flows_p50, dir + "flows_output_p50.txt");
-            mio::mpm::percentile_output_to_file(ensemble_result_flows_p75, dir + "flows_output_p75.txt");
-            mio::mpm::percentile_output_to_file(ensemble_result_flows_p95, dir + "flows_output_p95.txt");
+                mio::mpm::percentile_output_to_file(ensemble_result_flows_p05, dir + "flows_output_p05.txt");
+                mio::mpm::percentile_output_to_file(ensemble_result_flows_p25, dir + "flows_output_p25.txt");
+                mio::mpm::percentile_output_to_file(ensemble_result_flows_p50, dir + "flows_output_p50.txt");
+                mio::mpm::percentile_output_to_file(ensemble_result_flows_p75, dir + "flows_output_p75.txt");
+                mio::mpm::percentile_output_to_file(ensemble_result_flows_p95, dir + "flows_output_p95.txt");
+            }
         }
     }
 }
@@ -291,7 +299,7 @@ void save_new_infections(mio::Date start_date, size_t num_days, std::string resu
 int main(int argc, char** argv)
 {
     mio::set_log_level(mio::LogLevel::warn);
-    run_simulation(3, false, false, mio::base_dir() + "cpp/outputs/Munich/test/test_Hybrid");
+    run_simulation(50, false, false, mio::base_dir() + "cpp/outputs/");
     //save_new_infections(mio::Date(2021, 3, 1), 30, "cpp/outputs/300runs_9/");
     return 0;
 }
