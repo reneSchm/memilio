@@ -2,9 +2,18 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import gaussian_kde
 import matplotlib.cm as cm
-from matplotlib.colors import Normalize 
+from matplotlib.colors import Normalize
 
-agent_pre_positions = np.loadtxt("Results/movement/positions800agents_50days_sigma0.3.txt")
+font_size = 16
+
+plt.rc ('font', size = font_size) # steuert die Standardtextgröße
+plt.rc ('axes', titlesize = font_size) # Schriftgröße des Titels
+plt.rc ('axes', labelsize = font_size) # Schriftgröße der x- und y-Beschriftungen
+plt.rc ('xtick', labelsize = font_size) #Schriftgröße der x-Tick-Labels
+plt.rc ('ytick', labelsize = font_size) #Schriftgröße der y-Tick-Labels
+plt.rc ('legend', fontsize = font_size) #Schriftgröße der Legende
+
+agent_pre_positions = np.loadtxt("Results/movement/positions800agents_50days_sigma0.6.txt")
 #agent_post_positions = np.loadtxt("agents_post.txt")
 # background = np.loadtxt("potentially_germany.pgm", skiprows=3)
 fig = plt.figure(dpi=500)
@@ -19,9 +28,9 @@ colors = 'RdYlGn_r'
 
 norm = Normalize(vmin = 0, vmax = 1)
 plt.scatter(agent_pre_positions[:, 0], agent_pre_positions[:, 1], c=z, norm=norm, cmap=colors, s=marker_size, linewidths=0)
-# cbar = fig.colorbar(cm.ScalarMappable(norm = norm, cmap=colors), ax=ax)
-# cbar.ax.set_ylabel('Agent concentration')
-#plt.clim(0,1)
+cbar = fig.colorbar(cm.ScalarMappable(norm = norm, cmap=colors), ax=ax)
+cbar.ax.set_ylabel('Agent concentration')
+plt.clim(0,1)
 
 # Set limits for the axes
 ax.set_xlim([-2, 2])
