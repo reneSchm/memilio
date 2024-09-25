@@ -2,6 +2,7 @@
 #define QUAD_WELL_H
 
 #include "infection_state.h"
+#include "memilio/utils/compiler_diagnostics.h"
 #include "mpm/model.h"
 #include "hybrid_paper/library/infection_state.h"
 #include <algorithm>
@@ -106,6 +107,7 @@ public:
         , m_number_transitions(static_cast<size_t>(Status::Count), Eigen::MatrixXd::Zero(4, 4))
     {
         for (auto& agent : populations) {
+            mio::unused(agent);
             assert(is_in_domain(agent.position));
         }
         for (auto& r : rates) {

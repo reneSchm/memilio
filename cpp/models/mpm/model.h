@@ -123,7 +123,7 @@ public:
     {
         const auto& params = this->parameters;
         const auto& pop    = this->populations;
-        if (flows.cols() != params.template get<AdoptionRates<Status>>().size()) {
+        if (static_cast<size_t>(flows.cols()) != params.template get<AdoptionRates<Status>>().size()) {
             flows.resize(max_evals, params.template get<AdoptionRates<Status>>().size());
             flows.setZero();
             flow_x = Eigen::VectorXd::Zero(flows.cols());

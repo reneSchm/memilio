@@ -22,7 +22,8 @@
 #define TIME_NOW std::chrono::high_resolution_clock::now()
 #define PRINTABLE_TIME(_time) (std::chrono::duration_cast<std::chrono::duration<double>>(_time)).count()
 
-void run_hybridization(size_t num_runs, bool save_percentiles, std::string result_path)
+void run_hybridization(size_t num_runs, size_t num_agents, bool save_percentiles, std::string result_path,
+                       bool save_res)
 {
     const size_t num_regions = 4;
     const int focus_region   = 0;
@@ -31,14 +32,14 @@ void run_hybridization(size_t num_runs, bool save_percentiles, std::string resul
     using ABM                = mio::mpm::ABM<QuadWellModel<Status>>;
     using PDMM               = mio::mpm::PDMModel<4, Status>;
 
-    size_t num_agents = 40000;
-    double time_mean  = 0;
+    double time_mean = 0;
 
     const QuadWellSetup<ABM::Agent> setup(num_agents);
 
     ABM abm = setup.create_abm<ABM>();
     abm.set_non_moving_regions({1, 2, 3});
     PDMM pdmm = setup.create_pdmm<PDMM>();
+    setup.save_setup(result_path);
 
     //PDMM gets its populations through first exchange timestep
     pdmm.populations.array().setZero();
@@ -74,11 +75,11 @@ void run_hybridization(size_t num_runs, bool save_percentiles, std::string resul
         num_runs, mio::TimeSeries<double>(num_regions * static_cast<size_t>(Status::Count)));
 
     auto& region_rng = mio::DiscreteDistribution<size_t>::get_instance();
-    bool save_res    = false;
     std::cerr << "num_runs " << num_runs << "\n" << std::flush;
 #pragma omp barrier
 #pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
+        mio::thread_local_rng().seed({static_cast<uint32_t>(run)});
         std::cerr << "Start run " << run << std::endl << std::flush;
         std::vector<double> region_weights(3);
         double t_start = omp_get_wtime();
@@ -190,6 +191,11 @@ void run_hybridization(size_t num_runs, bool save_percentiles, std::string resul
 int main()
 {
     mio::set_log_level(mio::LogLevel::warn);
-    run_hybridization(50, false, mio::base_dir() + "cpp/outputs/timing_Hybrid_");
+    size_t num_runs        = 140;
+    size_t num_agents      = 8000;
+    bool save_res          = true;
+    bool save_percentiles  = true;
+    std::string result_dir = mio::base_dir() + "cpp/outputs/QuadWell/20240923_v1/Hybrid_";
+    run_hybridization(num_runs, num_agents, save_percentiles, result_dir, save_res);
     return 0;
 }

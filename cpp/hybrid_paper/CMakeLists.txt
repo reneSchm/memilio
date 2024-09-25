@@ -16,7 +16,10 @@ add_library(hybrid_paper
     library/transition_rate_estimation.cpp
     library/weighted_gradient.h
     library/weighted_potential.h
+    library/sensitivity_analysis.h
+    library/sensitivity_analysis.cpp
     quad_well/quad_well_setup.h
+    quad_well/sensitivity_analysis_setup.h
     munich/munich_setup.h
 )
 target_link_libraries(hybrid_paper memilio mpm OpenMP::OpenMP_CXX)
@@ -85,3 +88,6 @@ target_link_libraries(qw_temporal_hybrid hybrid_paper)
 
 add_executable(extinction_model extinction_model.cpp)
 target_link_libraries(extinction_model hybrid_paper OpenMP::OpenMP_CXX)
+
+add_executable(sensitivity_ABM_PDMM_qw quad_well/sensitivity_analysis_ABM_PDMM.cpp)
+target_link_libraries(sensitivity_ABM_PDMM_qw hybrid_paper OpenMP::OpenMP_CXX)

@@ -9,6 +9,7 @@
 #include "memilio/data/analyze_result.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <omp.h>
 #include <ostream>
@@ -41,9 +42,20 @@ void percentile_output_to_file(std::vector<TimeSeries<double>>& percentile_outpu
 
 TimeSeries<double> add_time_series(TimeSeries<double>& t1, TimeSeries<double>& t2);
 
+void save_results(std::vector<mio::TimeSeries<double>>& ensemble_results, size_t num_runs, size_t num_regions,
+                  bool save_percentiles, std::string result_prefix, std::string result_path);
+
 template <class Model, class SampleStatusFunction>
 void run(Model model, size_t num_runs, double tmax, double dt, size_t num_regions, bool save_percentiles,
          std::string result_prefix, std::string result_path, SampleStatusFunction sample_function)
+{
+    auto ensemble_results = simulate(model, num_runs, tmax, dt, num_regions, sample_function);
+    save_results(ensemble_results, num_runs, num_regions, save_percentiles, result_prefix, result_path);
+}
+
+template <class Model, class SampleStatusFunction>
+std::vector<mio::TimeSeries<double>> simulate(Model model, size_t num_runs, double tmax, double dt, size_t num_regions,
+                                              SampleStatusFunction sample_function)
 {
     using Status = InfectionState;
     std::vector<mio::TimeSeries<double>> ensemble_results(
@@ -52,7 +64,8 @@ void run(Model model, size_t num_runs, double tmax, double dt, size_t num_region
     TIME_TYPE total_sim_time = TIME_NOW;
 #pragma omp barrier
 #pragma omp parallel for
-    for (int run = 0; run < num_runs; ++run) {
+    for (size_t run = 0; run < num_runs; ++run) {
+        //mio::thread_local_rng().seed({static_cast<uint32_t>(run)});
         std::cerr << "Start run " << run << "\n" << std::flush;
         double t_start = omp_get_wtime();
         auto sim       = mio::Simulation<Model>(model, 0.0, dt);
@@ -73,42 +86,8 @@ void run(Model model, size_t num_runs, double tmax, double dt, size_t num_region
     {
         std::cout << "Mean time: " << time_mean / double(num_runs) << std::endl << std::flush;
         restart_timer(total_sim_time, "Time for simulation");
-        // add all results
-        mio::TimeSeries<double> mean_time_series =
-            std::accumulate(ensemble_results.begin(), ensemble_results.end(),
-                            mio::TimeSeries<double>::zero(ensemble_results[0].get_num_time_points(),
-                                                          num_regions * static_cast<size_t>(Status::Count)),
-                            add_time_series);
-        //calculate average
-        for (size_t t = 0; t < static_cast<size_t>(mean_time_series.get_num_time_points()); ++t) {
-            mean_time_series.get_value(t) *= 1.0 / num_runs;
-        }
-
-        std::string dir = result_path + result_prefix;
-
-        //save mean timeseries
-        FILE* file = fopen((dir + "_output_mean.txt").c_str(), "w");
-        mio::mpm::print_to_file(file, mean_time_series, {});
-        fclose(file);
-
-        if (save_percentiles) {
-
-            auto ensemble_percentile = get_format_for_percentile_output(ensemble_results, num_regions);
-
-            //save percentile output
-            auto ensemble_result_p05 = mio::ensemble_percentile(ensemble_percentile, 0.05);
-            auto ensemble_result_p25 = mio::ensemble_percentile(ensemble_percentile, 0.25);
-            auto ensemble_result_p50 = mio::ensemble_percentile(ensemble_percentile, 0.50);
-            auto ensemble_result_p75 = mio::ensemble_percentile(ensemble_percentile, 0.75);
-            auto ensemble_result_p95 = mio::ensemble_percentile(ensemble_percentile, 0.95);
-
-            percentile_output_to_file(ensemble_result_p05, dir + "_output_p05.txt");
-            percentile_output_to_file(ensemble_result_p25, dir + "_output_p25.txt");
-            percentile_output_to_file(ensemble_result_p50, dir + "_output_p50.txt");
-            percentile_output_to_file(ensemble_result_p75, dir + "_output_p75.txt");
-            percentile_output_to_file(ensemble_result_p95, dir + "_output_p95.txt");
-        }
     }
+    return ensemble_results;
 }
 
 } // namespace paper

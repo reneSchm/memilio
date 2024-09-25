@@ -87,27 +87,65 @@ struct QuadWellSetup {
     {
     }
 
-    void read_positions(std::string filename, std::vector<Agent>& agents)
+    void read_positions(std::string filename, std::vector<Agent>& agent_vec)
     {
         size_t iter = 0;
         std::string line;
         std::ifstream file(filename);
         if (file.is_open()) {
             while (std::getline(file, line)) {
-                if (iter == agents.size()) {
+                if (iter == agent_vec.size()) {
                     break;
                 }
                 std::stringstream ss(line);
                 std::string pos;
                 size_t pos_iter = 0;
                 while (std::getline(ss, pos, ' ')) {
-                    agents[iter].position[pos_iter] = std::stod(pos);
+                    agent_vec[iter].position[pos_iter] = std::stod(pos);
                     ++pos_iter;
                 }
                 ++iter;
             }
             file.close();
         }
+    }
+
+    void save_setup(std::string filename) const
+    {
+        filename  = filename + "setup.txt";
+        auto file = fopen(filename.c_str(), "w");
+        fprintf(file, "num_agents: %zu\n", agents.size());
+        fprintf(file, "t_Exposed: %.14f\n", t_Exposed);
+        fprintf(file, "t_Carrier: %.14f\n", t_Carrier);
+        fprintf(file, "t_Infected: %.14f\n", t_Infected);
+        fprintf(file, "mu_C_R: %.14f\n", mu_C_R);
+        fprintf(file, "mu_I_D: %.14f\n", mu_I_D);
+        fprintf(file, "%s ", "transmission rates:");
+        //transmission rates
+        for (auto tr : transmission_rates) {
+            fprintf(file, "%.14f ", tr);
+        }
+        fprintf(file, "\ntmax: %.14f\n", tmax);
+        fprintf(file, "dt: %.14f\n", dt);
+        fprintf(file, "sigma: %.14f\n", sigma);
+        fprintf(file, "contact_radius: %.14f\n", contact_radius);
+        fprintf(file, "%s\n", "transition rates:");
+        // save transition rates
+        for (auto& tr : transition_rates) {
+            fprintf(file, "From: %zu ", static_cast<size_t>(tr.from));
+            fprintf(file, "To: %zu ", static_cast<size_t>(tr.to));
+            fprintf(file, "Status: %i ", static_cast<int>(tr.status));
+            fprintf(file, "Factor: %.14f\n", tr.factor);
+        }
+        fprintf(file, "%s", "initialization:");
+        //save initialization
+        for (size_t region = 0; region < init_dists.size(); ++region) {
+            fprintf(file, "\nregion: %zu", region);
+            for (auto val : init_dists[region]) {
+                fprintf(file, " %.14f ", val);
+            }
+        }
+        fclose(file);
     }
 
     qw::MetaregionSampler pos_rng{{-2, -2}, {0, 0}, {2, 2}, 0.5};
@@ -122,6 +160,7 @@ struct QuadWellSetup {
     double t_Infected;
     double mu_C_R;
     double mu_I_D;
+    std::vector<double> transmission_rates;
     std::vector<Agent> agents;
     std::vector<mio::mpm::AdoptionRate<Status>> adoption_rates;
     double tmax;
@@ -134,48 +173,58 @@ struct QuadWellSetup {
     //PDMM
     std::vector<mio::mpm::TransitionRate<Status>> transition_rates;
 
-    QuadWellSetup(double t_Exposed, double t_Carrier, double t_Infected, std::vector<double> transmission_rates,
-                  double mu_C_R, double mu_I_D, double tmax, double dt, double sigma, double contact_radius,
-                  size_t num_agents, const std::vector<std::vector<double>>& init_dists,
+    const size_t num_regions = 4;
+
+    QuadWellSetup(double t_E, double t_C, double t_I, std::vector<double> transm_rats, double m_C_R, double m_I_D,
+                  double t_max, double delta_t, double sgm, double cr, size_t na,
+                  const std::vector<std::vector<double>>& init,
                   const std::map<std::tuple<Status, mio::mpm::Region, mio::mpm::Region>, double>& transition_factors)
-        : t_Exposed(t_Exposed)
-        , t_Carrier(t_Carrier)
-        , t_Infected(t_Infected)
-        , mu_C_R(mu_C_R)
-        , mu_I_D(mu_I_D)
-        , agents(num_agents)
-        , init_dists(init_dists)
-        , tmax(tmax)
-        , dt(dt)
-        , num_agents(num_agents)
-        , sigma(sigma)
-        , contact_radius(contact_radius)
+        : t_Exposed(t_E)
+        , t_Carrier(t_C)
+        , t_Infected(t_I)
+        , mu_C_R(m_C_R)
+        , mu_I_D(m_I_D)
+        , transmission_rates(transm_rats)
+        , agents(na)
+        , tmax(t_max)
+        , dt(delta_t)
+        , num_agents(na)
+        , init_dists(init)
+        , sigma(sgm)
+        , contact_radius(cr)
     {
         //initialize agents
         size_t counter = 0;
         auto& sta_rng  = mio::DiscreteDistribution<int>::get_instance();
         bool read_pos  = true;
         if (read_pos) {
-            read_positions(mio::base_dir() + "cpp/hybrid_paper/quad_well/input/positions_1000.txt", agents);
+            std::string path = mio::base_dir() + "cpp/hybrid_paper/quad_well/input/positions_" +
+                               std::to_string(static_cast<int>(num_agents)) + ".txt";
+            read_positions(path, agents);
         }
+        bool one_infected = false;
         for (auto& agent : agents) {
-            agent.status = static_cast<Status>(sta_rng(init_dists[counter]));
+            if (!one_infected) {
+                agent.status = Status::C;
+                one_infected = true;
+            }
+            else {
+                agent.status = static_cast<Status>(sta_rng(init_dists[counter]));
+            }
             if (!read_pos) {
                 agent.position = pos_rng(counter);
             }
             counter = (counter + 1) % 4;
         }
-        std::cout << "Num Agents: " << agents.size() << "\n";
-
         //set adoption rates
         for (size_t r = 0; r < 4; ++r) {
             adoption_rates.push_back(
                 {Status::S, Status::E, mio::mpm::Region(r), transmission_rates[r], {Status::C, Status::I}, {1, 1}});
-            adoption_rates.push_back({Status::E, Status::C, mio::mpm::Region(r), 1.0 / t_Exposed});
-            adoption_rates.push_back({Status::C, Status::R, mio::mpm::Region(r), mu_C_R / t_Carrier});
-            adoption_rates.push_back({Status::C, Status::I, mio::mpm::Region(r), (1 - mu_C_R) / t_Carrier});
-            adoption_rates.push_back({Status::I, Status::R, mio::mpm::Region(r), (1 - mu_I_D) / t_Infected});
-            adoption_rates.push_back({Status::I, Status::D, mio::mpm::Region(r), mu_I_D / t_Infected});
+            adoption_rates.push_back({Status::E, Status::C, mio::mpm::Region(r), 1.0 / t_Exposed, {}, {}});
+            adoption_rates.push_back({Status::C, Status::R, mio::mpm::Region(r), mu_C_R / t_Carrier, {}, {}});
+            adoption_rates.push_back({Status::C, Status::I, mio::mpm::Region(r), (1 - mu_C_R) / t_Carrier, {}, {}});
+            adoption_rates.push_back({Status::I, Status::R, mio::mpm::Region(r), (1 - mu_I_D) / t_Infected, {}, {}});
+            adoption_rates.push_back({Status::I, Status::D, mio::mpm::Region(r), mu_I_D / t_Infected, {}, {}});
         }
 
         //set transition rates
@@ -184,12 +233,10 @@ struct QuadWellSetup {
         for (auto& rate : transition_factors) {
             transition_rates.push_back(
                 {std::get<0>(rate.first), std::get<1>(rate.first), std::get<2>(rate.first), rate.second});
-            transition_rates.push_back(
-                {std::get<0>(rate.first), std::get<2>(rate.first), std::get<1>(rate.first), rate.second});
         }
     }
 
-    QuadWellSetup(size_t num_agents)
+    QuadWellSetup(size_t na)
         : QuadWellSetup(3.0, //t_Exposed
                         3.0, //t_Carrier
                         5.0, //t_Infected
@@ -200,7 +247,7 @@ struct QuadWellSetup {
                         0.1, //dt
                         0.55, //sigma
                         0.4, //contact_radius
-                        num_agents,
+                        na,
                         {{0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
                          {0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
                          {0.99, 0.002, 0.003, 0.005, 0.0, 0.0},
@@ -208,27 +255,49 @@ struct QuadWellSetup {
                         std::map<std::tuple<Status, mio::mpm::Region, mio::mpm::Region>, double>{
                             //transition rates for sigma = 0.55
                             {{Status::S, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0048}, //0->1
-                            {{Status::E, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0048},
-                            {{Status::C, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0048},
-                            {{Status::I, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0048},
+                            {{Status::E, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.03},
+                            {{Status::C, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.03},
+                            {{Status::I, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.03},
                             {{Status::R, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0048},
+                            {{Status::S, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0048}, //1->0
+                            {{Status::E, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0033},
+                            {{Status::C, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0033},
+                            {{Status::I, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0033},
+                            {{Status::R, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0048},
                             {{Status::S, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0048}, //0->2
-                            {{Status::E, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0048},
-                            {{Status::C, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0048},
-                            {{Status::I, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0048},
+                            {{Status::E, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0033},
+                            {{Status::C, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0033},
+                            {{Status::I, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0033},
                             {{Status::R, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0048},
+                            {{Status::S, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0048}, //2->0
+                            {{Status::E, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0033},
+                            {{Status::C, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0033},
+                            {{Status::I, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0033},
+                            {{Status::R, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0048},
                             {{Status::S, mio::mpm::Region(0), mio::mpm::Region(3)}, 1e-07}, //0->3 1e-07
                             {{Status::S, mio::mpm::Region(1), mio::mpm::Region(2)}, 1e-07}, //1->2
+                            {{Status::S, mio::mpm::Region(3), mio::mpm::Region(0)}, 1e-07}, //3->0 1e-07
+                            {{Status::S, mio::mpm::Region(2), mio::mpm::Region(1)}, 1e-07}, //2->1
                             {{Status::S, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0048}, //1->3
-                            {{Status::E, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0048},
-                            {{Status::C, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0048},
-                            {{Status::I, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0048},
+                            {{Status::E, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0033},
+                            {{Status::C, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0033},
+                            {{Status::I, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0033},
                             {{Status::R, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0048},
+                            {{Status::S, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.0048}, //3->1
+                            {{Status::E, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.03},
+                            {{Status::C, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.03},
+                            {{Status::I, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.03},
+                            {{Status::R, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.0048},
                             {{Status::S, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0048}, //2->3
-                            {{Status::E, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0048},
-                            {{Status::C, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0048},
-                            {{Status::I, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0048},
-                            {{Status::R, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0048}})
+                            {{Status::E, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0033},
+                            {{Status::C, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0033},
+                            {{Status::I, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0033},
+                            {{Status::R, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0048},
+                            {{Status::S, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0048}, //3->2
+                            {{Status::E, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0033},
+                            {{Status::C, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0033},
+                            {{Status::I, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0033},
+                            {{Status::R, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0048}})
     {
     }
 };

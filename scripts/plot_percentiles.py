@@ -25,7 +25,7 @@ def plot(time, data1, data2, comp, labels=['data1', 'data2'], filename = 'plt', 
     3rd dimension: number of regions
     4th dimension: matrix with lines the number of timepoints and columns the compartments for that timepoint
 """
-def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_series_labels, sum = False, y_label = ""):
+def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_series_labels, sum = False, y_label = "", save_dir=""):
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     comps_names = ["Susceptible", "Exposed", "Carrier", "Infected", "Recovered", "Dead"]
     # iterate over all region
@@ -59,7 +59,7 @@ def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_ser
             plt.subplots_adjust(bottom=0.15)
             plt.grid()
             plt.legend()
-            fig.savefig("Percentiles_" + label + "_" + region_names[r]+".png")
+            fig.savefig(save_dir + "Percentiles_" + label + "_" + region_names[r]+".png")
 
 def plot_percentiles(time, mean, percentiles, comp, compare = [], scaling_factor=1, label = [], filename=''
                      , region_names = ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land", 
@@ -242,7 +242,8 @@ def add_compartments(result_list):
         acc_result_list.append(acc_output)
     return acc_result_list
 
-dir = "../cpp/outputs/QuadWell/Scenario2/"
+dir = "cpp/outputs/QuadWell/20240923_v1/"
+save_dir = "scripts/Results/QuadWell/20240923_v1/"
 #table_real, labels_real = read_from_terminal(dir + "output_extrapolated.txt")
 #time = table_real[:,0]
 num_regions = 4
@@ -259,8 +260,8 @@ plt.rc ('legend', fontsize = font_size) #Schriftgröße der Legende
 
 
 #list with mean output as first element and percentiles as following elements starting with p05 and ending with p95
-ABM_list, time_ABM = read_mean_and_percentile_outputs(dir, "2.4_ABM", num_comp, num_regions)
-PDMM_list, time_PDMM = read_mean_and_percentile_outputs(dir, "2.4_PDMM", num_comp, num_regions)
+ABM_list, time_ABM = read_mean_and_percentile_outputs(dir, "ABM", num_comp, num_regions)
+PDMM_list, time_PDMM = read_mean_and_percentile_outputs(dir, "PDMM", num_comp, num_regions)
 # ABM_list_from, ABM_time_from = read_mean_and_percentile_outputs(dir, "2.4_ABM_trans_from", num_comp, num_regions)
 # ABM_list_to, ABM_time_to = read_mean_and_percentile_outputs(dir, "2.4_ABM_trans_to", num_comp, num_regions)
 # PDMM_list_from, PDMM_time_from = read_mean_and_percentile_outputs(dir, "2.4_PDMM_trans_from", num_comp, num_regions)
@@ -271,9 +272,9 @@ PDMM_list, time_PDMM = read_mean_and_percentile_outputs(dir, "2.4_PDMM", num_com
 # PDMM_list_from_acc = add_compartments(PDMM_list_from)
 # PDMM_list_to_acc = add_compartments(PDMM_list_to)
 
-Hybrid_list, time_Hybrid = read_mean_and_percentile_outputs(dir, "2.4_new_Hybrid", num_comp, num_regions)
+Hybrid_list, time_Hybrid = read_mean_and_percentile_outputs(dir, "Hybrid", num_comp, num_regions)
 
-# #get same lists summed up for all regions
+# get same lists summed up for all regions
 ABM_list_accumulated = get_accumulated_output(ABM_list)
 PDMM_list_accumulated = get_accumulated_output(PDMM_list)
 Hybrid_list_accumulated = get_accumulated_output(Hybrid_list)
@@ -290,12 +291,12 @@ Hybrid_list_acc_mean_p25_p75 = [Hybrid_list_accumulated[0], Hybrid_list_accumula
 # plot number infectious (C+I) for all three models and all regions
 plot_percentiles2(time_ABM, [ABM_list_mean_p25_p75, PDMM_list_mean_p25_p75, Hybrid_list_mean_p25_p75], [2, 3], ["blue", "red", "green"], 
                   ["Focus_region", "Region_1", "Region_2", "Region_3"], 
-                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious") # ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land",  "Freising", "Erding", "Ebersberg"]
+                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious", save_dir=save_dir) # ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land",  "Freising", "Erding", "Ebersberg"]
 # plot number infectious (C+I) for all three models sum over all regions
-plot_percentiles2(time_ABM, [ABM_list_acc_mean_p25_p75, PDMM_list_acc_mean_p25_p75, Hybrid_list_acc_mean_p25_p75], [2,3], ["blue", "red", "green"], ["All_regions"],
-                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious")
+plot_percentiles2(time_ABM, [ABM_list_acc_mean_p25_p75, PDMM_list_acc_mean_p25_p75, Hybrid_list_acc_mean_p25_p75], [2, 3], ["blue", "red", "green"], ["All_regions"],
+                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious", save_dir=save_dir)
 
-plot_populations(time_Hybrid, Hybrid_list[0], [0, 1, 2, 3, 4, 5, 6, 7], "test")
+# plot_populations(time_Hybrid, Hybrid_list[0], [0, 1, 2, 3, 4, 5, 6, 7], "test")
 
 # # plot number transitions for ABM and PDMM accumulated for all compartments
 # plot_num_transitions(ABM_time_from, [ABM_list_from_acc[0], PDMM_list_from_acc[0]], [ABM_list_from_acc[1:]], comp=0, labels=["ABM", "PDMM"], region_names=["Focus region", "Region 1", "Region 2", "Region 3"])

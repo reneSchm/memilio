@@ -60,6 +60,47 @@ TimeSeries<double> add_time_series(TimeSeries<double>& t1, TimeSeries<double>& t
     return added_time_series;
 }
 
+void save_results(std::vector<mio::TimeSeries<double>>& ensemble_results, size_t num_runs, size_t num_regions,
+                  bool save_percentiles, std::string result_prefix, std::string result_path)
+{
+    using Status = InfectionState;
+    // add all results
+    mio::TimeSeries<double> mean_time_series =
+        std::accumulate(ensemble_results.begin(), ensemble_results.end(),
+                        mio::TimeSeries<double>::zero(ensemble_results[0].get_num_time_points(),
+                                                      num_regions * static_cast<size_t>(Status::Count)),
+                        add_time_series);
+    //calculate average
+    for (size_t t = 0; t < static_cast<size_t>(mean_time_series.get_num_time_points()); ++t) {
+        mean_time_series.get_value(t) *= 1.0 / num_runs;
+    }
+
+    std::string dir = result_path + result_prefix;
+
+    //save mean timeseries
+    FILE* file = fopen((dir + "_output_mean.txt").c_str(), "w");
+    mio::mpm::print_to_file(file, mean_time_series, {});
+    fclose(file);
+
+    if (save_percentiles) {
+
+        auto ensemble_percentile = get_format_for_percentile_output(ensemble_results, num_regions);
+
+        //save percentile output
+        auto ensemble_result_p05 = mio::ensemble_percentile(ensemble_percentile, 0.05);
+        auto ensemble_result_p25 = mio::ensemble_percentile(ensemble_percentile, 0.25);
+        auto ensemble_result_p50 = mio::ensemble_percentile(ensemble_percentile, 0.50);
+        auto ensemble_result_p75 = mio::ensemble_percentile(ensemble_percentile, 0.75);
+        auto ensemble_result_p95 = mio::ensemble_percentile(ensemble_percentile, 0.95);
+
+        percentile_output_to_file(ensemble_result_p05, dir + "_output_p05.txt");
+        percentile_output_to_file(ensemble_result_p25, dir + "_output_p25.txt");
+        percentile_output_to_file(ensemble_result_p50, dir + "_output_p50.txt");
+        percentile_output_to_file(ensemble_result_p75, dir + "_output_p75.txt");
+        percentile_output_to_file(ensemble_result_p95, dir + "_output_p95.txt");
+    }
+}
+
 } // namespace paper
 } // namespace mpm
 } // namespace mio
