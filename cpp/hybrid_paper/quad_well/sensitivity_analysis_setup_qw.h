@@ -1,5 +1,5 @@
-#ifndef SENSITIVITY_ANALYSIS_SETUP_H
-#define SENSITIVITY_ANALYSIS_SETUP_H
+#ifndef SENSITIVITY_ANALYSIS_SETUP_QW_H
+#define SENSITIVITY_ANALYSIS_SETUP_QW_H
 
 #include "memilio/utils/parameter_distributions.h"
 
@@ -9,18 +9,18 @@
 #include <string>
 #include <vector>
 
-struct SensitivitySetup {
+struct SensitivitySetupQW {
     const std::map<std::string, mio::ParameterDistributionUniform> params;
     const std::map<std::string, double> base_values;
     const std::map<std::string, double> deltas;
     std::vector<std::map<std::string, std::vector<double>>> elem_effects;
 
-    SensitivitySetup(std::vector<double> t_Exposed_range, std::vector<double> mu_C_R_range,
-                     std::vector<double> mu_I_D_range, std::vector<double> transmission_rate_range,
-                     std::vector<double> sigma_range, std::vector<double> contact_radius_range,
-                     std::vector<double> E_init_range, std::vector<double> C_init_range,
-                     std::vector<double> I_init_range, std::vector<double> transition_rates_range, size_t num_runs,
-                     size_t num_outputs)
+    SensitivitySetupQW(std::vector<double> t_Exposed_range, std::vector<double> mu_C_R_range,
+                       std::vector<double> mu_I_D_range, std::vector<double> transmission_rate_range,
+                       std::vector<double> sigma_range, std::vector<double> contact_radius_range,
+                       std::vector<double> E_init_range, std::vector<double> C_init_range,
+                       std::vector<double> I_init_range, std::vector<double> transition_rates_range, size_t num_runs,
+                       size_t num_outputs)
         : params(
               {{"t_Exposed", mio::ParameterDistributionUniform(t_Exposed_range[0], t_Exposed_range[1])},
                {"transmission_rate",
@@ -68,19 +68,19 @@ struct SensitivitySetup {
                           {"transition_rates", std::vector<double>(num_runs)}});
     }
 
-    SensitivitySetup(size_t num_runs, size_t num_outputs)
-        : SensitivitySetup({1.5, 5.}, //t_Exposed = 1/gamma_E_C
-                           {0.01, 0.5}, //mu_C_R = gamma_C_R
-                           {0.0001, 0.1}, //mu_I_D = gamma_I_D
-                           {0.01, 0.6}, //transmission_rate
-                           {0.1, 0.6}, //sigma
-                           {0.1, 1.}, //contact_radius
-                           {0.0, 0.1}, //E
-                           {0.0, 0.1}, //C
-                           {0.0, 0.1}, //I
-                           {0.00001, 0.05}, //transition_rates
-                           num_runs, num_outputs)
+    SensitivitySetupQW(size_t num_runs, size_t num_outputs)
+        : SensitivitySetupQW({1.5, 5.}, //t_Exposed = 1/gamma_E_C
+                             {0.01, 0.5}, //mu_C_R = gamma_C_R
+                             {0.0001, 0.1}, //mu_I_D = gamma_I_D
+                             {0.01, 0.6}, //transmission_rate
+                             {0.1, 0.6}, //sigma
+                             {0.1, 1.}, //contact_radius
+                             {0.0, 0.1}, //E
+                             {0.0, 0.1}, //C
+                             {0.0, 0.1}, //I
+                             {0.00001, 0.05}, //transition_rates
+                             num_runs, num_outputs)
     {
     }
 };
-#endif //SENSITIVITY_ANALYSIS_SETUP_H
+#endif //SENSITIVITY_ANALYSIS_SETUP_QW_H

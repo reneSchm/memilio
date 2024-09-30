@@ -181,7 +181,7 @@ std::vector<double> sensitivity_results(ModelSetup& setup, Model& model, size_t 
         timing[run]           = t_end - t_start;
     }
 
-    //claculate mean result and mean time
+    //calculate mean result and mean time
     mio::TimeSeries<double> mean_time_series = std::accumulate(
         ensemble_results.begin(), ensemble_results.end(),
         mio::TimeSeries<double>::zero(ensemble_results[0].get_num_time_points(),
