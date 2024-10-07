@@ -14,8 +14,10 @@ struct SensitivitySetupQW {
     const std::map<std::string, double> base_values;
     const std::map<std::string, double> deltas;
     std::vector<std::map<std::string, std::vector<double>>> elem_effects;
+    std::vector<std::map<std::string, std::vector<double>>> diffs;
 
-    SensitivitySetupQW(std::vector<double> t_Exposed_range, std::vector<double> mu_C_R_range,
+    SensitivitySetupQW(std::vector<double> t_Exposed_range, std::vector<double> t_Carrier_range,
+                       std::vector<double> t_Infected_range, std::vector<double> mu_C_R_range,
                        std::vector<double> mu_I_D_range, std::vector<double> transmission_rate_range,
                        std::vector<double> sigma_range, std::vector<double> contact_radius_range,
                        std::vector<double> E_init_range, std::vector<double> C_init_range,
@@ -23,6 +25,8 @@ struct SensitivitySetupQW {
                        size_t num_outputs)
         : params(
               {{"t_Exposed", mio::ParameterDistributionUniform(t_Exposed_range[0], t_Exposed_range[1])},
+               {"t_Carrier", mio::ParameterDistributionUniform(t_Carrier_range[0], t_Carrier_range[1])},
+               {"t_Infected", mio::ParameterDistributionUniform(t_Infected_range[0], t_Infected_range[1])},
                {"transmission_rate",
                 mio::ParameterDistributionUniform(transmission_rate_range[0], transmission_rate_range[1])},
                {"mu_C_R", mio::ParameterDistributionUniform(mu_C_R_range[0], mu_C_R_range[1])},
@@ -34,17 +38,21 @@ struct SensitivitySetupQW {
                {"I", mio::ParameterDistributionUniform(I_init_range[0], I_init_range[1])},
                {"transition_rates",
                 mio::ParameterDistributionUniform(transition_rates_range[0], transition_rates_range[1])}})
-        , deltas({{"t_Exposed", (t_Exposed_range[1] - t_Exposed_range[0]) / 10.},
-                  {"transmission_rate", (transmission_rate_range[1] - transmission_rate_range[0]) / 10.},
-                  {"mu_C_R", (mu_C_R_range[1] - mu_C_R_range[0]) / 10.},
-                  {"mu_I_D", (mu_I_D_range[1] - mu_I_D_range[0]) / 10.},
-                  {"sigma", ((sigma_range[1] - sigma_range[0]) / 10.)},
-                  {"contact_radius", (contact_radius_range[1] - contact_radius_range[0]) / 10.},
-                  {"E", (E_init_range[1] - E_init_range[0]) / 10.},
-                  {"C", (C_init_range[1] - C_init_range[0]) / 10.},
-                  {"I", (I_init_range[1] - I_init_range[0]) / 10.},
-                  {"transition_rates", (transition_rates_range[1] - transition_rates_range[0]) / 10.}})
+        , deltas({{"t_Exposed", (t_Exposed_range[1] - t_Exposed_range[0]) / 7.},
+                  {"t_Carrier", (t_Carrier_range[1] - t_Carrier_range[0]) / 7.},
+                  {"t_Infected", (t_Infected_range[1] - t_Infected_range[0]) / 7.},
+                  {"transmission_rate", (transmission_rate_range[1] - transmission_rate_range[0]) / 7.},
+                  {"mu_C_R", (mu_C_R_range[1] - mu_C_R_range[0]) / 7.},
+                  {"mu_I_D", (mu_I_D_range[1] - mu_I_D_range[0]) / 7.},
+                  {"sigma", ((sigma_range[1] - sigma_range[0]) / 7.)},
+                  {"contact_radius", (contact_radius_range[1] - contact_radius_range[0]) / 7.},
+                  {"E", (E_init_range[1] - E_init_range[0]) / 7.},
+                  {"C", (C_init_range[1] - C_init_range[0]) / 7.},
+                  {"I", (I_init_range[1] - I_init_range[0]) / 7.},
+                  {"transition_rates", (transition_rates_range[1] - transition_rates_range[0]) / 7.}})
         , base_values({{"t_Exposed", 0.0},
+                       {"t_Carrier", 0.0},
+                       {"t_Infected", 0.0},
                        {"transmission_rate", 0.0},
                        {"mu_C_R", 0.0},
                        {"mu_I_D", 0.0},
@@ -57,6 +65,21 @@ struct SensitivitySetupQW {
     {
         elem_effects = std::vector<std::map<std::string, std::vector<double>>>(
             num_outputs, {{"t_Exposed", std::vector<double>(num_runs)},
+                          {"t_Carrier", std::vector<double>(num_runs)},
+                          {"t_Infected", std::vector<double>(num_runs)},
+                          {"transmission_rate", std::vector<double>(num_runs)},
+                          {"mu_C_R", std::vector<double>(num_runs)},
+                          {"mu_I_D", std::vector<double>(num_runs)},
+                          {"sigma", std::vector<double>(num_runs)},
+                          {"contact_radius", std::vector<double>(num_runs)},
+                          {"E", std::vector<double>(num_runs)},
+                          {"C", std::vector<double>(num_runs)},
+                          {"I", std::vector<double>(num_runs)},
+                          {"transition_rates", std::vector<double>(num_runs)}});
+        diffs = std::vector<std::map<std::string, std::vector<double>>>(
+            num_outputs, {{"t_Exposed", std::vector<double>(num_runs)},
+                          {"t_Carrier", std::vector<double>(num_runs)},
+                          {"t_Infected", std::vector<double>(num_runs)},
                           {"transmission_rate", std::vector<double>(num_runs)},
                           {"mu_C_R", std::vector<double>(num_runs)},
                           {"mu_I_D", std::vector<double>(num_runs)},
@@ -69,16 +92,18 @@ struct SensitivitySetupQW {
     }
 
     SensitivitySetupQW(size_t num_runs, size_t num_outputs)
-        : SensitivitySetupQW({1.5, 5.}, //t_Exposed = 1/gamma_E_C
-                             {0.01, 0.5}, //mu_C_R = gamma_C_R
-                             {0.0001, 0.1}, //mu_I_D = gamma_I_D
-                             {0.01, 0.6}, //transmission_rate
-                             {0.1, 0.6}, //sigma
+        : SensitivitySetupQW({2.67, 4.}, //t_Exposed
+                             {1.2, 6.73}, //t_Carrier
+                             {5., 12.}, //t_Infected
+                             {0.15, 0.3}, //mu_C_R
+                             {0.0, 0.08}, //mu_I_D
+                             {0.025, 0.6}, //transmission_rate
+                             {0.4, 0.6}, //sigma
                              {0.1, 1.}, //contact_radius
-                             {0.0, 0.1}, //E
-                             {0.0, 0.1}, //C
-                             {0.0, 0.1}, //I
-                             {0.00001, 0.05}, //transition_rates
+                             {0.0, 0.01}, //E
+                             {0.0, 0.01}, //C
+                             {0.0, 0.01}, //I
+                             {0.00002, 0.0125}, //transition_rates
                              num_runs, num_outputs)
     {
     }
