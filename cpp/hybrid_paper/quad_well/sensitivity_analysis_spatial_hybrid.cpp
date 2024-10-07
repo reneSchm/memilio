@@ -1,10 +1,15 @@
+#include "hybrid_paper/library/quad_well.h"
 #include "hybrid_paper/quad_well/quad_well_setup.h"
 #include "memilio/data/analyze_result.h"
+#include "memilio/utils/logging.h"
 #include "memilio/utils/random_number_generator.h"
 #include "memilio/utils/time_series.h"
 #include "sensitivity_analysis_setup_qw.h"
 #include "hybrid_paper/library/sensitivity_analysis.h"
+#include <cmath>
 #include <cstddef>
+#include <iostream>
+#include <map>
 #include <ostream>
 #include <vector>
 
@@ -42,7 +47,7 @@ void set_up_models(mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionState>>
 std::vector<double>
 simulate_hybridization(mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionState>>& abm,
                        mio::mpm::PDMModel<4, mio::mpm::paper::InfectionState>& pdmm,
-                       QuadWellSetup<mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionState>>::Agent>& setup,
+                       const QuadWellSetup<mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionState>>::Agent>& setup,
                        size_t num_runs)
 {
     using Status              = mio::mpm::paper::InfectionState;
@@ -106,7 +111,13 @@ simulate_hybridization(mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionSta
                         state_ABM[index] += 1;
                         pop_PDMM[{Region(focus_region), (Status)s}] -= 1;
                         size_t source_region = region_rng(region_weights);
-                        simABM.get_model().populations.push_back({setup.focus_pos_rng(source_region), (Status)s});
+                        auto new_pos         = setup.focus_pos_rng(source_region);
+                        while (qw::well_index(new_pos) != focus_region) {
+                            mio::log_warning("Position has to be resampled. x is {:.5f}, y is {:.5f}", new_pos[0],
+                                             new_pos[1]);
+                            new_pos = setup.focus_pos_rng(source_region);
+                        }
+                        simABM.get_model().populations.push_back({new_pos, (Status)s});
                     }
                 }
             }
@@ -146,10 +157,10 @@ void run_sensitivity_analysis_hybrid(SensitivitySetupQW& sensi_setup, size_t num
     using ABM    = mio::mpm::ABM<QuadWellModel<Status>>;
     using PDMM   = mio::mpm::PDMModel<4, Status>;
 
-    std::vector<double> sigmas      = {0.4, 0.42, 0.44, 0.45, 0.46, 0.48, 0.5, 0.52, 0.54, 0.55, 0.56, 0.58, 0.6};
-    std::vector<double> trans_rates = {0.00002, 0.00006, 0.00013, 0.00019, 0.0003, 0.00059, 0.00115,
-                                       0.0021,  0.0035,  0.0044,  0.0055,  0.0085, 0.0124};
-    auto& sigma_rng                 = mio::DiscreteDistribution<size_t>::get_instance();
+    const std::vector<double> sigmas      = {0.4, 0.42, 0.44, 0.45, 0.46, 0.48, 0.5, 0.52, 0.54, 0.55, 0.56, 0.58, 0.6};
+    const std::vector<double> trans_rates = {0.00002, 0.00006, 0.00013, 0.00019, 0.0003, 0.00059, 0.00115,
+                                             0.0021,  0.0035,  0.0044,  0.0055,  0.0085, 0.0124};
+    auto& sigma_rng                       = mio::DiscreteDistribution<size_t>::get_instance();
     // #pragma omp barrier
     // #pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
@@ -160,11 +171,15 @@ void run_sensitivity_analysis_hybrid(SensitivitySetupQW& sensi_setup, size_t num
         draw_base_values(params, base_values);
         //sigma and transition rates have to match in hybrid model,
         // therefore we fix them for the analysis
-        size_t sigma_index                 = sigma_rng(std::vector<double>(sigmas.size(), 1.0));
+        size_t sigma_index = sigma_rng(std::vector<double>(sigmas.size() - 1, 1.0));
+        if (sigma_index == sigmas.size()) {
+            mio::log_warning("Sigma index is too big");
+        }
         base_values.at("sigma")            = sigmas[sigma_index];
         base_values.at("transition_rates") = trans_rates[sigma_index];
-        QuadWellSetup<ABM::Agent> setup_base =
+        const QuadWellSetup<ABM::Agent> setup_base =
             create_model_setup<QuadWellSetup<ABM::Agent>>(base_values, tmax, dt, num_agents);
+
         //create models with base parameters
         ABM abm_base   = setup_base.create_abm<ABM>();
         PDMM pdmm_base = setup_base.create_pdmm<PDMM>();
@@ -180,7 +195,7 @@ void run_sensitivity_analysis_hybrid(SensitivitySetupQW& sensi_setup, size_t num
             else {
                 it->second = old_value + sensi_setup.deltas.at(it->first);
             }
-            QuadWellSetup<ABM::Agent> setup_delta =
+            const QuadWellSetup<ABM::Agent> setup_delta =
                 create_model_setup<QuadWellSetup<ABM::Agent>>(base_values, tmax, dt, num_agents);
             //create models with base parameters
             ABM abm_delta   = setup_delta.create_abm<ABM>();
@@ -190,8 +205,9 @@ void run_sensitivity_analysis_hybrid(SensitivitySetupQW& sensi_setup, size_t num
                 simulate_hybridization(abm_delta, pdmm_delta, setup_delta, num_runs_per_output);
             // save elementary effect sample
             for (size_t i = 0; i < y_base.size(); ++i) {
-                sensi_setup.elem_effects[i].at(it->first)[run] =
-                    (y_delta[i] - y_base[i]) / sensi_setup.deltas.at(it->first);
+                double diff                                    = y_delta[i] - y_base[i];
+                sensi_setup.elem_effects[i].at(it->first)[run] = diff / sensi_setup.deltas.at(it->first);
+                sensi_setup.diffs[i].at(it->first)[run]        = diff;
             }
             // reset param value
             it->second = old_value;
@@ -200,8 +216,10 @@ void run_sensitivity_analysis_hybrid(SensitivitySetupQW& sensi_setup, size_t num
     }
 #pragma omp single
     {
-        std::string result_file = result_dir + "_elem_effects";
-        save_elementary_effects(sensi_setup.elem_effects, result_file, num_runs);
+        std::string result_file_elem_eff = result_dir + "_elem_effects";
+        std::string result_file_diff     = result_dir + "_diff";
+        save_elementary_effects(sensi_setup.elem_effects, result_file_elem_eff, num_runs);
+        save_elementary_effects(sensi_setup.diffs, result_file_diff, num_runs);
     }
 }
 
@@ -210,7 +228,7 @@ int main()
     mio::set_log_level(mio::LogLevel::warn);
 
     const size_t num_regions         = 4;
-    const size_t num_runs            = 10;
+    const size_t num_runs            = 1;
     const size_t num_runs_per_output = 56;
     const size_t num_agents          = 8000;
     double tmax                      = 150.0;

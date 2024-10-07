@@ -21,7 +21,7 @@ create_model_setup<QuadWellSetup<mio::mpm::ABM<QuadWellModel<mio::mpm::paper::In
         }
     }
     QuadWellSetup<mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionState>>::Agent> setup(
-        params.at("t_Exposed"), 1.0, 1.0,
+        params.at("t_Exposed"), params.at("t_Carrier"), params.at("t_Infected"),
         std::vector<double>{params.at("transmission_rate"), params.at("transmission_rate"),
                             params.at("transmission_rate"), params.at("transmission_rate")},
         params.at("mu_C_R"), params.at("mu_I_D"), tmax, dt, params.at("sigma"), params.at("contact_radius"), num_agents,

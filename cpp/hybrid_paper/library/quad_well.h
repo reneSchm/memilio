@@ -3,11 +3,14 @@
 
 #include "infection_state.h"
 #include "memilio/utils/compiler_diagnostics.h"
+#include "memilio/utils/logging.h"
 #include "mpm/model.h"
 #include "hybrid_paper/library/infection_state.h"
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <iostream>
+#include <random>
 #include <vector>
 
 namespace qw
@@ -41,8 +44,8 @@ public:
         const auto& x = m_x[metaregion_index];
         const auto& y = m_y[metaregion_index];
 
-        return {-1 * mio::ParameterDistributionNormal(x[0], x[1], x[3]).get_rand_sample(),
-                mio::ParameterDistributionNormal(y[0], y[1], y[3]).get_rand_sample()};
+        return {-1. * mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(x[0], x[1]),
+                mio::DistributionAdapter<std::normal_distribution<double>>::get_instance()(y[0], y[1])};
     }
 
 private:

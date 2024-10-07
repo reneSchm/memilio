@@ -2,6 +2,8 @@
 #define SENSITIVITY_ANALYSIS_H
 
 #include "hybrid_paper/quad_well/quad_well_setup.h"
+#include "hybrid_paper/munich/munich_setup.h"
+#include "hybrid_paper/library/potentials/commuting_potential.h"
 #include "hybrid_paper/library/ensemble_run.h"
 #include "memilio/utils/compiler_diagnostics.h"
 #include "memilio/utils/time_series.h"
@@ -63,8 +65,8 @@ void run_sensitivity_analysis(SensiSetup& sensi_setup, OutputFunction output_fun
                               double tmax, double dt, std::string result_dir, size_t num_runs_per_output,
                               SampleStatusFunction sample_function)
 {
-#pragma omp barrier
-#pragma omp parallel for
+    // #pragma omp barrier
+    // #pragma omp parallel for
     for (size_t run = size_t(0); run < num_runs; ++run) {
         std::cerr << "Start run " << run << "\n" << std::flush;
         std::map<std::string, double> base_values(sensi_setup.base_values);
@@ -83,8 +85,9 @@ void run_sensitivity_analysis(SensiSetup& sensi_setup, OutputFunction output_fun
             std::vector<double> y_delta = output_func(setup_delta, model_delta, num_runs_per_output, sample_function);
             // save elementary effect sample
             for (size_t i = 0; i < y_base.size(); ++i) {
-                sensi_setup.elem_effects[i].at(it->first)[run] =
-                    (y_delta[i] - y_base[i]) / sensi_setup.deltas.at(it->first);
+                double diff                                    = (y_delta[i] - y_base[i]);
+                sensi_setup.diffs[i].at(it->first)[run]        = diff;
+                sensi_setup.elem_effects[i].at(it->first)[run] = diff / sensi_setup.deltas.at(it->first);
             }
             // reset param value
             it->second = old_value;
@@ -93,8 +96,10 @@ void run_sensitivity_analysis(SensiSetup& sensi_setup, OutputFunction output_fun
     }
 #pragma omp single
     {
-        std::string result_file = result_dir + "_elem_effects";
-        save_elementary_effects(sensi_setup.elem_effects, result_file, num_runs);
+        std::string result_file_elem_eff = result_dir + "_elem_effects";
+        std::string result_file_diff     = result_dir + "_diff";
+        save_elementary_effects(sensi_setup.elem_effects, result_file_elem_eff, num_runs);
+        save_elementary_effects(sensi_setup.diffs, result_file_diff, num_runs);
     }
 }
 
@@ -169,6 +174,8 @@ std::vector<double> sensitivity_results(ModelSetup& setup, Model& model, size_t 
         num_runs,
         mio::TimeSeries<double>::zero(setup.tmax, setup.num_regions * static_cast<size_t>(ModelSetup::Status::Count)));
     std::vector<double> timing(num_runs);
+#pragma omp barrier
+#pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
         auto sim = mio::Simulation<Model>(model, 0.0, setup.dt);
         sample_function(setup, sim);
