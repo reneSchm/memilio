@@ -28,7 +28,7 @@ static ScalarType get_weight(const std::map<std::pair<int, int>, ScalarType> w, 
         std::array<int, 2> key;
         int i = 0; // key index
         // iterate bit positions
-        for (int k = 0; k < 8 * sizeof(int); k++) {
+        for (int k = 0; k < int(8 * sizeof(int)); k++) {
             if ((bitkey >> k) & 1) { // check that the k-th bit is set
                 // write down keys in increasing order
                 key[i] = k;
@@ -50,7 +50,7 @@ static ScalarType get_weight(const std::map<std::pair<int, int>, ScalarType> w, 
         // read positions (key) from bitkey
         int i = 0;
         std::array<int, 3> key;
-        for (int k = 0; k < 8 * sizeof(int); k++) {
+        for (int k = 0; k < int(8 * sizeof(int)); k++) {
             if ((bitkey >> k) & 1) {
                 key[i] = k;
                 i++;

@@ -173,7 +173,7 @@ void run_sensitivity_analysis_hybrid(SensitivitySetupQW& sensi_setup, size_t num
         // therefore we fix them for the analysis
         size_t sigma_index = sigma_rng(std::vector<double>(sigmas.size() - 1, 1.0));
         if (sigma_index == sigmas.size()) {
-            mio::log_warning("Sigma index is too big");
+            mio::log_error("Sigma index is too big");
         }
         base_values.at("sigma")            = sigmas[sigma_index];
         base_values.at("transition_rates") = trans_rates[sigma_index];
@@ -208,6 +208,7 @@ void run_sensitivity_analysis_hybrid(SensitivitySetupQW& sensi_setup, size_t num
                 double diff                                    = y_delta[i] - y_base[i];
                 sensi_setup.elem_effects[i].at(it->first)[run] = diff / sensi_setup.deltas.at(it->first);
                 sensi_setup.diffs[i].at(it->first)[run]        = diff;
+                sensi_setup.rel_effects[i].at(it->first)[run]  = diff / (sensi_setup.deltas.at(it->first) / old_value);
             }
             // reset param value
             it->second = old_value;
@@ -216,10 +217,12 @@ void run_sensitivity_analysis_hybrid(SensitivitySetupQW& sensi_setup, size_t num
     }
 #pragma omp single
     {
-        std::string result_file_elem_eff = result_dir + "_elem_effects";
-        std::string result_file_diff     = result_dir + "_diff";
+        std::string result_file_elem_eff    = result_dir + "_elem_effects";
+        std::string result_file_diff        = result_dir + "_diff";
+        std::string result_file_rel_effects = result_dir + "_rel_effects";
         save_elementary_effects(sensi_setup.elem_effects, result_file_elem_eff, num_runs);
         save_elementary_effects(sensi_setup.diffs, result_file_diff, num_runs);
+        save_elementary_effects(sensi_setup.rel_effects, result_file_rel_effects, num_runs);
     }
 }
 

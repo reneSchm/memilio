@@ -4,6 +4,7 @@
 #include "hybrid_paper/library/metaregion_sampler.h"
 #include "hybrid_paper/library/infection_state.h"
 #include "memilio/math/floating_point.h"
+#include "memilio/utils/compiler_diagnostics.h"
 #include "memilio/utils/random_number_generator.h"
 #include "mpm/model.h"
 #include "memilio/utils/time_series.h"
@@ -276,6 +277,7 @@ public:
 
     {
         for (auto& agent : populations) {
+            mio::unused(agent);
             assert(is_in_domain(agent.position));
         }
         for (auto& r : rates) {
@@ -478,10 +480,10 @@ private:
         assert(areas.size() == m_metaregions.maxCoeff());
         std::vector<double> factors(m_metaregions.maxCoeff());
         //count pixels
-        for (size_t metaregion = 1; metaregion <= m_metaregions.maxCoeff(); ++metaregion) {
+        for (auto metaregion = 1; metaregion <= m_metaregions.maxCoeff(); ++metaregion) {
             int num = 0;
-            for (size_t row = 0; row < m_metaregions.rows(); ++row) {
-                for (size_t pixel = 0; pixel < m_metaregions.cols(); ++pixel) {
+            for (size_t row = 0; row < static_cast<size_t>(m_metaregions.rows()); ++row) {
+                for (size_t pixel = 0; pixel < static_cast<size_t>(m_metaregions.cols()); ++pixel) {
                     if (m_metaregions(row, pixel) == metaregion) {
                         num += 1;
                         if (pixel > 0 && m_metaregions(row, pixel - 1) != metaregion) {
@@ -490,8 +492,8 @@ private:
                     }
                 }
             }
-            for (size_t col = 0; col < m_metaregions.cols(); ++col) {
-                for (size_t pixel = 1; pixel < m_metaregions.rows(); ++pixel) {
+            for (size_t col = 0; col < static_cast<size_t>(m_metaregions.cols()); ++col) {
+                for (size_t pixel = 1; pixel < static_cast<size_t>(m_metaregions.rows()); ++pixel) {
                     if (m_metaregions(pixel, col) == metaregion && m_metaregions(pixel - 1, col) != metaregion) {
                         num += 1;
                     }

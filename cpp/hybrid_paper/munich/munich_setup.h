@@ -132,33 +132,31 @@ struct MunichSetup {
     std::vector<TransitionRate<Status>> transition_rates;
     std::vector<std::vector<double>> pop_dists_scaled;
 
-    MunichSetup(
-        double t_Exposed, double t_Carrier, double t_Infected, std::vector<double> transmission_rates, double mu_C_R,
-        double mu_I_D, Date start_date, const std::vector<int>& region_ids, const std::vector<double>& populations,
-        double persons_per_agent, const std::vector<std::vector<double>> init_dists,
-        Eigen::Ref<const Eigen::MatrixXi> metaregions, const double tmax, double dt,
-        Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> commute_weights,
-        const std::vector<double>& sigmas, double contact_radius, double scaling_factor_infected = 1.0,
-        bool set_only_infected = false)
-        : t_Exposed(t_Exposed)
-        , t_Carrier(t_Carrier)
-        , t_Infected(t_Infected)
-        , transmission_rates(transmission_rates)
-        , mu_C_R(mu_C_R)
-        , mu_I_D(mu_I_D)
-        , start_date(start_date)
-        , region_ids(region_ids)
-        , populations(populations)
-        , persons_per_agent(persons_per_agent)
-        , init_dists(init_dists)
-        , metaregions(metaregions)
-        , tmax(tmax)
-        , dt(dt)
-        , commute_weights(commute_weights)
-        , metaregion_sampler(metaregions)
+    MunichSetup(double t_E, double t_C, double t_I, std::vector<double> transm_rats, double m_C_R, double m_I_D,
+                Date date, const std::vector<int>& regn_ids, const std::vector<double>& pops, double ppa,
+                const std::vector<std::vector<double>> init, Eigen::Ref<const Eigen::MatrixXi> metaregns,
+                const double t_max, double delta_t,
+                Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> comm_weights,
+                const std::vector<double>& sgms, double cr)
+        : t_Exposed(t_E)
+        , t_Carrier(t_C)
+        , t_Infected(t_I)
+        , transmission_rates(transm_rats)
+        , mu_C_R(m_C_R)
+        , mu_I_D(m_I_D)
+        , start_date(date)
+        , region_ids(regn_ids)
+        , populations(pops)
+        , persons_per_agent(ppa)
+        , init_dists(init)
+        , metaregions(metaregns)
+        , tmax(t_max)
+        , dt(delta_t)
+        , commute_weights(comm_weights)
+        , metaregion_sampler(metaregns)
         , wg(mio::base_dir() + "potentially_germany_grad.json", mio::base_dir() + "boundary_ids.pgm")
-        , sigmas(sigmas)
-        , contact_radius(contact_radius)
+        , sigmas(sgms)
+        , contact_radius(cr)
 
     {
         // //create agents
@@ -206,8 +204,8 @@ struct MunichSetup {
 
         std::vector<Status> transitioning_states{Status::S, Status::E, Status::C, Status::I, Status::R};
         //No adapted transition behaviour when infected
-        for (size_t from = 0; from < metaregions.maxCoeff(); ++from) {
-            for (size_t to = 0; to < metaregions.maxCoeff(); ++to) {
+        for (size_t from = 0; from < static_cast<size_t>(metaregions.maxCoeff()); ++from) {
+            for (size_t to = 0; to < static_cast<size_t>(metaregions.maxCoeff()); ++to) {
                 if (from != to) {
                     for (auto s : transitioning_states) {
                         transition_rates.push_back(
@@ -261,7 +259,7 @@ struct MunichSetup {
                   const std::vector<int> county_ids = {233, 228, 242, 223, 238, 232, 231, 229};
                   Eigen::MatrixXd reference_commuters =
                       get_transition_matrix(mio::base_dir() + "data/mobility/").value();
-                  std::vector<double> populations{218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
+                  std::vector<double> pops{218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562};
                   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> _commute_weights(8, 8);
                   _commute_weights.setZero();
                   for (int i = 0; i < 8; i++) {
@@ -270,7 +268,7 @@ struct MunichSetup {
                               _commute_weights(i, j) = reference_commuters(county_ids[i], county_ids[j]);
                           }
                       }
-                      _commute_weights(i, i) = populations[i] - _commute_weights.row(i).sum();
+                      _commute_weights(i, i) = pops[i] - _commute_weights.row(i).sum();
                   }
                   return _commute_weights;
               }(), //commute weights

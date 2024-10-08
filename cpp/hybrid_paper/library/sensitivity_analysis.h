@@ -1,6 +1,7 @@
 #ifndef SENSITIVITY_ANALYSIS_H
 #define SENSITIVITY_ANALYSIS_H
 
+#include "hybrid_paper/library/infection_state.h"
 #include "hybrid_paper/quad_well/quad_well_setup.h"
 #include "hybrid_paper/munich/munich_setup.h"
 #include "hybrid_paper/library/potentials/commuting_potential.h"
@@ -29,6 +30,11 @@ QuadWellSetup<mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionState>>::Age
 create_model_setup<QuadWellSetup<mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionState>>::Agent>>(
     std::map<std::string, double>& params, double tmax, double dt, size_t num_agents);
 
+template <>
+mio::mpm::paper::MunichSetup<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>::Agent> create_model_setup<
+    mio::mpm::paper::MunichSetup<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>::Agent>>(
+    std::map<std::string, double>& params, double tmax, double dt, size_t num_agents);
+
 template <class ModelSetup, class Model>
 Model create_model(const ModelSetup& model_setup)
 {
@@ -46,6 +52,20 @@ mio::mpm::PDMModel<4, mio::mpm::paper::InfectionState>
 create_model<QuadWellSetup<mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionState>>::Agent>,
              mio::mpm::PDMModel<4, mio::mpm::paper::InfectionState>>(
     const QuadWellSetup<mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionState>>::Agent>& model_setup);
+
+template <>
+mio::mpm::ABM<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>>
+create_model<mio::mpm::paper::MunichSetup<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>::Agent>,
+             mio::mpm::ABM<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>>>(
+    const mio::mpm::paper::MunichSetup<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>::Agent>&
+        model_setup);
+
+template <>
+mio::mpm::PDMModel<8, mio::mpm::paper::InfectionState>
+create_model<mio::mpm::paper::MunichSetup<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>::Agent>,
+             mio::mpm::PDMModel<8, mio::mpm::paper::InfectionState>>(
+    const mio::mpm::paper::MunichSetup<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>::Agent>&
+        model_setup);
 
 void save_elementary_effects(std::vector<std::map<std::string, std::vector<double>>>& elem_effects,
                              std::string result_file, size_t num_runs);
@@ -88,6 +108,7 @@ void run_sensitivity_analysis(SensiSetup& sensi_setup, OutputFunction output_fun
                 double diff                                    = (y_delta[i] - y_base[i]);
                 sensi_setup.diffs[i].at(it->first)[run]        = diff;
                 sensi_setup.elem_effects[i].at(it->first)[run] = diff / sensi_setup.deltas.at(it->first);
+                sensi_setup.rel_effects[i].at(it->first)[run]  = diff / (sensi_setup.deltas.at(it->first) / old_value);
             }
             // reset param value
             it->second = old_value;
@@ -96,10 +117,12 @@ void run_sensitivity_analysis(SensiSetup& sensi_setup, OutputFunction output_fun
     }
 #pragma omp single
     {
-        std::string result_file_elem_eff = result_dir + "_elem_effects";
-        std::string result_file_diff     = result_dir + "_diff";
+        std::string result_file_elem_eff    = result_dir + "_elem_effects";
+        std::string result_file_diff        = result_dir + "_diff";
+        std::string result_file_rel_effects = result_dir + "_rel_effects";
         save_elementary_effects(sensi_setup.elem_effects, result_file_elem_eff, num_runs);
         save_elementary_effects(sensi_setup.diffs, result_file_diff, num_runs);
+        save_elementary_effects(sensi_setup.rel_effects, result_file_rel_effects, num_runs);
     }
 }
 
