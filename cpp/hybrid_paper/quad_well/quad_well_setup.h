@@ -148,6 +148,20 @@ struct QuadWellSetup {
         fclose(file);
     }
 
+    Eigen::Vector2d adapt_sampled_position(Eigen::Vector2d pos, size_t source_region) const
+    {
+        switch (source_region) {
+        case 0:
+            return Eigen::Vector2d{-0.01, pos[1]};
+        case 1:
+            return Eigen::Vector2d{pos[0], 0.01};
+        case 2:
+            return pos;
+        default:
+            return Eigen::Vector2d{0., 0.};
+        }
+    }
+
     qw::MetaregionSampler pos_rng{{-2, -2}, {0, 0}, {2, 2}, 0.5};
     // qw::PositionSampler focus_pos_rng{{{0.0001, 0.25, 0.12505}, {0.008, 1.78, 0.93}, {0.1, 0.3, 0.2}}, //0.52
     //                                   {{0.15, 1.65, 0.9}, {0.0001, 0.25, 0.12505}, {0.1, 0.3, 0.2}}};

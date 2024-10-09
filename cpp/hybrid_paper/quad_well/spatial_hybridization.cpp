@@ -74,11 +74,11 @@ void run_hybridization(size_t num_runs, size_t num_agents, bool save_percentiles
     std::vector<mio::TimeSeries<double>> ensemble_results(
         num_runs, mio::TimeSeries<double>(num_regions * static_cast<size_t>(Status::Count)));
 
-    auto& region_rng = mio::DiscreteDistribution<size_t>::get_instance();
     std::cerr << "num_runs " << num_runs << "\n" << std::flush;
 #pragma omp barrier
 #pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
+        auto& region_rng = mio::DiscreteDistribution<size_t>::get_instance();
         mio::thread_local_rng().seed({static_cast<uint32_t>(run)});
         std::cerr << "Start run " << run << std::endl << std::flush;
         std::vector<double> region_weights(3);

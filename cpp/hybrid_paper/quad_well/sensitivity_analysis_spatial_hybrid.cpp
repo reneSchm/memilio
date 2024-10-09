@@ -56,15 +56,15 @@ simulate_hybridization(mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionSta
     using PDMM                = mio::mpm::PDMModel<4, Status>;
     const size_t focus_region = 0;
 
-    std::vector<double> region_weights(3);
-    auto& region_rng = mio::DiscreteDistribution<size_t>::get_instance();
     std::vector<mio::TimeSeries<double>> ensemble_results(
         num_runs, mio::TimeSeries<double>::zero(setup.tmax, setup.num_regions * static_cast<size_t>(Status::Count)));
     std::vector<double> timing(num_runs);
 #pragma omp barrier
 #pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
-        std::cerr << "Start inner run " << run << "\n" << std::flush;
+        auto& region_rng = mio::DiscreteDistribution<size_t>::get_instance();
+        std::vector<double> region_weights(3);
+        //std::cerr << "Start inner run " << run << "\n" << std::flush;
         double t_start = omp_get_wtime();
         auto simABM    = mio::Simulation<ABM>(abm, 0.0, setup.dt);
         setup.redraw_agents_status(simABM);
@@ -112,10 +112,13 @@ simulate_hybridization(mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionSta
                         pop_PDMM[{Region(focus_region), (Status)s}] -= 1;
                         size_t source_region = region_rng(region_weights);
                         auto new_pos         = setup.focus_pos_rng(source_region);
-                        while (qw::well_index(new_pos) != focus_region) {
-                            mio::log_warning("Position has to be resampled. x is {:.5f}, y is {:.5f}", new_pos[0],
-                                             new_pos[1]);
-                            new_pos = setup.focus_pos_rng(source_region);
+                        if (qw::well_index(new_pos) != focus_region) {
+                            new_pos = setup.adapt_sampled_position(new_pos, source_region);
+                            if (qw::well_index(new_pos) != focus_region) {
+                                mio::log_error("adapt_sampled_position does not work. Source region is {:d}. x is "
+                                               "{:.5f}, y is {:.5f}",
+                                               source_region, new_pos[0], new_pos[1]);
+                            }
                         }
                         simABM.get_model().populations.push_back({new_pos, (Status)s});
                     }
@@ -129,7 +132,7 @@ simulate_hybridization(mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionSta
         double t_end          = omp_get_wtime();
         ensemble_results[run] = mio::interpolate_simulation_result(hybrid_result);
         timing[run]           = t_end - t_start;
-        std::cerr << "End inner run " << run << "\n" << std::flush;
+        //std::cerr << "End inner run " << run << "\n" << std::flush;
     }
     //claculate mean result and mean time
     mio::TimeSeries<double> mean_time_series =
@@ -164,7 +167,7 @@ void run_sensitivity_analysis_hybrid(SensitivitySetupQW& sensi_setup, size_t num
     // #pragma omp barrier
     // #pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
-        std::cerr << "Start outer run " << run << "\n" << std::flush;
+        std::cerr << "Start run " << run << "\n" << std::flush;
         //draw base values
         std::map<std::string, double> base_values(sensi_setup.base_values);
         std::map<std::string, mio::ParameterDistributionUniform> params(sensi_setup.params);
@@ -213,7 +216,7 @@ void run_sensitivity_analysis_hybrid(SensitivitySetupQW& sensi_setup, size_t num
             // reset param value
             it->second = old_value;
         }
-        std::cerr << "End outer run " << run << "\n" << std::flush;
+        std::cerr << "End run " << run << "\n" << std::flush;
     }
 #pragma omp single
     {
@@ -231,13 +234,13 @@ int main()
     mio::set_log_level(mio::LogLevel::warn);
 
     const size_t num_regions         = 4;
-    const size_t num_runs            = 1;
-    const size_t num_runs_per_output = 56;
-    const size_t num_agents          = 8000;
+    const size_t num_runs            = 10;
+    const size_t num_runs_per_output = 90;
+    const size_t num_agents          = 4000;
     double tmax                      = 150.0;
     double dt                        = 0.1;
 
-    std::string result_dir = mio::base_dir() + "cpp/outputs/sensitivity_analysis/20240930_v2/";
+    std::string result_dir = mio::base_dir() + "cpp/outputs/sensitivity_analysis/20241009_v1/";
 
     SensitivitySetupQW sensi_setup(num_runs, 4);
     run_sensitivity_analysis_hybrid(sensi_setup, num_runs, num_runs_per_output, num_agents, tmax, dt,
