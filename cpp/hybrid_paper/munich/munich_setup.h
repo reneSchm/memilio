@@ -132,6 +132,8 @@ struct MunichSetup {
     std::vector<TransitionRate<Status>> transition_rates;
     std::vector<std::vector<double>> pop_dists_scaled;
 
+    const size_t num_regions = 8;
+
     MunichSetup(double t_E, double t_C, double t_I, std::vector<double> transm_rats, double m_C_R, double m_I_D,
                 Date date, const std::vector<int>& regn_ids, const std::vector<double>& pops, double ppa,
                 const std::vector<std::vector<double>> init, Eigen::Ref<const Eigen::MatrixXi> metaregns,
@@ -178,9 +180,8 @@ struct MunichSetup {
         //                    });
         // }
         // agents = create_agents<Agent>(pop_dists, populations, persons_per_agent, metaregion_sampler, false).value();
-
         agents = create_susceptible_agents<Agent>(populations, persons_per_agent, metaregion_sampler, false).value();
-        std::cout << "num_agents: " << agents.size() << "\n";
+        std::cerr << "num_agents: " << agents.size() << "\n" << std::flush;
         auto& sta_rng     = mio::DiscreteDistribution<int>::get_instance();
         bool has_infected = false; //TODO
         for (auto& a : agents) {

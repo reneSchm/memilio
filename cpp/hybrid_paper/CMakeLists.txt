@@ -94,3 +94,9 @@ target_link_libraries(sensitivity_ABM_PDMM_qw hybrid_paper OpenMP::OpenMP_CXX)
 
 add_executable(sensitivity_spatial_hybrid_qw quad_well/sensitivity_analysis_spatial_hybrid.cpp)
 target_link_libraries(sensitivity_spatial_hybrid_qw hybrid_paper OpenMP::OpenMP_CXX)
+
+add_executable(sensitivity_ABM_PDMM_munich munich/sensitivity_analysis_ABM_PDMM.cpp)
+target_link_libraries(sensitivity_ABM_PDMM_munich hybrid_paper OpenMP::OpenMP_CXX)
+
+add_executable(sensitivity_spatial_hybrid_munich munich/sensitivity_analysis_spatial_hybrid.cpp)
+target_link_libraries(sensitivity_spatial_hybrid_munich hybrid_paper OpenMP::OpenMP_CXX)

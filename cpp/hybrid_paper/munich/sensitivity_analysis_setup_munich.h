@@ -71,7 +71,6 @@ struct SensitivitySetupMunich {
                           {"E", std::vector<double>(num_runs)},
                           {"C", std::vector<double>(num_runs)},
                           {"I", std::vector<double>(num_runs)},
-                          {"transition_rates", std::vector<double>(num_runs)},
                           {"commute_weights", std::vector<double>(num_runs)},
                           {"sigma", std::vector<double>(num_runs)},
                           {"contact_radius", std::vector<double>(num_runs)}});
@@ -85,7 +84,6 @@ struct SensitivitySetupMunich {
                           {"E", std::vector<double>(num_runs)},
                           {"C", std::vector<double>(num_runs)},
                           {"I", std::vector<double>(num_runs)},
-                          {"transition_rates", std::vector<double>(num_runs)},
                           {"commute_weights", std::vector<double>(num_runs)},
                           {"sigma", std::vector<double>(num_runs)},
                           {"contact_radius", std::vector<double>(num_runs)}});
@@ -99,7 +97,6 @@ struct SensitivitySetupMunich {
                           {"E", std::vector<double>(num_runs)},
                           {"C", std::vector<double>(num_runs)},
                           {"I", std::vector<double>(num_runs)},
-                          {"transition_rates", std::vector<double>(num_runs)},
                           {"commute_weights", std::vector<double>(num_runs)},
                           {"sigma", std::vector<double>(num_runs)},
                           {"contact_radius", std::vector<double>(num_runs)}});
@@ -117,7 +114,7 @@ struct SensitivitySetupMunich {
                                  {0.0, 0.01}, //I
                                  {0.001, 0.22}, //commute weights
                                  {5., 15.}, //sigma
-                                 {20., 100.}, //contact radius
+                                 {5., 60.}, //contact radius
                                  num_runs, num_outputs)
     {
     }

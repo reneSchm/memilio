@@ -1,9 +1,10 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 label_map = {'C': r'$C_0$', 'E': r'$E_0$', 'I': r'$I_0$', 'contact_radius': r'$r$', 'mu_C_R': r'$\mu_C^R$', 'mu_I_D': r'$\mu_I^D$',
              'sigma': r'$\sigma$', 't_Exposed': r'$\tau_E$', 't_Carrier': r'$\tau_C$', 't_Infected': r'$\tau_I$',
-             'transition_rates': r'$\lambda_i^{(k,l)}$', 'transmission_rate': r'$\rho$'}
+             'transition_rates': r'$\lambda_i^{(k,l)}$', 'transmission_rate': r'$\rho$', 'commute_weights': r'$\lambda_i^{(k,l)}$'}
 
 """
 Boxplot of distribution and (log-scaled) bar plot of mean.
@@ -16,19 +17,31 @@ def plot_results(output_folders, output_file_name, titles, saving_path):
     fig, axs = plt.subplots(len(titles), 2, figsize=(12,17), constrained_layout=True)
     for i in range(len(titles)):
         path = output_folders[0] + output_file_name + str(i) + ".txt"
-        df = pd.read_csv(path, sep=" ").drop(columns=['Unnamed: 10'])
+        df = pd.read_csv(path, sep=" ")
+        df = df.drop(columns=['Unnamed: ' + str(len(df.columns)-1)])
         for f in range(1, len(output_folders)):
             path = output_folders[f] + output_file_name + str(i) + ".txt"
-            df = pd.concat([df, pd.read_csv(path, sep=" ").drop(columns=['Unnamed: 10'])], ignore_index=True)
+            df = pd.concat([df, pd.read_csv(path, sep=" ").drop(columns=['Unnamed: 12'])], ignore_index=True)
         #get labels
         labels = []
+        width = 0.25
         for c in df.columns:
             labels.append(label_map[c])
         axs[i, 0].boxplot(df, labels=labels)
-        axs[i, 1].barh(labels, [df[col].mean() for col in df.columns])
+        axs[i, 1].barh(np.arange(len(labels)), [df[col].mean() for col in df.columns], label="mean", height=0.5)
+        axs[i, 1].barh(np.arange(len(labels)) + width, [df[col].median() for col in df.columns], label="median", height=0.5)
+        #axs[i, 1].barh(np.arange(len(labels)) + width, [df[col].std() for col in df.columns], label="std", height=0.5)
+        axs[i, 1].set_yticks(np.arange(len(labels))+width, labels)
         axs[i, 1].set_xscale("symlog")
+        axs[i, 1].legend()
         axs[i, 0].set_title(titles[i])
     fig.savefig(saving_path + output_file_name + ".png")
 
-plot_results(['cpp/outputs/sensitivity_analysis/20240930_v1/'], 'Hybrid_elem_effects', 
-             ['Norm Infected', 'Max Infected', 'Total Transmissions', 'Total Deaths'], "scripts/Results/sensitivity_analysis/20240930_v1/")
+plot_results(['cpp/outputs/sensitivity_analysis/20241011_v1/'], 'Hybrid_rel_effects', 
+             ['Norm Infected', 'Max Infected', 'Total Transmissions', 'Total Deaths'], "scripts/Results/sensitivity_analysis/20241011_v1/")
+plot_results(['cpp/outputs/sensitivity_analysis/20241011_v1/'], 'Hybrid_diff', 
+             ['Norm Infected', 'Max Infected', 'Total Transmissions', 'Total Deaths'], "scripts/Results/sensitivity_analysis/20241011_v1/")
+# plot_results(['cpp/outputs/sensitivity_analysis/20241009_v2/'], 'PDMM_rel_effects', 
+#              ['Norm Infected', 'Max Infected', 'Total Transmissions', 'Total Deaths'], "scripts/Results/sensitivity_analysis/20241009_v2/")
+# plot_results(['cpp/outputs/sensitivity_analysis/20241009_v2/'], 'PDMM_diff', 
+#              ['Norm Infected', 'Max Infected', 'Total Transmissions', 'Total Deaths'], "scripts/Results/sensitivity_analysis/20241009_v2/")
