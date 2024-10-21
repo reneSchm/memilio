@@ -477,7 +477,7 @@ private:
     double get_contact_radius_factor(std::vector<double> areas = std::vector<double>{435, 579, 488, 310.7, 667.3, 800,
                                                                                      870.4, 549.3})
     {
-        assert(areas.size() == m_metaregions.maxCoeff());
+        assert(areas.size() == static_cast<size_t>(m_metaregions.maxCoeff()));
         std::vector<double> factors(m_metaregions.maxCoeff());
         //count pixels
         for (auto metaregion = 1; metaregion <= m_metaregions.maxCoeff(); ++metaregion) {

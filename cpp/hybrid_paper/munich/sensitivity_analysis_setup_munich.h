@@ -10,7 +10,6 @@ struct SensitivitySetupMunich {
     const std::map<std::string, mio::ParameterDistributionUniform> params;
     const std::map<std::string, double> base_values;
     const std::map<std::string, double> deltas;
-    std::vector<std::map<std::string, std::vector<double>>> elem_effects;
     std::vector<std::map<std::string, std::vector<double>>> diffs;
     std::vector<std::map<std::string, std::vector<double>>> rel_effects;
 
@@ -35,7 +34,9 @@ struct SensitivitySetupMunich {
                {"commute_weights",
                 mio::ParameterDistributionUniform(commute_weights_range[0], commute_weights_range[1])},
                {"sigma", mio::ParameterDistributionUniform(sigma_range[0], sigma_range[1])},
-               {"contact_radius", mio::ParameterDistributionUniform(contact_radius_range[0], contact_radius_range[1])}})
+               {"contact_radius", mio::ParameterDistributionUniform(contact_radius_range[0], contact_radius_range[1])},
+               {"dummy1", mio::ParameterDistributionUniform(mu_I_D_range[0], mu_I_D_range[1])},
+               {"dummy2", mio::ParameterDistributionUniform(commute_weights_range[0], commute_weights_range[1])}})
         , deltas({{"t_Exposed", (t_Exposed_range[1] - t_Exposed_range[0]) / 7.},
                   {"t_Carrier", (t_Carrier_range[1] - t_Carrier_range[0]) / 7.},
                   {"t_Infected", (t_Infected_range[1] - t_Infected_range[0]) / 7.},
@@ -47,7 +48,9 @@ struct SensitivitySetupMunich {
                   {"I", (I_init_range[1] - I_init_range[0]) / 7.},
                   {"commute_weights", (commute_weights_range[1] - commute_weights_range[0]) / 7.},
                   {"sigma", (sigma_range[1] - sigma_range[0]) / 7.},
-                  {"contact_radius", (contact_radius_range[1] - contact_radius_range[0]) / 7.}})
+                  {"contact_radius", (contact_radius_range[1] - contact_radius_range[0]) / 7.},
+                  {"dummy1", (mu_I_D_range[1] - mu_I_D_range[0]) / 7.},
+                  {"dummy2", (commute_weights_range[1] - commute_weights_range[0]) / 7.}})
         , base_values({{"t_Exposed", 0.0},
                        {"t_Carrier", 0.0},
                        {"t_Infected", 0.0},
@@ -59,21 +62,10 @@ struct SensitivitySetupMunich {
                        {"I", 0.0},
                        {"commute_weights", 0.0},
                        {"sigma", 0.0},
-                       {"contact_radius", 0.0}})
+                       {"contact_radius", 0.0},
+                       {"dummy1", 0.0},
+                       {"dummy2", 0.0}})
     {
-        elem_effects = std::vector<std::map<std::string, std::vector<double>>>(
-            num_outputs, {{"t_Exposed", std::vector<double>(num_runs)},
-                          {"t_Carrier", std::vector<double>(num_runs)},
-                          {"t_Infected", std::vector<double>(num_runs)},
-                          {"transmission_rate", std::vector<double>(num_runs)},
-                          {"mu_C_R", std::vector<double>(num_runs)},
-                          {"mu_I_D", std::vector<double>(num_runs)},
-                          {"E", std::vector<double>(num_runs)},
-                          {"C", std::vector<double>(num_runs)},
-                          {"I", std::vector<double>(num_runs)},
-                          {"commute_weights", std::vector<double>(num_runs)},
-                          {"sigma", std::vector<double>(num_runs)},
-                          {"contact_radius", std::vector<double>(num_runs)}});
         diffs = std::vector<std::map<std::string, std::vector<double>>>(
             num_outputs, {{"t_Exposed", std::vector<double>(num_runs)},
                           {"t_Carrier", std::vector<double>(num_runs)},
@@ -86,7 +78,9 @@ struct SensitivitySetupMunich {
                           {"I", std::vector<double>(num_runs)},
                           {"commute_weights", std::vector<double>(num_runs)},
                           {"sigma", std::vector<double>(num_runs)},
-                          {"contact_radius", std::vector<double>(num_runs)}});
+                          {"contact_radius", std::vector<double>(num_runs)},
+                          {"dummy1", std::vector<double>(num_runs)},
+                          {"dummy2", std::vector<double>(num_runs)}});
         rel_effects = std::vector<std::map<std::string, std::vector<double>>>(
             num_outputs, {{"t_Exposed", std::vector<double>(num_runs)},
                           {"t_Carrier", std::vector<double>(num_runs)},
@@ -99,7 +93,9 @@ struct SensitivitySetupMunich {
                           {"I", std::vector<double>(num_runs)},
                           {"commute_weights", std::vector<double>(num_runs)},
                           {"sigma", std::vector<double>(num_runs)},
-                          {"contact_radius", std::vector<double>(num_runs)}});
+                          {"contact_radius", std::vector<double>(num_runs)},
+                          {"dummy1", std::vector<double>(num_runs)},
+                          {"dummy2", std::vector<double>(num_runs)}});
     }
 
     SensitivitySetupMunich(size_t num_runs, size_t num_outputs)
