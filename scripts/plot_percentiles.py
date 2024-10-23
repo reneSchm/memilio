@@ -30,6 +30,7 @@ def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_ser
     comps_names = ["Susceptible", "Exposed", "Carrier", "Infected", "Recovered", "Dead"]
     # iterate over all region
     for r in range(len(region_names)):
+        mean_list = []
         # iterate over all model outputs e.g. ABM, PDMM, Hybrid
         fig, ax = plt.subplots()
         for s in range(len(values)):
@@ -48,18 +49,24 @@ def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_ser
                 data.append(y)
                 # case mean
                 if p==0:
+                    mean_list.append(y)
                     ax.plot(time, y, label = time_series_labels[s], color=colors[s])
                 #case p25 or p75
                 else:
                     ax.plot(time, y, color=colors[s], linestyle = "dotted", alpha=0.3)
                 # fill between p25 and p75
             ax.fill_between(time, data[1], data[2], alpha=0.2, color=colors[s])
-            plt.ylabel(label)
-            plt.xlabel("Time(days)")
-            plt.subplots_adjust(bottom=0.15)
-            plt.grid()
-            plt.legend()
-            fig.savefig(save_dir + "Percentiles_" + label + "_" + region_names[r]+".png")
+        ax.set_zorder(1)
+        plt.ylabel(label)
+        plt.xlabel("Time(days)")
+        plt.subplots_adjust(bottom=0.15)
+        plt.grid()
+        plt.legend(bbox_to_anchor=(0.6, 1), loc="center left")
+        # add MAPE
+        for ts in range(1, len(time_series_labels)):
+            MAPE = np.mean(np.abs(mean_list[0] - mean_list[ts])/mean_list[0])
+            plt.figtext(0.58, 0.6 - (ts-1)*0.07, f'MAPE = {np.round(MAPE, 4)}', style='italic', color=colors[ts])
+        fig.savefig(save_dir + "Percentiles_" + label + "_" + region_names[r]+".png")
 
 def plot_percentiles(time, mean, percentiles, comp, compare = [], scaling_factor=1, label = [], filename=''
                      , region_names = ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land", 
@@ -242,8 +249,8 @@ def add_compartments(result_list):
         acc_result_list.append(acc_output)
     return acc_result_list
 
-dir = "cpp/outputs/QuadWell/20240923_v1/"
-save_dir = "scripts/Results/QuadWell/20240923_v1/"
+dir = "cpp/outputs/QuadWell/20241016_v1/"
+save_dir = "scripts/Results/QuadWell/20241016_v1/"
 #table_real, labels_real = read_from_terminal(dir + "output_extrapolated.txt")
 #time = table_real[:,0]
 num_regions = 4
@@ -288,6 +295,7 @@ PDMM_list_acc_mean_p25_p75 = [PDMM_list_accumulated[0], PDMM_list_accumulated[2]
 Hybrid_list_mean_p25_p75 = [Hybrid_list[0], Hybrid_list[2], Hybrid_list[4]]
 Hybrid_list_acc_mean_p25_p75 = [Hybrid_list_accumulated[0], Hybrid_list_accumulated[2], Hybrid_list_accumulated[4]]
 
+#[ABM_list_mean_p25_p75, PDMM_list_mean_p25_p75, Hybrid_list_mean_p25_p75]
 # plot number infectious (C+I) for all three models and all regions
 plot_percentiles2(time_ABM, [ABM_list_mean_p25_p75, PDMM_list_mean_p25_p75, Hybrid_list_mean_p25_p75], [2, 3], ["blue", "red", "green"], 
                   ["Focus_region", "Region_1", "Region_2", "Region_3"], 

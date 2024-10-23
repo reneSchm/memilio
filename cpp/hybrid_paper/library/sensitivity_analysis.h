@@ -207,8 +207,8 @@ std::vector<double> sensitivity_results(ModelSetup& setup, Model& model, size_t 
         num_runs,
         mio::TimeSeries<double>::zero(setup.tmax, setup.num_regions * static_cast<size_t>(ModelSetup::Status::Count)));
     std::vector<double> timing(num_runs);
-#pragma omp barrier
-#pragma omp parallel for
+    // #pragma omp barrier
+    // #pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
         auto sim = mio::Simulation<Model>(model, 0.0, setup.dt);
         sample_function(setup, sim);
@@ -233,10 +233,16 @@ std::vector<double> sensitivity_results(ModelSetup& setup, Model& model, size_t 
 
     double mean_time = (1.0 / num_runs) * std::accumulate(timing.begin(), timing.end(), 0.0);
     mio::unused(mean_time);
-    return std::vector<double>{sum_infected<ModelSetup>(mean_time_series, setup.num_regions),
-                               max_num_infected<ModelSetup>(mean_time_series, setup.num_regions),
+    // return std::vector<double>{sum_infected<ModelSetup>(mean_time_series, setup.num_regions),
+    //                            max_num_infected<ModelSetup>(mean_time_series, setup.num_regions),
+    //                            total_transmissions<ModelSetup>(mean_time_series, setup.num_regions),
+    //                            total_deaths<ModelSetup>(mean_time_series, setup.num_regions)};
+
+    return std::vector<double>{max_num_infected<ModelSetup>(mean_time_series, setup.num_regions),
                                total_transmissions<ModelSetup>(mean_time_series, setup.num_regions),
-                               total_deaths<ModelSetup>(mean_time_series, setup.num_regions)};
+                               total_deaths<ModelSetup>(mean_time_series, setup.num_regions), mean_time};
+
+    //return std::vector<double>{mean_time};
 }
 
 #endif //SENSITIVITY_ANALYSIS_H

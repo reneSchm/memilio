@@ -5,6 +5,7 @@
 #include "hybrid_paper/library/initialization.h"
 #include "hybrid_paper/library/quad_well.h"
 #include "memilio/utils/index.h"
+#include "memilio/utils/logging.h"
 #include "models/mpm/model.h"
 #include "memilio/math/eigen.h"
 #include "memilio/utils/custom_index_array.h"
@@ -107,6 +108,9 @@ struct QuadWellSetup {
                 ++iter;
             }
             file.close();
+        }
+        else {
+            mio::log_error("Position file could not be opened");
         }
     }
 

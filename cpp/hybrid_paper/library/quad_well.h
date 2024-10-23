@@ -9,8 +9,10 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdio>
 #include <iostream>
 #include <random>
+#include <string>
 #include <vector>
 
 namespace qw
@@ -98,7 +100,7 @@ public:
         Position position;
         Status status;
         // vector with all transitions (timepoint, from ,to)
-        std::vector<std::tuple<double, size_t, size_t>> transitions;
+        std::vector<std::tuple<double, size_t, size_t>> transitions{};
     };
 
     QuadWellModel(const std::vector<Agent>& agents, const typename mio::mpm::AdoptionRates<Status>::Type& rates,
