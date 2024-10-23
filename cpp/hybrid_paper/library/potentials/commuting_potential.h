@@ -47,10 +47,10 @@ struct StochastiK {
     }
 
     template <class Agent>
-    void draw_commuting_parameters(Agent& a, const double t, const double dt)
+    void draw_commuting_parameters(Agent& a, const double t, const double /*dt*/)
     {
-        size_t destination_region =
-            mio::DiscreteDistribution<size_t>::get_instance()(metaregion_commute_weights.row(a.region));
+        int destination_region =
+            mio::DiscreteDistribution<int>::get_instance()(metaregion_commute_weights.row(a.region));
 
         a.commutes = (destination_region != a.region);
 
@@ -88,6 +88,7 @@ struct StochastiK {
 
             Eigen::Vector2d direction = a.commuting_destination - a.position;
             Eigen::Vector2d dest      = a.position + direction;
+            mio::unused(dest);
 
             assert(metaregions(a.commuting_destination[0], a.commuting_destination[1]) ==
                    metaregions(dest[0], dest[1]));
