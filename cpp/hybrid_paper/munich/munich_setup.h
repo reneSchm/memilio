@@ -7,6 +7,7 @@
 #include "hybrid_paper/library/initialization.h"
 #include "hybrid_paper/library/potentials/commuting_potential.h"
 #include "memilio/utils/compiler_diagnostics.h"
+#include <cstddef>
 
 namespace mio
 {
@@ -131,6 +132,7 @@ struct MunichSetup {
     std::vector<TransitionRate<Status>> commute_rates;
     std::vector<TransitionRate<Status>> transition_rates;
     std::vector<std::vector<double>> pop_dists_scaled;
+    size_t num_agents;
 
     const size_t num_regions = 8;
 
@@ -181,6 +183,7 @@ struct MunichSetup {
         // }
         // agents = create_agents<Agent>(pop_dists, populations, persons_per_agent, metaregion_sampler, false).value();
         agents = create_susceptible_agents<Agent>(populations, persons_per_agent, metaregion_sampler, false).value();
+        num_agents = agents.size();
         std::cerr << "num_agents: " << agents.size() << "\n" << std::flush;
         auto& sta_rng     = mio::DiscreteDistribution<int>::get_instance();
         bool has_infected = false; //TODO

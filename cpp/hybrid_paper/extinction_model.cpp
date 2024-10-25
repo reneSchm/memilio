@@ -18,7 +18,39 @@
 #include <string>
 #include <vector>
 
-static qw::MetaregionSampler pos_rng{{-2, -2}, {2, 2}, {2, 2}, 0.3};
+namespace sw
+{
+class MetaregionSampler
+{
+    using Position = qw::Position;
+
+public:
+    MetaregionSampler(const Position& bottom_left, const Position& mid_point, const Position& top_right, double margin)
+        : m_ranges(1)
+    {
+        auto assign_range = [&](Position range_x, Position range_y) {
+            range_x += Position{margin, -margin};
+            range_y += Position{margin, -margin};
+            m_ranges[0] = {range_x, range_y};
+        };
+
+        assign_range({bottom_left.x(), top_right.x()}, {bottom_left.y(), top_right.y()});
+    }
+
+    Position operator()(size_t metaregion_index) const
+    {
+        const auto& range = m_ranges[metaregion_index];
+        return {mio::UniformDistribution<double>::get_instance()(range.first[0], range.first[1]),
+                mio::UniformDistribution<double>::get_instance()(range.second[0], range.second[1])};
+    }
+
+private:
+    // stores pairs of (x-range, y-range)
+    std::vector<std::pair<Position, Position>> m_ranges;
+};
+} // namespace sw
+
+static sw::MetaregionSampler pos_rng{{-1, -1}, {0, 0}, {1, 1}, 0.2};
 
 class SingleWell
 {
@@ -207,10 +239,11 @@ int main()
         return v[(int)Status::E] + v[(int)Status::C] + v[(int)Status::I] <= 1e-14;
     };
 
-    const int survival_threshold = 5;
+    const int survival_threshold = 20000;
     // const auto dir               = mio::base_dir() + "results_hybrid/abm_";
     // const auto dir = mio::base_dir() + "results_hybrid/pdmm_";
-    const auto dir = mio::base_dir() + "results_hybrid/hybrid_" + std::to_string(survival_threshold) + "_";
+    const auto dir =
+        mio::base_dir() + "cpp/outputs/SingleWell/20241024_v1/abm_" + std::to_string(survival_threshold) + "_";
 
     const auto use_base_model = [&is_extinction, survival_threshold](const bool&, const auto& results) {
         // return true;
@@ -229,6 +262,7 @@ int main()
     std::vector<mio::TimeSeries<double>> results(num_runs, {(int)Status::Count});
 #pragma omp parallel for
     for (auto& result : results) {
+        std::cerr << "run\n";
         auto sim        = mio::HybridSimulation<ABM, PDMM>(abm, pdmm, dt_switch, t0, dt);
         double start_tp = omp_get_wtime();
         sim.advance(tnpi, use_base_model);

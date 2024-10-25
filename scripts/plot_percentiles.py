@@ -25,7 +25,7 @@ def plot(time, data1, data2, comp, labels=['data1', 'data2'], filename = 'plt', 
     3rd dimension: number of regions
     4th dimension: matrix with lines the number of timepoints and columns the compartments for that timepoint
 """
-def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_series_labels, sum = False, y_label = "", save_dir=""):
+def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_series_labels, sum = False, y_label = "", save_dir="", error="MAPE"):
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     comps_names = ["Susceptible", "Exposed", "Carrier", "Infected", "Recovered", "Dead"]
     # iterate over all region
@@ -64,9 +64,23 @@ def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_ser
         plt.legend(bbox_to_anchor=(0.6, 1), loc="center left")
         # add MAPE
         for ts in range(1, len(time_series_labels)):
-            MAPE = np.mean(np.abs(mean_list[0] - mean_list[ts])/mean_list[0])
-            plt.figtext(0.58, 0.6 - (ts-1)*0.07, f'MAPE = {np.round(MAPE, 4)}', style='italic', color=colors[ts])
-        fig.savefig(save_dir + "Percentiles_" + label + "_" + region_names[r]+".png")
+            err = -1
+            if(error == "MAPE"):
+                err = np.mean(np.abs(mean_list[0] - mean_list[ts])/mean_list[0])
+            elif(error == "MAE"):
+                err = np.mean(np.abs(mean_list[0] - mean_list[ts]))
+            elif(error == "MSE"):
+                err = np.mean((mean_list[0] - mean_list[ts])**2)
+            if(error == "All"):
+                MAPE = np.mean(np.abs(mean_list[0] - mean_list[ts])/mean_list[0])
+                MAE = np.mean(np.abs(mean_list[0] - mean_list[ts]))
+                MSE = np.mean((mean_list[0] - mean_list[ts])**2)
+                plt.figtext(0.62, 0.72 - (ts-1)*0.06, f'MAPE = {np.round(MAPE, 4)}', style='italic', color=colors[ts])
+                plt.figtext(0.62, 0.59 - (ts-1)*0.06, f'MAE = {np.round(MAE, 4)}', style='italic', color=colors[ts])
+                plt.figtext(0.62, 0.46 - (ts-1)*0.06, f'MSE = {np.round(MSE, 3)}', style='italic', color=colors[ts])
+            else:
+                plt.figtext(0.58, 0.6 - (ts-1)*0.07, f'{error} = {np.round(err, 4)}', style='italic', color=colors[ts])
+        fig.savefig(save_dir + label + "_" + region_names[r] + "_"+ error +".png")
 
 def plot_percentiles(time, mean, percentiles, comp, compare = [], scaling_factor=1, label = [], filename=''
                      , region_names = ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land", 
@@ -249,8 +263,8 @@ def add_compartments(result_list):
         acc_result_list.append(acc_output)
     return acc_result_list
 
-dir = "cpp/outputs/QuadWell/20241016_v1/"
-save_dir = "scripts/Results/QuadWell/20241016_v1/"
+dir = "cpp/outputs/QuadWell/20241025_v1/"
+save_dir = "scripts/Results/QuadWell/20241025_v1/"
 #table_real, labels_real = read_from_terminal(dir + "output_extrapolated.txt")
 #time = table_real[:,0]
 num_regions = 4
@@ -299,10 +313,10 @@ Hybrid_list_acc_mean_p25_p75 = [Hybrid_list_accumulated[0], Hybrid_list_accumula
 # plot number infectious (C+I) for all three models and all regions
 plot_percentiles2(time_ABM, [ABM_list_mean_p25_p75, PDMM_list_mean_p25_p75, Hybrid_list_mean_p25_p75], [2, 3], ["blue", "red", "green"], 
                   ["Focus_region", "Region_1", "Region_2", "Region_3"], 
-                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious", save_dir=save_dir) # ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land",  "Freising", "Erding", "Ebersberg"]
+                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious", save_dir=save_dir, error="MSE") # ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land",  "Freising", "Erding", "Ebersberg"]
 # plot number infectious (C+I) for all three models sum over all regions
 plot_percentiles2(time_ABM, [ABM_list_acc_mean_p25_p75, PDMM_list_acc_mean_p25_p75, Hybrid_list_acc_mean_p25_p75], [2, 3], ["blue", "red", "green"], ["All_regions"],
-                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious", save_dir=save_dir)
+                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious", save_dir=save_dir, error="MSE")
 
 # plot_populations(time_Hybrid, Hybrid_list[0], [0, 1, 2, 3, 4, 5, 6, 7], "test")
 

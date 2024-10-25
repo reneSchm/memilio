@@ -9,12 +9,12 @@ plt.rc ('xtick', labelsize = font_size) #Schriftgröße der x-Tick-Labels
 plt.rc ('ytick', labelsize = font_size) #Schriftgröße der y-Tick-Labels
 plt.rc ('legend', fontsize = font_size) #Schriftgröße der Legende
 
-def plot_scaling_infected_transmissions(outputfile, resultfile):
+def plot_scaling_infected_transmissions(outputfile, resultfile, figsize=(9, 7)):
     df_ABM = pd.read_csv(outputfile + "time_infected_transmissions_ABM.txt", sep=" ")
     df_PDMM = pd.read_csv(outputfile + "time_infected_transmissions_PDMM.txt", sep=" ")
     df_Hybrid = pd.read_csv(outputfile + "time_infected_transmissions_Hybrid.txt", sep=" ")
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=figsize)
     plt.grid()
     ax.scatter(df_ABM.sum_Infected, df_ABM.ABM_Time, label='ABM', color='indianred')
     ax.scatter(df_PDMM.sum_Infected, df_PDMM.PDMM_Time, label='PDMM', color='royalblue')
@@ -24,7 +24,7 @@ def plot_scaling_infected_transmissions(outputfile, resultfile):
     ax.legend()
     fig.savefig(resultfile + "time_infected.png")
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=figsize)
     plt.grid()
     ax.scatter(df_ABM.transmissions, df_ABM.ABM_Time, label='ABM', color='indianred')
     ax.scatter(df_PDMM.transmissions, df_PDMM.PDMM_Time, label='PDMM', color='royalblue')
@@ -34,7 +34,7 @@ def plot_scaling_infected_transmissions(outputfile, resultfile):
     ax.legend()
     fig.savefig(resultfile + "time_transmissions.png")
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=figsize)
     plt.grid()
     ax.scatter(df_ABM.deaths, df_ABM.ABM_Time, label='ABM', color='indianred')
     ax.scatter(df_PDMM.deaths, df_PDMM.PDMM_Time, label='PDMM', color='royalblue')
@@ -56,8 +56,8 @@ def plot_scaling_susceptibles(outfile, resultfile):
     ax.legend()
     fig.savefig(resultfile + "time_sus.png")
 
-outputfile = 'cpp/outputs/QuadWell/time_measure/20241022_v2/'
-resultfile = 'scripts/Results/QuadWell/time/20241022_v2/'
+outputfile = 'cpp/outputs/Munich/time_measure/20241024_v1/'
+resultfile = 'scripts/Results/Munich/time/20241024_v1/'
 
 plot_scaling_infected_transmissions(outputfile, resultfile)
-plot_scaling_susceptibles(outputfile, resultfile)
+#plot_scaling_susceptibles(outputfile, resultfile)

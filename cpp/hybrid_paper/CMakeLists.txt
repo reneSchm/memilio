@@ -93,7 +93,6 @@ target_link_libraries(qw_temporal_hybrid hybrid_paper)
 
 add_executable(extinction_model extinction_model.cpp)
 target_link_libraries(extinction_model hybrid_paper OpenMP::OpenMP_CXX)
-
 add_executable(sensitivity_ABM_PDMM_qw quad_well/sensitivity_analysis_ABM_PDMM.cpp)
 target_link_libraries(sensitivity_ABM_PDMM_qw hybrid_paper OpenMP::OpenMP_CXX)
 
@@ -108,3 +107,6 @@ target_link_libraries(sensitivity_spatial_hybrid_munich hybrid_paper OpenMP::Ope
 
 add_executable(runtime_analysis_qw quad_well/runtime_analysis.cpp)
 target_link_libraries(runtime_analysis_qw hybrid_paper OpenMP::OpenMP_CXX)
+
+add_executable(runtime_analysis_munich munich/runtime_analysis.cpp)
+target_link_libraries(runtime_analysis_munich hybrid_paper OpenMP::OpenMP_CXX)

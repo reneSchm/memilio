@@ -128,7 +128,16 @@ void run_hybridization(size_t num_runs, size_t num_agents, bool save_percentiles
                         state_ABM[index] += 1;
                         pop_PDMM[{Region(focus_region), (Status)s}] -= 1;
                         size_t source_region = region_rng(region_weights);
-                        simABM.get_model().populations.push_back({setup.focus_pos_rng(source_region), (Status)s});
+                        auto new_pos         = setup.focus_pos_rng(source_region);
+                        if (qw::well_index(new_pos) != focus_region) {
+                            new_pos = setup.adapt_sampled_position(new_pos, source_region);
+                            if (qw::well_index(new_pos) != focus_region) {
+                                mio::log_error("adapt_sampled_position does not work. Source region is {:d}. x is "
+                                               "{:.5f}, y is {:.5f}",
+                                               source_region, new_pos[0], new_pos[1]);
+                            }
+                        }
+                        simABM.get_model().populations.push_back({new_pos, (Status)s});
                     }
                 }
             }
@@ -191,11 +200,11 @@ void run_hybridization(size_t num_runs, size_t num_agents, bool save_percentiles
 int main()
 {
     mio::set_log_level(mio::LogLevel::warn);
-    size_t num_runs        = 140;
+    size_t num_runs        = 500;
     size_t num_agents      = 8000;
     bool save_res          = true;
     bool save_percentiles  = true;
-    std::string result_dir = mio::base_dir() + "cpp/outputs/QuadWell/20240923_v1/Hybrid_";
+    std::string result_dir = mio::base_dir() + "cpp/outputs/QuadWell/20241025_v1/Hybrid_";
     run_hybridization(num_runs, num_agents, save_percentiles, result_dir, save_res);
     return 0;
 }
