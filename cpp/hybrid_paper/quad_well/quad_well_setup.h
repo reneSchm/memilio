@@ -162,7 +162,7 @@ struct QuadWellSetup {
             }
             return Eigen::Vector2d{-0.01, pos[1]};
         case 1:
-            if (pos[0] < 0) {
+            if (pos[0] > 0) {
                 mio::log_warning("x position in region 0 is positive and has value {:.5f}. Sign is corrected", pos[0]);
                 pos[0] = -pos[0];
             }
