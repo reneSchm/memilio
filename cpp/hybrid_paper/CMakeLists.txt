@@ -24,6 +24,8 @@ add_library(hybrid_paper
     munich/sensitivity_analysis_setup_munich.h
     quad_well/sensitivity_analysis_spatial_hybrid_fcts.h
     quad_well/sensitivity_analysis_spatial_hybrid_fcts.cpp
+    munich/sensitivity_analysis_spatial_hybrid_fcts.h
+    munich/sensitivity_analysis_spatial_hybrid_fcts.cpp
 )
 target_link_libraries(hybrid_paper memilio mpm OpenMP::OpenMP_CXX)
 

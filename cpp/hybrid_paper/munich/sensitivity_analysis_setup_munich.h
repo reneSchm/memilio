@@ -8,8 +8,8 @@
 
 struct SensitivitySetupMunich {
     const std::map<std::string, mio::ParameterDistributionUniform> params;
-    const std::map<std::string, double> base_values;
     const std::map<std::string, double> deltas;
+    const std::map<std::string, double> base_values;
     std::vector<std::map<std::string, std::vector<double>>> diffs;
     std::vector<std::map<std::string, std::vector<double>>> rel_effects;
 
