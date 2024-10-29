@@ -1,7 +1,10 @@
+#include "hybrid_paper/library/initialization.h"
 #include "hybrid_paper/library/sensitivity_analysis.h"
 #include "hybrid_paper/quad_well/quad_well_setup.h"
 #include "memilio/utils/logging.h"
+#include "memilio/utils/random_number_generator.h"
 #include "sensitivity_analysis_spatial_hybrid_fcts.h"
+#include <algorithm>
 #include <cstddef>
 #include <cstdio>
 #include <string>
@@ -33,9 +36,9 @@ int main()
     using ABM                = mio::mpm::ABM<QuadWellModel<Status>>;
     using PDMM               = mio::mpm::PDMModel<4, Status>;
     const size_t num_regions = 4;
-    const size_t num_runs    = 50;
-    int scenario             = 1;
-    std::string result_path  = "cpp/outputs/QuadWell/time_measure/20241022_v1/";
+    const size_t num_runs    = 1;
+    int scenario             = 3;
+    std::string result_path  = mio::base_dir() + "cpp/outputs/time_QW/";
     mio::set_log_level(mio::LogLevel::warn);
     switch (scenario) {
     case 0: //Scaling only with susceptibles according to num_agents
@@ -117,7 +120,7 @@ int main()
             double I_init = I_init_dist.get_rand_sample();
             double S      = 1.0 - E_init - C_init - I_init;
             QuadWellSetup<ABM::Agent> setup(
-                3., 3., 5., std::vector<double>(num_regions, rho), 0.1, 0.0, 150., 0.1, 0.55, 0.1, na,
+                3., 3., 5., std::vector<double>(num_regions, rho), 0.1, 0.004, 150., 0.1, 0.55, 0.1, na,
                 std::vector<std::vector<double>>(num_regions, {S, E_init, C_init, I_init, 0.0, 0.0}), //mu_I_D 0.004
                 std::map<std::tuple<Status, mio::mpm::Region, mio::mpm::Region>, double>{
                     //transition rates for sigma = 0.55
@@ -199,6 +202,177 @@ int main()
                      {"PDMM_Time", "sum_Infected", "transmissions", "deaths"});
         save_results(result_path + "time_infected_transmissions_Hybrid.txt", y_Hybrid, x_Hybrid,
                      {"Hybrid_Time", "sum_Infected", "transmissions", "deaths"});
+
+    } break;
+    case 2: {
+        const std::vector<double> prop_infected{0.001, 0.005, 0.01, 0.05, 0.1};
+        // x value is the proportion of infected
+        std::vector<double> x(num_runs * prop_infected.size());
+        // y value is the runtime
+        std::vector<double> y_ABM(num_runs * prop_infected.size());
+        std::vector<double> y_PDMM(num_runs * prop_infected.size());
+        std::vector<double> y_Hybrid(num_runs * prop_infected.size());
+        const size_t na = 8000;
+        for (size_t i = 0; i < prop_infected.size(); ++i) {
+            double E_init = prop_infected[i] / 3.;
+            double C_init = prop_infected[i] / 3.;
+            double I_init = prop_infected[i] - E_init - C_init;
+            double S      = 1.0 - E_init - C_init - I_init;
+            QuadWellSetup<ABM::Agent> setup(
+                3.0, 3.0, 5.0, std::vector<double>{0.1, 0.3, 0.1, 0.1}, 0.1, 0.004, 150., 0.1, 0.55, 0.4, na,
+                std::vector<std::vector<double>>(num_regions, {S, E_init, C_init, I_init, 0.0, 0.0}),
+                std::map<std::tuple<Status, mio::mpm::Region, mio::mpm::Region>, double>{
+                    //transition rates for sigma = 0.55
+                    {{Status::S, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0044}, //0->1
+                    {{Status::E, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0044}, //1->0
+                    {{Status::E, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0044}, //0->2
+                    {{Status::E, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0044}, //2->0
+                    {{Status::E, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(0), mio::mpm::Region(3)}, 1e-07}, //0->3 1e-07
+                    {{Status::S, mio::mpm::Region(1), mio::mpm::Region(2)}, 1e-07}, //1->2
+                    {{Status::S, mio::mpm::Region(3), mio::mpm::Region(0)}, 1e-07}, //3->0 1e-07
+                    {{Status::S, mio::mpm::Region(2), mio::mpm::Region(1)}, 1e-07}, //2->1
+                    {{Status::S, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0044}, //1->3
+                    {{Status::E, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.0044}, //3->1
+                    {{Status::E, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0044}, //2->3
+                    {{Status::E, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0044}, //3->2
+                    {{Status::E, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0044}});
+            auto draw_func_abm = [](QuadWellSetup<ABM::Agent> setup, auto& sim) {
+                setup.redraw_agents_status(sim);
+            };
+            auto draw_func_pdmm = [](QuadWellSetup<ABM::Agent> setup, auto& sim) {
+                setup.redraw_pdmm_populations(sim);
+            };
+            ABM abm         = setup.create_abm<ABM>();
+            PDMM pdmm       = setup.create_pdmm<PDMM>();
+            auto res_ABM    = sensitivity_results(setup, abm, num_runs, draw_func_abm);
+            auto res_PDMM   = sensitivity_results(setup, pdmm, num_runs, draw_func_pdmm);
+            auto res_Hybrid = simulate_hybridization(abm, pdmm, setup, num_runs);
+            if (res_ABM.size() != num_runs || res_PDMM.size() != num_runs || res_Hybrid.size() != num_runs) {
+                mio::log_error("Outputs do not have the correct format.");
+            }
+            std::fill_n(x.begin() + i * num_runs, num_runs, prop_infected[i]);
+            std::copy_n(res_ABM.cbegin(), num_runs, y_ABM.begin() + num_runs * i);
+            std::copy_n(res_PDMM.cbegin(), num_runs, y_PDMM.begin() + num_runs * i);
+            std::copy_n(res_Hybrid.cbegin(), num_runs, y_Hybrid.begin() + num_runs * i);
+        }
+        //save outputs
+        save_results(result_path + "Scaling_initially_infected.txt", x,
+                     std::vector<std::vector<double>>{y_ABM, y_PDMM, y_Hybrid},
+                     {"prop_infected", "ABM", "PDMM", "Hybrid"});
+
+    } break;
+    case 3: {
+        const std::vector<double> rho{0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4};
+        // x value is the value of rho
+        std::vector<double> x(num_runs * rho.size());
+        // y value is the runtime
+        std::vector<double> y_ABM(num_runs * rho.size());
+        std::vector<double> y_PDMM(num_runs * rho.size());
+        std::vector<double> y_Hybrid(num_runs * rho.size());
+        const size_t na = 8000;
+        for (size_t i = 0; i < rho.size(); ++i) {
+            QuadWellSetup<ABM::Agent> setup(
+                3.0, 3.0, 5.0, std::vector<double>{0.1, rho[i], 0.1, 0.1}, 0.1, 0.004, 150., 0.1, 0.55, 0.4, na,
+                std::vector<std::vector<double>>(num_regions, {0.99, 0.002, 0.003, 0.005, 0.0, 0.0}),
+                std::map<std::tuple<Status, mio::mpm::Region, mio::mpm::Region>, double>{
+                    //transition rates for sigma = 0.55
+                    {{Status::S, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0044}, //0->1
+                    {{Status::E, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(0), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0044}, //1->0
+                    {{Status::E, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(1), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0044}, //0->2
+                    {{Status::E, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(0), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0044}, //2->0
+                    {{Status::E, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(2), mio::mpm::Region(0)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(0), mio::mpm::Region(3)}, 1e-07}, //0->3 1e-07
+                    {{Status::S, mio::mpm::Region(1), mio::mpm::Region(2)}, 1e-07}, //1->2
+                    {{Status::S, mio::mpm::Region(3), mio::mpm::Region(0)}, 1e-07}, //3->0 1e-07
+                    {{Status::S, mio::mpm::Region(2), mio::mpm::Region(1)}, 1e-07}, //2->1
+                    {{Status::S, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0044}, //1->3
+                    {{Status::E, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(1), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.0044}, //3->1
+                    {{Status::E, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(3), mio::mpm::Region(1)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0044}, //2->3
+                    {{Status::E, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(2), mio::mpm::Region(3)}, 0.0044},
+                    {{Status::S, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0044}, //3->2
+                    {{Status::E, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::C, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::I, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0044},
+                    {{Status::R, mio::mpm::Region(3), mio::mpm::Region(2)}, 0.0044}});
+            auto draw_func_abm = [](QuadWellSetup<ABM::Agent> setup, auto& sim) {
+                setup.redraw_agents_status(sim);
+            };
+            auto draw_func_pdmm = [](QuadWellSetup<ABM::Agent> setup, auto& sim) {
+                setup.redraw_pdmm_populations(sim);
+            };
+            ABM abm         = setup.create_abm<ABM>();
+            PDMM pdmm       = setup.create_pdmm<PDMM>();
+            auto res_ABM    = sensitivity_results(setup, abm, num_runs, draw_func_abm);
+            auto res_PDMM   = sensitivity_results(setup, pdmm, num_runs, draw_func_pdmm);
+            auto res_Hybrid = simulate_hybridization(abm, pdmm, setup, num_runs);
+            if (res_ABM.size() != num_runs || res_PDMM.size() != num_runs || res_Hybrid.size() != num_runs) {
+                mio::log_error("Outputs do not have the correct format.");
+            }
+            std::fill_n(x.begin() + i * num_runs, num_runs, rho[i]);
+            std::copy_n(res_ABM.cbegin(), num_runs, y_ABM.begin() + num_runs * i);
+            std::copy_n(res_PDMM.cbegin(), num_runs, y_PDMM.begin() + num_runs * i);
+            std::copy_n(res_Hybrid.cbegin(), num_runs, y_Hybrid.begin() + num_runs * i);
+        }
+        //save outputs
+        save_results(result_path + "Scaling_rho.txt", x, std::vector<std::vector<double>>{y_ABM, y_PDMM, y_Hybrid},
+                     {"rho", "ABM", "PDMM", "Hybrid"});
 
     } break;
     default:
