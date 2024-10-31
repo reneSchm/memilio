@@ -11,6 +11,7 @@
 #include "memilio/data/analyze_result.h"
 #include "memilio/utils/random_number_generator.h"
 
+#include <cstddef>
 #include <omp.h>
 
 #include <ostream>
@@ -44,6 +45,7 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
 
     ABM abm   = setup.create_abm<ABM>();
     PDMM pdmm = setup.create_pdmm<PDMM>();
+    setup.save_setup(results_path);
 
     pdmm.populations.array().setZero();
 
@@ -299,7 +301,11 @@ void save_new_infections(mio::Date start_date, size_t num_days, std::string resu
 int main(int argc, char** argv)
 {
     mio::set_log_level(mio::LogLevel::warn);
-    run_simulation(50, false, false, mio::base_dir() + "cpp/outputs/");
+    bool save_percentiles  = true;
+    bool save_single_runs  = false;
+    std::string result_dir = mio::base_dir() + "cpp/outputs/Munich/20241025_v1/";
+    size_t num_runs        = 500;
+    run_simulation(num_runs, save_percentiles, save_single_runs, result_dir);
     //save_new_infections(mio::Date(2021, 3, 1), 30, "cpp/outputs/300runs_9/");
     return 0;
 }

@@ -20,7 +20,7 @@ int main()
     using ABM    = mio::mpm::ABM<CommutingPotential<StochastiK, Status>>;
     using PDMM   = mio::mpm::PDMModel<8, Status>;
 
-    size_t num_runs = 50;
+    size_t num_runs = 500;
     mio::mpm::paper::MunichSetup<ABM::Agent> setup;
 
     ABM abm   = setup.create_abm<ABM>();
@@ -64,10 +64,13 @@ int main()
     auto draw_func_no_draw = [&setup](auto& model) {
         setup.dummy(model);
     };
-    mio::mpm::paper::run(abm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), false, "test_ABM",
-                         mio::base_dir() + "cpp/outputs/", draw_func_abm);
-    mio::mpm::paper::run(pdmm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), false, "test_PDMM",
-                         mio::base_dir() + "cpp/outputs/", draw_func_pdmm);
+    bool save_percentiles  = true;
+    std::string result_dir = mio::base_dir() + "cpp/outputs/Munich/20241025_v1/";
+    setup.save_setup(result_dir);
+    mio::mpm::paper::run(abm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), save_percentiles, "ABM",
+                         result_dir, draw_func_abm);
+    mio::mpm::paper::run(pdmm, num_runs, setup.tmax, setup.dt, setup.metaregions.maxCoeff(), save_percentiles, "PDMM",
+                         result_dir, draw_func_pdmm);
 
     return 0;
 }

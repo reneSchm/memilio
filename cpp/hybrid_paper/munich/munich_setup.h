@@ -104,6 +104,46 @@ struct MunichSetup {
     {
     }
 
+    void save_setup(std::string filename) const
+    {
+        filename  = filename + "setup.txt";
+        auto file = fopen(filename.c_str(), "w");
+        fprintf(file, "num_agents: %zu\n", agents.size());
+        fprintf(file, "t_Exposed: %.14f\n", t_Exposed);
+        fprintf(file, "t_Carrier: %.14f\n", t_Carrier);
+        fprintf(file, "t_Infected: %.14f\n", t_Infected);
+        fprintf(file, "mu_C_R: %.14f\n", mu_C_R);
+        fprintf(file, "mu_I_D: %.14f\n", mu_I_D);
+        fprintf(file, "%s ", "transmission rates:");
+        //transmission rates
+        for (auto tr : transmission_rates) {
+            fprintf(file, "%.14f ", tr);
+        }
+        fprintf(file, "\ntmax: %.14f\n", tmax);
+        fprintf(file, "dt: %.14f\n", dt);
+        for (auto sigma : sigmas) {
+            fprintf(file, "sigma: %.14f\n", sigma);
+        }
+        fprintf(file, "contact_radius: %.14f\n", contact_radius);
+        fprintf(file, "%s\n", "transition rates:");
+        // save transition rates
+        for (auto& tr : transition_rates) {
+            fprintf(file, "From: %zu ", static_cast<size_t>(tr.from));
+            fprintf(file, "To: %zu ", static_cast<size_t>(tr.to));
+            fprintf(file, "Status: %i ", static_cast<int>(tr.status));
+            fprintf(file, "Factor: %.14f\n", tr.factor);
+        }
+        fprintf(file, "%s", "initialization:");
+        //save initialization
+        for (size_t region = 0; region < init_dists.size(); ++region) {
+            fprintf(file, "\nregion: %zu", region);
+            for (auto val : init_dists[region]) {
+                fprintf(file, " %.14f ", val);
+            }
+        }
+        fclose(file);
+    }
+
     //parameters
     double t_Exposed;
     double t_Carrier;
@@ -228,14 +268,14 @@ struct MunichSetup {
         : MunichSetup(
               3.0, //t_Exposed
               3.0, //t_Carrier
-              6.0, //t_Infected
+              5.0, //t_Infected
               std::vector<double>(8, 0.2), //transmission rates
-              0.2, //mu_C_R
-              0.003, //mu_I_D
+              0.1, //mu_C_R
+              0.004, //mu_I_D
               mio::Date(2021, 3, 1), //start date (not relevant)
               {9179, 9174, 9188, 9162, 9184, 9178, 9177, 9175}, //region ids
               {218579, 155449, 136747, 1487708, 349837, 181144, 139622, 144562}, //populations
-              40, //persons per agent
+              200, //persons per agent
               {{1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
                {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
                {1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -257,7 +297,7 @@ struct MunichSetup {
                       return _metaregions;
                   }
               }(), //metaregions
-              50, //tmax
+              150, //tmax
               0.1, //dt
               []() {
                   const std::vector<int> county_ids = {233, 228, 242, 223, 238, 232, 231, 229};
