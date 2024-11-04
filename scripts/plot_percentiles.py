@@ -32,7 +32,7 @@ def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_ser
     for r in range(len(region_names)):
         mean_list = []
         # iterate over all model outputs e.g. ABM, PDMM, Hybrid
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(8, 6))
         for s in range(len(values)):
             series = values[s]
             data = []
@@ -59,9 +59,10 @@ def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_ser
         ax.set_zorder(1)
         plt.ylabel(label)
         plt.xlabel("Time(days)")
-        plt.subplots_adjust(bottom=0.15)
+        #plt.tight_layout()
+        plt.subplots_adjust(top=0.9)
         plt.grid()
-        plt.legend(bbox_to_anchor=(0.6, 1), loc="center left")
+        plt.legend(bbox_to_anchor=(0.5, 1.06), loc="center", ncol = 3)
         # add MAPE
         for ts in range(1, len(time_series_labels)):
             err = -1
@@ -75,9 +76,9 @@ def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_ser
                 MAPE = np.mean(np.abs(mean_list[0] - mean_list[ts])/mean_list[0])
                 MAE = np.mean(np.abs(mean_list[0] - mean_list[ts]))
                 MSE = np.mean((mean_list[0] - mean_list[ts])**2)
-                plt.figtext(0.62, 0.72 - (ts-1)*0.06, f'MAPE = {np.round(MAPE, 4)}', style='italic', color=colors[ts])
-                plt.figtext(0.62, 0.59 - (ts-1)*0.06, f'MAE = {np.round(MAE, 4)}', style='italic', color=colors[ts])
-                plt.figtext(0.62, 0.46 - (ts-1)*0.06, f'MSE = {np.round(MSE, 3)}', style='italic', color=colors[ts])
+                plt.figtext(0.15, 0.72 - (ts-1)*0.06, f'MAPE = {np.round(MAPE, 4)}', style='italic', color=colors[ts])
+                plt.figtext(0.15, 0.59 - (ts-1)*0.06, f'MAE = {np.round(MAE, 4)}', style='italic', color=colors[ts])
+                plt.figtext(0.15, 0.46 - (ts-1)*0.06, f'MSE = {np.round(MSE, 3)}', style='italic', color=colors[ts])
             else:
                 plt.figtext(0.58, 0.6 - (ts-1)*0.07, f'{error} = {np.round(err, 4)}', style='italic', color=colors[ts])
         fig.savefig(save_dir + label + "_" + region_names[r] + "_"+ error +".png")
@@ -263,11 +264,11 @@ def add_compartments(result_list):
         acc_result_list.append(acc_output)
     return acc_result_list
 
-dir = "cpp/outputs/QuadWell/20241025_v1/"
-save_dir = "scripts/Results/QuadWell/20241025_v1/"
+dir = "cpp/outputs/Munich/20241101_v4/"
+save_dir = "scripts/Results/Munich/20241101_v4/"
 #table_real, labels_real = read_from_terminal(dir + "output_extrapolated.txt")
 #time = table_real[:,0]
-num_regions = 4
+num_regions = 8
 num_comp = 6
 
 font_size = 16
@@ -293,7 +294,7 @@ PDMM_list, time_PDMM = read_mean_and_percentile_outputs(dir, "PDMM", num_comp, n
 # PDMM_list_from_acc = add_compartments(PDMM_list_from)
 # PDMM_list_to_acc = add_compartments(PDMM_list_to)
 
-Hybrid_list, time_Hybrid = read_mean_and_percentile_outputs(dir, "Hybrid", num_comp, num_regions)
+Hybrid_list, time_Hybrid = read_mean_and_percentile_outputs(dir, "Hybrid_comps", num_comp, num_regions)
 
 # get same lists summed up for all regions
 ABM_list_accumulated = get_accumulated_output(ABM_list)
@@ -301,7 +302,7 @@ PDMM_list_accumulated = get_accumulated_output(PDMM_list)
 Hybrid_list_accumulated = get_accumulated_output(Hybrid_list)
 
 ABM_list_mean_p25_p75 = [ABM_list[0], ABM_list[2], ABM_list[4]]
-ABM_list_acc_mean_p25_p75 = [ABM_list_accumulated[0], ABM_list_accumulated[2], ABM_list_accumulated[4]]
+ABM_list_acc_mean_p25_p75 = [ABM_list_accumulated[3], ABM_list_accumulated[2], ABM_list_accumulated[4]]
 
 PDMM_list_mean_p25_p75 = [PDMM_list[0], PDMM_list[2], PDMM_list[4]]
 PDMM_list_acc_mean_p25_p75 = [PDMM_list_accumulated[0], PDMM_list_accumulated[2], PDMM_list_accumulated[4]]
@@ -311,12 +312,13 @@ Hybrid_list_acc_mean_p25_p75 = [Hybrid_list_accumulated[0], Hybrid_list_accumula
 
 #[ABM_list_mean_p25_p75, PDMM_list_mean_p25_p75, Hybrid_list_mean_p25_p75]
 # plot number infectious (C+I) for all three models and all regions
+#["Focus_region", "Region_1", "Region_2", "Region_3"]
 plot_percentiles2(time_ABM, [ABM_list_mean_p25_p75, PDMM_list_mean_p25_p75, Hybrid_list_mean_p25_p75], [2, 3], ["blue", "red", "green"], 
-                  ["Focus_region", "Region_1", "Region_2", "Region_3"], 
-                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious", save_dir=save_dir, error="MSE") # ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land",  "Freising", "Erding", "Ebersberg"]
+                  ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land",  "Freising", "Erding", "Ebersberg"], 
+                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious", save_dir=save_dir, error="All") # ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land",  "Freising", "Erding", "Ebersberg"]
 # plot number infectious (C+I) for all three models sum over all regions
-plot_percentiles2(time_ABM, [ABM_list_acc_mean_p25_p75, PDMM_list_acc_mean_p25_p75, Hybrid_list_acc_mean_p25_p75], [2, 3], ["blue", "red", "green"], ["All_regions"],
-                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious", save_dir=save_dir, error="MSE")
+plot_percentiles2(time_ABM, [ABM_list_acc_mean_p25_p75, PDMM_list_acc_mean_p25_p75, Hybrid_list_acc_mean_p25_p75], [2, 3], ["blue", "red"], ["All_regions"],
+                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious", save_dir=save_dir, error="All")
 
 # plot_populations(time_Hybrid, Hybrid_list[0], [0, 1, 2, 3, 4, 5, 6, 7], "test")
 
