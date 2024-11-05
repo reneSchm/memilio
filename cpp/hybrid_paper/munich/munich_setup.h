@@ -45,6 +45,20 @@ struct MunichSetup {
         return model;
     }
 
+    void reset_adoption_rates()
+    {
+        adoption_rates.clear();
+        for (int i = 0; i < metaregions.maxCoeff(); ++i) {
+            adoption_rates.push_back(
+                {Status::S, Status::E, mio::mpm::Region(i), transmission_rates[i], {Status::C, Status::I}, {1, 1}});
+            adoption_rates.push_back({Status::E, Status::C, mio::mpm::Region(i), 1.0 / t_Exposed, {}, {}});
+            adoption_rates.push_back({Status::C, Status::R, mio::mpm::Region(i), mu_C_R / t_Carrier, {}, {}});
+            adoption_rates.push_back({Status::C, Status::I, mio::mpm::Region(i), (1 - mu_C_R) / t_Carrier, {}, {}});
+            adoption_rates.push_back({Status::I, Status::R, mio::mpm::Region(i), (1 - mu_I_D) / t_Infected, {}, {}});
+            adoption_rates.push_back({Status::I, Status::D, mio::mpm::Region(i), mu_I_D / t_Infected, {}, {}});
+        }
+    }
+
     template <class ABM>
     void draw_ABM_population(ABM& model) const
     {
@@ -269,7 +283,7 @@ struct MunichSetup {
               3.0, //t_Exposed
               3.0, //t_Carrier
               5.0, //t_Infected
-              std::vector<double>(8, 0.2), //transmission rates
+              std::vector<double>(8, 0.19), //transmission rates
               0.1, //mu_C_R
               0.004, //mu_I_D
               mio::Date(2021, 3, 1), //start date (not relevant)

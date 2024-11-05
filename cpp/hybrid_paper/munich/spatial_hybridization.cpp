@@ -39,12 +39,13 @@ void run_simulation(size_t num_runs, bool save_percentiles, bool save_single_out
     const size_t num_regions = 8;
     const int focus_region   = 3;
 
-    const mio::mpm::paper::MunichSetup<ABM::Agent> setup;
-    bool save_res    = false;
-    double time_mean = 0;
-
-    ABM abm   = setup.create_abm<ABM>();
-    PDMM pdmm = setup.create_pdmm<PDMM>();
+    mio::mpm::paper::MunichSetup<ABM::Agent> setup;
+    bool save_res            = true;
+    double time_mean         = 0;
+    PDMM pdmm                = setup.create_pdmm<PDMM>();
+    setup.transmission_rates = std::vector<double>(8, 0.2);
+    setup.reset_adoption_rates();
+    ABM abm = setup.create_abm<ABM>();
     setup.save_setup(results_path);
 
     pdmm.populations.array().setZero();
@@ -303,7 +304,7 @@ int main(int argc, char** argv)
     mio::set_log_level(mio::LogLevel::warn);
     bool save_percentiles  = true;
     bool save_single_runs  = false;
-    std::string result_dir = mio::base_dir() + "cpp/outputs/Munich/20241025_v1/";
+    std::string result_dir = mio::base_dir() + "cpp/outputs/Munich/20241101_v4_focus_r_4/Hybrid_";
     size_t num_runs        = 500;
     run_simulation(num_runs, save_percentiles, save_single_runs, result_dir);
     //save_new_infections(mio::Date(2021, 3, 1), 30, "cpp/outputs/300runs_9/");
