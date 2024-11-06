@@ -5,6 +5,7 @@
 #include "memilio/compartments/simulation.h"
 #include "memilio/config.h"
 #include "memilio/utils/time_series.h"
+#include <iostream>
 
 //TODO: remove DEBUG
 //#include <iostream>
@@ -58,7 +59,14 @@ public:
         while (t < tmax) {
             DEBUG(t << "\t/ " << std::min(t + m_dt_switch, tmax) << "\t/ " << tmax << " :: " << m_using_base_model
                     << " " << use_base_model(m_using_base_model, m_results))
-            if (m_using_base_model != use_base_model(m_using_base_model, m_results)) {
+            bool use_base_model_tmp;
+            if (m_using_base_model) {
+                use_base_model_tmp = use_base_model(m_using_base_model, m_sim_base.get_result());
+            }
+            else {
+                use_base_model_tmp = use_base_model(m_using_base_model, m_sim_sec.get_result());
+            }
+            if (m_using_base_model != use_base_model_tmp) {
                 if (m_using_base_model) {
                     m_using_base_model = false;
                     // set up sec model to start at the current state of the hybrid simulation
