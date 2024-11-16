@@ -1,5 +1,7 @@
 #include "sensitivity_analysis_spatial_hybrid_fcts.h"
 #include "hybrid_paper/library/sensitivity_analysis.h"
+#include "memilio/utils/compiler_diagnostics.h"
+#include <vector>
 
 void set_up_models(mio::mpm::ABM<CommutingPotential<StochastiK, mio::mpm::paper::InfectionState>>& abm,
                    mio::mpm::PDMModel<8, mio::mpm::paper::InfectionState>& pdmm)
@@ -132,11 +134,19 @@ std::vector<double> simulate_hybridization(
     }
 
     double mean_time = (1.0 / num_runs_per_output) * std::accumulate(timing.begin(), timing.end(), 0.0);
+    mio::unused(mean_time);
+    // return std::vector<double>{
+    //     sum_infected<mio::mpm::paper::MunichSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
+    //     max_num_infected<mio::mpm::paper::MunichSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
+    //     total_transmissions<mio::mpm::paper::MunichSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
+    //     total_deaths<mio::mpm::paper::MunichSetup<ABM::Agent>>(mean_time_series, setup.num_regions)};
+
     return std::vector<double>{
-        norm_num_infected<mio::mpm::paper::MunichSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
         max_num_infected<mio::mpm::paper::MunichSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
         total_transmissions<mio::mpm::paper::MunichSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
         total_deaths<mio::mpm::paper::MunichSetup<ABM::Agent>>(mean_time_series, setup.num_regions), mean_time};
+    // return std::vector<double>{mean_time};
+    //return timing;
 }
 
 void run_sensitivity_analysis_hybrid(SensitivitySetupMunich& sensi_setup, size_t num_runs, size_t num_runs_per_output,

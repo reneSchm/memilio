@@ -24,18 +24,19 @@ int main()
     using ABM                        = mio::mpm::ABM<QuadWellModel<Status>>;
     const size_t num_regions         = 4;
     using PDMM                       = mio::mpm::PDMModel<num_regions, Status>;
-    const size_t num_runs            = 100;
-    const size_t num_runs_per_output = 1;
-    const size_t num_agents          = 8000;
+    const size_t num_runs            = 20;
+    const size_t num_runs_per_output = 112;
+    const size_t num_agents          = 4000;
     double tmax                      = 150.0;
     double dt                        = 0.1;
+    const size_t num_outputs         = 4;
     std::cout << "num runs: " << num_runs << std::endl;
     std::cout << "num agents: " << num_agents << std::endl;
-    mio::thread_local_rng().seed({static_cast<uint32_t>(0)});
+    //mio::thread_local_rng().seed({static_cast<uint32_t>(0)});
 
-    std::string result_dir = mio::base_dir() + "cpp/outputs/sensitivity_analysis/20240925_v1/";
+    std::string result_dir = mio::base_dir() + "cpp/outputs/20241021_QW_final2/";
 
-    SensitivitySetupQW sensi_setup(num_runs, 4);
+    SensitivitySetupQW sensi_setup(num_runs, num_outputs);
     auto draw_func_abm = [](QuadWellSetup<ABM::Agent> setup, auto& sim) {
         setup.redraw_agents_status(sim);
     };
@@ -45,12 +46,12 @@ int main()
     const auto& output_func_abm  = sensitivity_results<QuadWellSetup<ABM::Agent>, ABM, decltype(draw_func_abm)>;
     const auto& output_func_pdmm = sensitivity_results<QuadWellSetup<ABM::Agent>, PDMM, decltype(draw_func_pdmm)>;
 
-    // run_sensitivity_analysis<SensitivitySetupQW, ABM, QuadWellSetup<ABM::Agent>, decltype(output_func_abm),
-    //                          decltype(draw_func_abm)>(sensi_setup, output_func_abm, num_runs, num_agents, tmax, dt,
-    //                                                   result_dir + "ABM_", num_runs_per_output, draw_func_abm);
+    run_sensitivity_analysis<SensitivitySetupQW, ABM, QuadWellSetup<ABM::Agent>, decltype(output_func_abm),
+                             decltype(draw_func_abm)>(sensi_setup, output_func_abm, num_runs, num_agents, tmax, dt,
+                                                      result_dir + "ABM", num_runs_per_output, draw_func_abm);
     run_sensitivity_analysis<SensitivitySetupQW, PDMM, QuadWellSetup<ABM::Agent>, decltype(output_func_pdmm),
                              decltype(draw_func_pdmm)>(sensi_setup, output_func_pdmm, num_runs, num_agents, tmax, dt,
-                                                       result_dir + "PDMM_", num_runs_per_output, draw_func_pdmm);
+                                                       result_dir + "PDMM", num_runs_per_output, draw_func_pdmm);
 
     return 0;
 }

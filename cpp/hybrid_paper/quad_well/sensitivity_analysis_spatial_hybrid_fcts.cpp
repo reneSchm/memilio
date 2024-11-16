@@ -52,8 +52,8 @@ simulate_hybridization(mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionSta
     std::vector<mio::TimeSeries<double>> ensemble_results(
         num_runs, mio::TimeSeries<double>::zero(setup.tmax, setup.num_regions * static_cast<size_t>(Status::Count)));
     std::vector<double> timing(num_runs);
-    // #pragma omp barrier
-    // #pragma omp parallel for
+#pragma omp barrier
+#pragma omp parallel for
     for (size_t run = 0; run < num_runs; ++run) {
         auto& region_rng = mio::DiscreteDistribution<size_t>::get_instance();
         std::vector<double> region_weights(3);
@@ -104,7 +104,11 @@ simulate_hybridization(mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionSta
                         state_ABM[index] += 1;
                         pop_PDMM[{Region(focus_region), (Status)s}] -= 1;
                         size_t source_region = region_rng(region_weights);
-                        auto new_pos         = setup.focus_pos_rng(source_region);
+                        if (source_region > 2) {
+                            mio::log_error("Sampled source region does not exist. Source region is {:d}",
+                                           source_region);
+                        }
+                        auto new_pos = setup.focus_pos_rng(source_region);
                         if (qw::well_index(new_pos) != focus_region) {
                             new_pos = setup.adapt_sampled_position(new_pos, source_region);
                             if (qw::well_index(new_pos) != focus_region) {
@@ -138,14 +142,18 @@ simulate_hybridization(mio::mpm::ABM<QuadWellModel<mio::mpm::paper::InfectionSta
     }
 
     double mean_time = (1.0 / num_runs) * std::accumulate(timing.begin(), timing.end(), 0.0);
-    // return std::vector<double>{norm_num_infected<QuadWellSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
+    mio::unused(mean_time);
+
+    // return std::vector<double>{sum_infected<QuadWellSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
     //                            max_num_infected<QuadWellSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
     //                            total_transmissions<QuadWellSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
+    //                            total_deaths<QuadWellSetup<ABM::Agent>>(mean_time_series, setup.num_regions)};
+
+    // return std::vector<double>{max_num_infected<QuadWellSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
+    //                            total_transmissions<QuadWellSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
     //                            total_deaths<QuadWellSetup<ABM::Agent>>(mean_time_series, setup.num_regions), mean_time};
-    return std::vector<double>{max_num_infected<QuadWellSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
-                               total_transmissions<QuadWellSetup<ABM::Agent>>(mean_time_series, setup.num_regions),
-                               total_deaths<QuadWellSetup<ABM::Agent>>(mean_time_series, setup.num_regions), mean_time};
-    //return std::vector<double>{mean_time};
+    // return std::vector<double>{mean_time};
+    return timing;
 }
 
 void run_sensitivity_analysis_hybrid(SensitivitySetupQW& sensi_setup, size_t num_runs, size_t num_runs_per_output,

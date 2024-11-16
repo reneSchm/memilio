@@ -24,9 +24,9 @@ int main()
     const size_t num_agents          = 4000;
     double tmax                      = 150.0;
     double dt                        = 0.1;
-    const size_t num_outputs         = 5;
+    const size_t num_outputs         = 4;
 
-    std::string result_dir = mio::base_dir() + "cpp/outputs/20241011_finalHybrid/";
+    std::string result_dir = mio::base_dir() + "cpp/outputs/20241025_QW_hybrid_final/";
 
     SensitivitySetupQW sensi_setup(num_runs, num_outputs);
     run_sensitivity_analysis_hybrid(sensi_setup, num_runs, num_runs_per_output, num_agents, tmax, dt,

@@ -13,7 +13,7 @@ get_format_for_percentile_output(std::vector<TimeSeries<double>>& ensemble_resul
 {
     std::vector<std::vector<mio::TimeSeries<double>>> ensemble_percentile(ensemble_result.size());
     auto num_time_points = ensemble_result[0].get_num_time_points();
-    auto num_elements    = static_cast<size_t>(InfectionState::Count);
+    auto num_elements    = static_cast<size_t>(ensemble_result[0].get_num_elements() / num_regions);
     for (size_t run = 0; run < ensemble_result.size(); ++run) {
         for (size_t region = 0; region < num_regions; ++region) {
             auto ts = mio::TimeSeries<double>::zero(num_time_points, num_elements);
@@ -33,7 +33,7 @@ void percentile_output_to_file(std::vector<TimeSeries<double>>& percentile_outpu
 {
     auto ts = mio::TimeSeries<double>::zero(percentile_output[0].get_num_time_points(),
                                             percentile_output.size() *
-                                                static_cast<size_t>(mio::mpm::paper::InfectionState::Count));
+                                                percentile_output[0].get_num_elements());
     for (Eigen::Index time = 0; time < percentile_output[0].get_num_time_points(); time++) {
         ts.get_time(time) = percentile_output[0].get_time(time);
         for (size_t region = 0; region < percentile_output.size(); ++region) {
@@ -63,12 +63,11 @@ TimeSeries<double> add_time_series(TimeSeries<double>& t1, TimeSeries<double>& t
 void save_results(std::vector<mio::TimeSeries<double>>& ensemble_results, size_t num_runs, size_t num_regions,
                   bool save_percentiles, std::string result_prefix, std::string result_path)
 {
-    using Status = InfectionState;
     // add all results
     mio::TimeSeries<double> mean_time_series =
         std::accumulate(ensemble_results.begin(), ensemble_results.end(),
                         mio::TimeSeries<double>::zero(ensemble_results[0].get_num_time_points(),
-                                                      num_regions * static_cast<size_t>(Status::Count)),
+                                                      ensemble_results[0].get_num_elements()),
                         add_time_series);
     //calculate average
     for (size_t t = 0; t < static_cast<size_t>(mean_time_series.get_num_time_points()); ++t) {

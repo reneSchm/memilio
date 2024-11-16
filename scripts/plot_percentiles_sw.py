@@ -25,14 +25,15 @@ def plot(time, data1, data2, comp, labels=['data1', 'data2'], filename = 'plt', 
     3rd dimension: number of regions
     4th dimension: matrix with lines the number of timepoints and columns the compartments for that timepoint
 """
-def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_series_labels, sum = False, y_label = "", save_dir="", error="MAPE"):
-    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_series_labels, sum = False, 
+                      y_label = "", save_dir="", error="MAPE", figsize = (11, 9)):
+    #colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     comps_names = ["Susceptible", "Exposed", "Carrier", "Infected", "Recovered", "Dead"]
     # iterate over all region
     for r in range(len(region_names)):
         mean_list = []
         # iterate over all model outputs e.g. ABM, PDMM, Hybrid
-        fig, ax = plt.subplots(figsize=(8, 6))
+        fig, ax = plt.subplots(figsize = figsize)
         for s in range(len(values)):
             series = values[s]
             data = []
@@ -55,14 +56,13 @@ def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_ser
                 else:
                     ax.plot(time, y, color=colors[s], linestyle = "dotted", alpha=0.3)
                 # fill between p25 and p75
-            ax.fill_between(time, data[1], data[2], alpha=0.2, color=colors[s])
+            ax.fill_between(time, data[1], data[2], alpha=0.2, color="darkgray")
         ax.set_zorder(1)
         plt.ylabel(label)
         plt.xlabel("Time(days)")
-        #plt.tight_layout()
-        plt.subplots_adjust(top=0.9)
+        plt.subplots_adjust(bottom=0.15)
         plt.grid()
-        plt.legend(bbox_to_anchor=(0.5, 1.06), loc="center", ncol = 3)
+        plt.legend(bbox_to_anchor=(0.5, 1.08), loc="center", ncol = 2)
         # add MAPE
         for ts in range(1, len(time_series_labels)):
             err = -1
@@ -76,12 +76,14 @@ def plot_percentiles2(time, values, comp_to_plot, colors, region_names, time_ser
                 MAPE = np.mean(np.abs(mean_list[0] - mean_list[ts])/mean_list[0])
                 MAE = np.mean(np.abs(mean_list[0] - mean_list[ts]))
                 MSE = np.mean((mean_list[0] - mean_list[ts])**2)
-                plt.figtext(0.15, 0.72 - (ts-1)*0.06, f'MAPE = {np.round(MAPE, 4)}', style='italic', color=colors[ts])
-                plt.figtext(0.15, 0.59 - (ts-1)*0.06, f'MAE = {np.round(MAE, 4)}', style='italic', color=colors[ts])
-                plt.figtext(0.15, 0.46 - (ts-1)*0.06, f'MSE = {np.round(MSE, 3)}', style='italic', color=colors[ts])
+                plt.figtext(0.15, 0.82 - (ts-1)*0.05, f'MAPE = {np.round(MAPE, 4)}', style='italic', color=colors[ts])
+                plt.figtext(0.15, 0.62 - (ts-1)*0.05, f'MAE = {np.round(MAE, 4)}', style='italic', color=colors[ts])
+                plt.figtext(0.15, 0.42 - (ts-1)*0.05, f'MSE = {np.round(MSE, 3)}', style='italic', color=colors[ts])
             else:
                 plt.figtext(0.58, 0.6 - (ts-1)*0.07, f'{error} = {np.round(err, 4)}', style='italic', color=colors[ts])
-        fig.savefig(save_dir + label + "_" + region_names[r] + "_"+ error +".png")
+        plt.tight_layout()
+        fig.subplots_adjust(top=0.89)
+        fig.savefig(save_dir + label + "_"+ error +".png")
 
 def plot_percentiles(time, mean, percentiles, comp, compare = [], scaling_factor=1, label = [], filename=''
                      , region_names = ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land", 
@@ -144,13 +146,13 @@ def read_mean_and_percentile_outputs(dir, prefix, num_comp, num_regions):
     #list contains subtables for mean as first element and subtables for 
     #percentiles as following elements starting with p05 and ending with p95
     read_list = []
-    read_list.append(read_from_terminal(dir + prefix + "_output_mean.txt")[0])
+    read_list.append(read_from_terminal(dir + prefix + "_mean.txt")[0])
     time = read_list[0][:, 0]
-    read_list.append(read_from_terminal(dir + prefix + "_output_p05.txt")[0])
-    read_list.append(read_from_terminal(dir + prefix + "_output_p25.txt")[0])
-    read_list.append(read_from_terminal(dir + prefix + "_output_p50.txt")[0])
-    read_list.append(read_from_terminal(dir + prefix + "_output_p75.txt")[0])
-    read_list.append(read_from_terminal(dir + prefix + "_output_p95.txt")[0])
+    read_list.append(read_from_terminal(dir + prefix + "_p05.txt")[0])
+    read_list.append(read_from_terminal(dir + prefix + "_p25.txt")[0])
+    read_list.append(read_from_terminal(dir + prefix + "_p50.txt")[0])
+    read_list.append(read_from_terminal(dir + prefix + "_p75.txt")[0])
+    read_list.append(read_from_terminal(dir + prefix + "_p95.txt")[0])
     subtable_list = []
     for table in read_list:
         subtable_list.append([table[:, i * num_comp + 1: (i + 1)*num_comp + 1] for i in range(num_regions)])
@@ -161,88 +163,6 @@ def get_accumulated_output(subtable_list):
     for i in range(len(subtable_list)):
         accumulated_list.append([sum(subtable_list[i])])
     return accumulated_list
-
-def plot_percentiles_new_infections(time, mean, percentiles, real, scaling_factor, indices, factors, filename=''):
-    for r in range(len(mean)):
-        region_mean = mean[r] #* scaling_factor
-        region_p05 = percentiles[0][r] #* scaling_factor
-        region_p25 = percentiles[1][r] #* scaling_factor
-        region_p50 = percentiles[2][r] #* scaling_factor
-        region_p75 = percentiles[3][r] #* scaling_factor
-        region_p95 = percentiles[4][r] #* scaling_factor
-        fig = plt.figure()
-        plt.scatter(time, real[:, r]/scaling_factor, marker="x", label="real", color='black')
-        new_infections_mean = 0 * region_mean[:, 0]
-        new_infections_p05 = 0 * region_p05[:, 0]
-        new_infections_p25 = 0 * region_p25[:, 0]
-        new_infections_p50 = 0 * region_p50[:, 0]
-        new_infections_p75 = 0 * region_p75[:, 0]
-        new_infections_p95 = 0 * region_p95[:, 0]
-        for i in range(len(indices)):
-            new_infections_mean += factors[i] * region_mean[:, i]
-            new_infections_p05 += factors[i] * region_p05[:, i]
-            new_infections_p25 += factors[i] * region_p25[:, i]
-            new_infections_p50 += factors[i] * region_p50[:, i]
-            new_infections_p75 += factors[i] * region_p75[:, i]
-            new_infections_p95 += factors[i] * region_p95[:, i]
-        plt.plot(time, new_infections_mean, label = 'mean')
-        plt.plot(time, new_infections_p05, label = 'p05', color='navy')
-        plt.plot(time, new_infections_p25, label = 'p25', color = 'dimgray')
-        plt.plot(time, new_infections_p50, label = 'p50')
-        plt.plot(time, new_infections_p75, label = 'p75', color='dimgray')
-        plt.plot(time, new_infections_p95, label = 'p95', color='navy')
-        plt.fill_between(time, new_infections_p05, new_infections_p95, color='navy', alpha=0.2)
-        plt.fill_between(time, new_infections_p25, new_infections_p75, color='dimgray', alpha=0.4)
-        plt.legend()
-        fig.savefig(filename + 'percentiles_' + str(r) + '.png')
-        plt.close()
-
-def scale_new_infections(flow_list, real, populations, scale):
-    population_real = [218579.0, 155449.0, 136747.0, 1487708.0, 349837.0, 181144.0, 139622.0, 144562.0]
-    if scale == "local":
-        for region in range(real.shape[1]):
-            real[:, region] *= (100000.0/population_real[region])
-    elif scale == "global":
-        real *= (100000.0/sum(population_real))
-    else:
-        print("Unknown scale")
-    for l in range(len(flow_list)):
-        for region in range(len(flow_list[l])):
-            if scale == "local":
-                flow_list[l][region] *= (100000.0/populations[region])
-            elif scale == "global":
-                flow_list[l][region] *= (100000.0/sum(populations))
-            else:
-                print("Unknown scale")
-    return flow_list, real
-
-def get_starting_populations(mean_list):
-    populations = []
-    for region in range(len(mean_list)):
-        comps = mean_list[region][0,:]
-        populations.append(np.sum(comps))
-    return populations
-
-def plot_flow(time, mean, percentiles, index, filename):
-    for r in range(len(mean)):
-        region_mean = mean[r][:, index] #* scaling_factor
-        region_p05 = percentiles[0][r][:, index] #* scaling_factor
-        region_p25 = percentiles[1][r][:, index] #* scaling_factor
-        region_p50 = percentiles[2][r][:, index] #* scaling_factor
-        region_p75 = percentiles[3][r][:, index] #* scaling_factor
-        region_p95 = percentiles[4][r][:, index] #* scaling_factor
-        fig = plt.figure()
-        plt.plot(time, region_mean, label = 'mean')
-        plt.plot(time, region_p05, label = 'p05', color='navy')
-        plt.plot(time, region_p25, label = 'p25', color = 'dimgray')
-        plt.plot(time, region_p50, label = 'p50')
-        plt.plot(time, region_p75, label = 'p75', color='dimgray')
-        plt.plot(time, region_p95, label = 'p95', color='navy')
-        plt.fill_between(time, region_p05, region_p95, color='navy', alpha=0.2)
-        plt.fill_between(time, region_p25, region_p75, color='dimgray', alpha=0.4)
-        plt.legend()
-        fig.savefig(filename + 'percentiles_' + str(r) + '.png')
-        plt.close()
 
 def plot_mean(time, mean, filename, labels, index_list):
     for region in range(len(mean)):
@@ -264,11 +184,11 @@ def add_compartments(result_list):
         acc_result_list.append(acc_output)
     return acc_result_list
 
-dir = "cpp/outputs/20241105_Munich/"
-save_dir = "scripts/Results/20241105_Munich/"
+dir = "cpp/outputs/20241031_sw/"
+save_dir = "scripts/Results/20241031_sw/"
 #table_real, labels_real = read_from_terminal(dir + "output_extrapolated.txt")
 #time = table_real[:,0]
-num_regions = 8
+num_regions = 1
 num_comp = 6
 
 font_size = 16
@@ -282,24 +202,17 @@ plt.rc ('legend', fontsize = font_size) #Schriftgröße der Legende
 
 
 #list with mean output as first element and percentiles as following elements starting with p05 and ending with p95
-ABM_list, time_ABM = read_mean_and_percentile_outputs(dir, "ABM", num_comp, num_regions)
-PDMM_list, time_PDMM = read_mean_and_percentile_outputs(dir, "PDMM", num_comp, num_regions)
-# ABM_list_from, ABM_time_from = read_mean_and_percentile_outputs(dir, "2.4_ABM_trans_from", num_comp, num_regions)
-# ABM_list_to, ABM_time_to = read_mean_and_percentile_outputs(dir, "2.4_ABM_trans_to", num_comp, num_regions)
-# PDMM_list_from, PDMM_time_from = read_mean_and_percentile_outputs(dir, "2.4_PDMM_trans_from", num_comp, num_regions)
-# PDMM_list_to, PDMM_time_to = read_mean_and_percentile_outputs(dir, "2.4_PDMM_trans_to", num_comp, num_regions)
-
-# ABM_list_from_acc = add_compartments(ABM_list_from)
-# ABM_list_to_acc = add_compartments(ABM_list_to)
-# PDMM_list_from_acc = add_compartments(PDMM_list_from)
-# PDMM_list_to_acc = add_compartments(PDMM_list_to)
-
-Hybrid_list, time_Hybrid = read_mean_and_percentile_outputs(dir, "Hybrid_comps", num_comp, num_regions)
+ABM_list, time_ABM = read_mean_and_percentile_outputs(dir, "abm_20000_combined", num_comp, num_regions)
+PDMM_list, time_PDMM = read_mean_and_percentile_outputs(dir, "pdmm_0_combined", num_comp, num_regions)
+Hybrid_list_2, time_Hybrid_2 = read_mean_and_percentile_outputs(dir, "hybrid_2_combined", num_comp, num_regions)
+Hybrid_list_5, time_Hybrid_5 = read_mean_and_percentile_outputs(dir, "hybrid_5_combined", num_comp, num_regions)
+Hybrid_list_10, time_Hybrid_10 = read_mean_and_percentile_outputs(dir, "hybrid_10_survival", num_comp, num_regions)
 
 # get same lists summed up for all regions
 ABM_list_accumulated = get_accumulated_output(ABM_list)
 PDMM_list_accumulated = get_accumulated_output(PDMM_list)
-Hybrid_list_accumulated = get_accumulated_output(Hybrid_list)
+Hybrid_list_2_accumulated = get_accumulated_output(Hybrid_list_2)
+Hybrid_list_5_accumulated = get_accumulated_output(Hybrid_list_5)
 
 ABM_list_mean_p25_p75 = [ABM_list[0], ABM_list[2], ABM_list[4]]
 ABM_list_acc_mean_p25_p75 = [ABM_list_accumulated[0], ABM_list_accumulated[2], ABM_list_accumulated[4]]
@@ -307,33 +220,16 @@ ABM_list_acc_mean_p25_p75 = [ABM_list_accumulated[0], ABM_list_accumulated[2], A
 PDMM_list_mean_p25_p75 = [PDMM_list[0], PDMM_list[2], PDMM_list[4]]
 PDMM_list_acc_mean_p25_p75 = [PDMM_list_accumulated[0], PDMM_list_accumulated[2], PDMM_list_accumulated[4]]
 
-Hybrid_list_mean_p25_p75 = [Hybrid_list[0], Hybrid_list[2], Hybrid_list[4]]
-Hybrid_list_acc_mean_p25_p75 = [Hybrid_list_accumulated[0], Hybrid_list_accumulated[2], Hybrid_list_accumulated[4]]
+Hybrid_list_2_mean_p25_p75 = [Hybrid_list_2[0], Hybrid_list_2[2], Hybrid_list_2[4]]
+Hybrid_list_2_acc_mean_p25_p75 = [Hybrid_list_2_accumulated[0], Hybrid_list_2_accumulated[2], Hybrid_list_2_accumulated[4]]
+
+Hybrid_list_5_mean_p25_p75 = [Hybrid_list_5[0], Hybrid_list_5[2], Hybrid_list_5[4]]
+Hybrid_list_5_acc_mean_p25_p75 = [Hybrid_list_5_accumulated[0], Hybrid_list_5_accumulated[2], Hybrid_list_5_accumulated[4]]
+
+Hybrid_list_10_mean_p25_p75 = [Hybrid_list_10[0], Hybrid_list_10[2], Hybrid_list_10[4]]
 
 #[ABM_list_mean_p25_p75, PDMM_list_mean_p25_p75, Hybrid_list_mean_p25_p75]
 # plot number infectious (C+I) for all three models and all regions
-#["Focus_region", "Region_1", "Region_2", "Region_3"]
-plot_percentiles2(time_ABM, [ABM_list_mean_p25_p75, PDMM_list_mean_p25_p75, Hybrid_list_mean_p25_p75], [2, 3], ["blue", "red", "green"], 
-                  ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land",  "Freising", "Erding", "Ebersberg"], 
-                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious", save_dir=save_dir, error="All") # ["Fürstenfeldbruck", "Dachau", "Starnberg", "München", "München Land",  "Freising", "Erding", "Ebersberg"]
-# plot number infectious (C+I) for all three models sum over all regions
-plot_percentiles2(time_ABM, [ABM_list_acc_mean_p25_p75, PDMM_list_acc_mean_p25_p75, Hybrid_list_acc_mean_p25_p75], [2, 3], ["blue", "red", "green"], ["All_regions"],
-                  ["ABM", "PDMM", "Spatial Hybrid"], sum=True, y_label="Number Infectious", save_dir=save_dir, error="All")
-
-# plot_populations(time_Hybrid, Hybrid_list[0], [0, 1, 2, 3, 4, 5, 6, 7], "test")
-
-# # plot number transitions for ABM and PDMM accumulated for all compartments
-# plot_num_transitions(ABM_time_from, [ABM_list_from_acc[0], PDMM_list_from_acc[0]], [ABM_list_from_acc[1:]], comp=0, labels=["ABM", "PDMM"], region_names=["Focus region", "Region 1", "Region 2", "Region 3"])
-
-# comps_names = ["Susceptible", "Exposed", "Carrier", "Infected", "Recovered", "Dead"]
-# # plot number transitions for ABM and PDMM per compartment
-# for c in range(len(comps_names)):
-#     ylable = "Number transitions " + comps_names[c]
-#     plot_num_transitions(ABM_time_from, [ABM_list_from[0], PDMM_list_from[0]], [ABM_list_from[1:]], comp=c, labels=["ABM", "PDMM"], region_names=["Focus region", "Region 1", "Region 2", "Region 3"], 
-#                          y_label=ylable, title=comps_names[c])
-
-#Infected
-# plot_percentiles(time_ABM, ABM_list[0], ABM_list[1:], 3, filename='18Test_ABM_Infected_', compare=[PDMM_list[0]], 
-#                  label=['PDMM mean', 'Hybrid mean'], region_names=["Focus region", "Region 1", "Region 2", "Region 3"])
-# plot_percentiles(time_ABM, ABM_list_accumulated[0], ABM_list_accumulated[1:], 3, filename='18Test_ABM_infected_acc_',
-#                  compare=[PDMM_list_accumulated[0]], label=['PDMM mean', 'Hybrid mean'], region_names=["All regions"])
+plot_percentiles2(time_ABM, [ABM_list_mean_p25_p75, PDMM_list_mean_p25_p75, Hybrid_list_2_mean_p25_p75, Hybrid_list_5_mean_p25_p75], 
+                  [3], ["tab:blue", "tab:orange", "tab:green", "tab:red"], ["Region_0"], ["ABM", "PDMM", "Temporal Hybrid (2)", "Temporal Hybrid (5)"], 
+                  sum=True, y_label="Infected Compartment", save_dir=save_dir, error="All") 

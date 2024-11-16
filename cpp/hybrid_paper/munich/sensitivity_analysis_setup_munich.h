@@ -110,7 +110,7 @@ struct SensitivitySetupMunich {
                                  {0.0, 0.01}, //I
                                  {0.001, 0.22}, //commute weights
                                  {5., 15.}, //sigma
-                                 {5., 60.}, //contact radius
+                                 {5., 20.}, //contact radius
                                  num_runs, num_outputs)
     {
     }

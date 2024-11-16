@@ -19,17 +19,18 @@ int main()
     using ABM                        = mio::mpm::ABM<CommutingPotential<StochastiK, Status>>;
     const size_t num_regions         = 8;
     using PDMM                       = mio::mpm::PDMModel<num_regions, Status>;
-    const size_t num_runs            = 10;
-    const size_t num_runs_per_output = 90;
+    const size_t num_runs            = 20;
+    const size_t num_runs_per_output = 112;
     const size_t num_agents          = 4000;
     double tmax                      = 150;
     double dt                        = 0.1;
+    const size_t num_outputs         = 4;
     std::cout << "num runs: " << num_runs << std::endl;
     std::cout << "num agents: " << num_agents << std::endl;
 
-    std::string result_dir = mio::base_dir() + "cpp/outputs/sensitivity_analysis/20241009_v2/";
+    std::string result_dir = mio::base_dir() + "cpp/outputs/20241109_Munich2/";
 
-    SensitivitySetupMunich sensi_setup(num_runs, 4);
+    SensitivitySetupMunich sensi_setup(num_runs, num_outputs);
     auto draw_func_abm = [](mio::mpm::paper::MunichSetup<ABM::Agent> setup, auto& sim) {
         setup.redraw_agents_status(sim);
     };

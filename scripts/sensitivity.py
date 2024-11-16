@@ -63,12 +63,12 @@ def plot_results(output_folders, output_file_name, titles, saving_path, label_ma
         axs[0].set_title(titles[0])
     else:    
         for i in range(len(titles)):
-            path = output_folders[0] + output_file_name + str(i+1) + ".txt"
+            path = output_folders[0] + output_file_name + str(i) + ".txt"
             df = pd.read_csv(path, sep=" ")
             df = df.drop(columns=['Unnamed: ' + str(len(df.columns)-1)])
             for f in range(1, len(output_folders)):
-                path = output_folders[f] + output_file_name + str(i+1) + ".txt"
-                df = pd.concat([df, pd.read_csv(path, sep=" ").drop(columns=['Unnamed: 13'])], ignore_index=True)
+                path = output_folders[f] + output_file_name + str(i) + ".txt"
+                df = pd.concat([df, pd.read_csv(path, sep=" ").drop(columns=['Unnamed: 14'])], ignore_index=True)
             #get labels
             labels = []
             width = 0.25
@@ -97,11 +97,11 @@ def plot_results(output_folders, output_file_name, titles, saving_path, label_ma
 
 # REL EFFECTS
 # Values
-plot_results(['cpp/outputs/20241025_Munich_hybrid_final1/'], 'Hybrid_rel_effects', 
-             [r'$\max_{t}N_{I}(t)$', r'$\sum_{t=0}^{t_{max}}(S\rightarrow E)(t)$', r'$\sum_{t=0}^{t_{max}}N_{D}(t)$'], "scripts/Results/20241025_Munich_hybrid_final1/", total_label_map, display_dummies=False, fig_size=(14, 15))
+plot_results(['cpp/outputs/20241109_Munich1/', 'cpp/outputs/20241109_Munich2/'], 'Hybrid_rel_effects', 
+             ['Max Infected', 'Total Transmissions', 'Total Deaths'], "scripts/Results/20241109_Munich/", total_label_map, display_dummies=False, fig_size=(14, 15))
 # DIFFS
 # Values
-plot_results(['cpp/outputs/20241025_Munich_hybrid_final1/'], 'Hybrid_diff', 
-            ['Max Infected', 'Total Transmissions', 'Total Deaths'], "scripts/Results/20241025_Munich_hybrid_final1/", total_label_map, display_dummies=False, fig_size=(14, 15))
+plot_results(['cpp/outputs/20241109_Munich1/', 'cpp/outputs/20241109_Munich2/'], 'Hybrid_diff', 
+            ['Max Infected', 'Total Transmissions', 'Total Deaths'], "scripts/Results/20241109_Munich/", total_label_map, display_dummies=False, fig_size=(14, 15))
 
 #[r'$\max_{t}N_{I}(t)$', r'$\sum_{t=0}^{t_{max}}(S\rightarrow E)(t)$', r'$\sum_{t=0}^{t_{max}}N_{D}(t)$']
