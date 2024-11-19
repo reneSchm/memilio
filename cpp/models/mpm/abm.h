@@ -161,7 +161,7 @@ private:
         m_current_events.clear();
         // compute rate for each (agent, status) combination
         for (auto& agent : m_model->populations) {
-            for (int s = 0; s < static_cast<size_t>(Status::Count); s++) {
+            for (int s = 0; s < static_cast<int>(Status::Count); s++) {
                 Status new_status = static_cast<Status>(s);
                 // check if an adoption from the agents status is possible
                 auto adoption_rate = m_model->adoption_rate(agent, new_status);

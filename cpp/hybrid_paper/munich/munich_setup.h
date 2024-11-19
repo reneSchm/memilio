@@ -283,7 +283,7 @@ struct MunichSetup {
               3.0, //t_Exposed
               3.0, //t_Carrier
               5.0, //t_Infected
-              std::vector<double>(8, 0.19), //transmission rates
+              std::vector<double>(8, 0.2), //transmission rates
               0.1, //mu_C_R
               0.004, //mu_I_D
               mio::Date(2021, 3, 1), //start date (not relevant)
@@ -311,7 +311,7 @@ struct MunichSetup {
                       return _metaregions;
                   }
               }(), //metaregions
-              150, //tmax
+              100, //tmax
               0.1, //dt
               []() {
                   const std::vector<int> county_ids = {233, 228, 242, 223, 238, 232, 231, 229};
